@@ -7,7 +7,7 @@ planning-system/
 │
 ├── README.md                           ← Quick-start, what this is, how to install
 ├── CONTRIBUTING.md                     ← How to contribute
-├── LICENCE                             ← Apache 2.0
+├── LICENCE                             ← MIT
 ├── STRUCTURE.md                        ← This file
 │
 ├── core/                               ← Platform-independent planning logic

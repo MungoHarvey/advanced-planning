@@ -3,11 +3,31 @@
 Sets up the Advanced Planning System in [Claude Cowork](https://claude.ai) — the desktop tool
 for non-developers to automate file and task management.
 
-No terminal required. You mount a folder; Claude finds the skills automatically.
+---
+
+## Option A — Install via Plugin (Recommended)
+
+The simplest way to get started is the **Advanced Planning plugin** for Cowork, which bundles
+all the skills, agent prompts, and checkpoint utilities into a single installable package.
+
+1. Open Claude Cowork
+2. Go to **Settings → Plugins → Browse**
+3. Search for **Advanced Planning**
+4. Click **Install**
+5. Start a new session and say: "Start a new planning session for [your project]"
+
+The plugin handles all path configuration automatically. No folder mounting or manual file
+setup required.
 
 ---
 
-## What You Need
+## Option B — Manual Setup (Folder Mount)
+
+If you prefer to work directly from the repository — for example to customise skills or
+contribute changes — follow the steps below. No terminal required; you mount a folder and
+Claude finds the skills automatically.
+
+### What You Need
 
 - Claude Cowork (desktop app)
 - This repository cloned or downloaded to your computer

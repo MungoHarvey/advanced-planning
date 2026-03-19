@@ -170,9 +170,63 @@ plan I/O, and handoff injection. See `platforms/python/README.md`.
 
 ---
 
+## Installation via Plugin (Cowork)
+
+The easiest way to use this system in Cowork is via the **Advanced Planning plugin**, which
+packages the core skills, agent prompts, and checkpoint utilities into a single installable
+bundle. Install it from the Cowork plugin manager, then select your project folder and start
+a session.
+
+For manual setup without the plugin, follow `setup/cowork/README.md`.
+
+---
+
+## Future Development
+
+The current system establishes a solid foundation. These are the directions we expect to
+develop next.
+
+### Headless Mode
+
+The current implementation requires an interactive Claude session to sequence loops — a human
+(or calling process) runs `/next-loop` or triggers the orchestrator manually between loops.
+A headless mode would allow a programme to run autonomously end-to-end: the main thread
+continuously reads `loop-complete.json`, advances to the next loop, and stops only when all
+phases are complete or a `status: failed` is returned. This is fully achievable with the
+existing state bus; it requires only a thin orchestrating script or daemon.
+
+### Nested Subagent Orchestration
+
+The current two-agent pattern has a hard constraint: **the main thread is the only sequencer**.
+Neither the orchestrator nor the worker spawns further agents. This is by design in the current
+release — Claude Code does not permit agents to spawn further subagents, so the main thread
+must retain control.
+
+As this capability becomes available (either in Claude Code, or via the API directly), the
+architecture could evolve to a nested model:
+
+```
+Main thread
+└── Subagent Orchestrator (Sonnet)
+    ├── Prepares loop-ready.json
+    └── Spawns Worker (Haiku)
+        └── Executes todos with skill injection
+```
+
+In this model the main thread becomes a true programme-level sequencer, delegating each
+complete loop cycle — orchestration and execution — to a single subagent invocation.
+This would reduce main-thread context consumption significantly on long programmes and
+enable fully autonomous multi-loop execution within a single top-level call.
+
+We are tracking this as a first-class future capability. Contributions exploring this pattern
+via the Python API (where subagent spawning is already possible with `subprocess` or async
+calls) are welcome.
+
+---
+
 ## Licence
 
-Apache 2.0 — see `LICENCE`.
+MIT — see `LICENCE`.
 
 ## Contributing
 

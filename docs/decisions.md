@@ -123,18 +123,18 @@ A curated log of the key decisions made during the v8 Advanced Planning System d
 
 ---
 
-## Decision 8 — Apache 2.0 Licence
+## Decision 8 — MIT Licence
 
 **Context**: Choosing a licence for the open-source release.
 
 **Alternatives considered**:
-1. MIT — permissive, widely used
-2. Apache 2.0 — permissive with patent clause
+1. MIT — permissive, minimal friction, universally understood
+2. Apache 2.0 — permissive with explicit patent clause
 3. AGPL — copyleft, requires open-sourcing modifications
 4. CC BY 4.0 — appropriate for content, not software
 
-**Decision**: Apache 2.0.
+**Decision**: MIT.
 
-**Rationale**: The target audience (AI developers, researchers, teams building agent frameworks) is concentrated in the Apache 2.0 ecosystem. The patent grant clause in Apache 2.0 provides additional protection for contributors and users without imposing the copyleft constraints of AGPL. MIT is equally permissive but lacks the patent language — Apache 2.0 is the safer choice for a project that may touch patented techniques in the AI tooling space.
+**Rationale**: This is a planning framework primarily made up of Markdown documents, prompt templates, and a small Python utility library. The primary goal is maximum adoption and minimum friction. MIT is the most universally understood permissive licence, imposes no conditions beyond attribution, and is the default expectation in the broader open-source community. The patent protections offered by Apache 2.0 are not a material concern for a project of this nature.
 
-**Consequence**: Commercial use and modification are permitted. Contributors grant a patent licence. Modified versions do not need to be open-sourced. Attribution is required.
+**Consequence**: Commercial use, modification, and distribution are all permitted. The only requirement is that the copyright notice and licence text are included in copies. No contributor licence agreement is required.
