@@ -1,0 +1,102 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "MultiEdit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "TodoWrite",
+      "TodoRead",
+      "WebSearch",
+      "WebFetch(*)",
+      "Agent(*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "mkdir -p .claude/logs && echo \"\\n=== SESSION START $(date '+%Y-%m-%d %H:%M:%S') model:${CLAUDE_MODEL:-unknown} ===\" >> .claude/logs/execution.log"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"=== SESSION END $(date '+%Y-%m-%d %H:%M:%S') ===\" >> .claude/logs/execution.log"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[$(date '+%H:%M:%S')] WORKER START: ${CLAUDE_AGENT_NAME:-unknown} model:${CLAUDE_MODEL:-unknown}\" >> .claude/logs/execution.log"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[$(date '+%H:%M:%S')] WORKER STOP:  ${CLAUDE_AGENT_NAME:-unknown}\" >> .claude/logs/execution.log"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "TodoWrite",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[$(date '+%H:%M:%S')] TODOS UPDATED\" >> .claude/logs/execution.log"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[$(date '+%H:%M:%S')] BASH: exit:${CLAUDE_TOOL_RESULT_EXIT_CODE:-?}\" >> .claude/logs/execution.log"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[$(date '+%H:%M:%S')] WRITE: ${CLAUDE_TOOL_INPUT_PATH:-unknown}\" >> .claude/logs/execution.log"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"[$(date '+%H:%M:%S')] EDIT:  ${CLAUDE_TOOL_INPUT_PATH:-unknown}\" >> .claude/logs/execution.log"
+          }
+        ]
+      }
+    ]
+  }
+}

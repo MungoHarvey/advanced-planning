@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "loop-complete",
+  "description": "Written by the worker to report loop execution results. Read by the main thread to update planning state and advance to the next loop.",
+  "type": "object",
+  "required": ["loop_name", "loop_file", "status", "todos_done", "todos_failed", "completed_at", "handoff"],
+  "properties": {
+    "loop_name": {
+      "type": "string",
+      "pattern": "^ralph-loop-\\d{3}$",
+      "description": "Globally unique loop identifier, e.g. ralph-loop-001"
+    },
+    "loop_file": {
+      "type": "string",
+      "description": "Relative path to the loop file from project root"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["completed", "partial", "failed"],
+      "description": "completed = all todos done; partial = some cancelled/failed; failed = hit max_iterations"
+    },
+    "todos_done": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of todos with status completed"
+    },
+    "todos_failed": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of todos with status cancelled"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when the worker finished"
+    },
+    "handoff": {
+      "type": "object",
+      "required": ["done", "failed", "needed"],
+      "properties": {
+        "done": {
+          "type": "string",
+          "description": "What was completed — one sentence max"
+        },
+        "failed": {
+          "type": "string",
+          "description": "What failed and why — one sentence max; empty string if nothing failed"
+        },
+        "needed": {
+          "type": "string",
+          "description": "What must still happen — one sentence max; empty string if fully done"
+        }
+      },
+      "description": "Handoff summary from this loop, to be injected into the next loop's context"
+    },
+    "duration_seconds": {
+      "type": "number",
+      "description": "Elapsed time from worker start to completion (optional, for metrics)"
+    }
+  }
+}

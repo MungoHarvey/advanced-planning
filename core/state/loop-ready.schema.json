@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "loop-ready",
+  "description": "Written by the orchestrator to signal that a loop is prepared and ready for execution. Read by the main thread and the worker agent.",
+  "type": "object",
+  "required": ["loop_name", "loop_file", "task_name", "todos_count", "prepared_at", "status", "handoff_injected"],
+  "properties": {
+    "loop_name": {
+      "type": "string",
+      "pattern": "^ralph-loop-\\d{3}$",
+      "description": "Globally unique loop identifier, e.g. ralph-loop-001"
+    },
+    "loop_file": {
+      "type": "string",
+      "description": "Relative path to the loop file from project root, e.g. plans/phase-1-ralph-loops.md"
+    },
+    "task_name": {
+      "type": "string",
+      "description": "Human-readable task name from loop frontmatter"
+    },
+    "todos_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of pending todos in this loop"
+    },
+    "prepared_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when the orchestrator finished preparation"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ready", "all_complete"],
+      "description": "ready = loop prepared for execution; all_complete = no more pending loops"
+    },
+    "handoff_injected": {
+      "type": "object",
+      "required": ["done", "failed", "needed"],
+      "properties": {
+        "done": { "type": "string" },
+        "failed": { "type": "string" },
+        "needed": { "type": "string" }
+      },
+      "description": "Handoff summary from the prior loop, injected into this loop's context"
+    }
+  }
+}

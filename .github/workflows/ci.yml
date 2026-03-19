@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+
+  # ── Job 1: Markdown linting ─────────────────────────────────────────────────
+  markdown-lint:
+    name: Markdown Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install markdownlint-cli2
+        run: npm install -g markdownlint-cli2
+
+      - name: Lint Markdown files
+        run: |
+          markdownlint-cli2 \
+            "**/*.md" \
+            "!node_modules/**" \
+            "!.venv/**" \
+            --config .markdownlint.json || true
+        # || true: lint warnings don't fail the build on first release;
+        # remove once all docs conform to the style guide.
+
+  # ── Job 2: JSON schema validation ──────────────────────────────────────────
+  schema-validation:
+    name: JSON Schema Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate JSON schema files are well-formed
+        run: |
+          python -c "
+          import json, pathlib, sys
+          schema_dir = pathlib.Path('core/state')
+          errors = []
+          for f in schema_dir.glob('*.json'):
+              try:
+                  json.loads(f.read_text())
+                  print(f'OK: {f}')
+              except json.JSONDecodeError as e:
+                  errors.append(f'FAIL: {f}: {e}')
+          if errors:
+              print('\n'.join(errors))
+              sys.exit(1)
+          print(f'All {len(list(schema_dir.glob(\"*.json\")))} schema files valid.')
+          "
+
+  # ── Job 3: Python tests ─────────────────────────────────────────────────────
+  python-tests:
+    name: Python Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run tests
+        run: python -m pytest platforms/python/tests/ -v --tb=short
+
+      - name: Verify no external dependencies
+        run: |
+          python -c "
+          # Verify the generic adapter uses only standard library
+          import ast, pathlib, sys
+          allowed_stdlib = {
+              'json', 'pathlib', 're', 'datetime', 'typing',
+              'os', 'sys', 'tempfile', 'textwrap', 'argparse', 'asyncio',
+          }
+          src_files = list(pathlib.Path('platforms/python').glob('*.py'))
+          violations = []
+          for f in src_files:
+              tree = ast.parse(f.read_text())
+              for node in ast.walk(tree):
+                  if isinstance(node, (ast.Import, ast.ImportFrom)):
+                      if isinstance(node, ast.Import):
+                          names = [alias.name.split('.')[0] for alias in node.names]
+                      else:
+                          names = [node.module.split('.')[0]] if node.module else []
+                      for name in names:
+                          if name not in allowed_stdlib and not name.startswith('adapters'):
+                              violations.append(f'{f.name}: imports {name!r}')
+          if violations:
+              print('External dependency violations:')
+              for v in violations:
+                  print(f'  {v}')
+              sys.exit(1)
+          print(f'All {len(src_files)} source files use only allowed imports.')
+          "
