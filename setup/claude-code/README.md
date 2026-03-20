@@ -12,50 +12,99 @@ directory (or your global Claude Code config for commands you want everywhere).
 
 - [Claude Code](https://claude.ai/claude-code) installed
 - This repository cloned to your computer
-- `bash` or `sh` available in your terminal
 
 ---
 
 ## Installation
 
+Two installer scripts are provided — use whichever matches your OS.
+
+| Script | Platform |
+|--------|----------|
+| `setup/claude-code/install.ps1` | Windows (PowerShell) |
+| `setup/claude-code/install.sh` | macOS / Linux |
+
+---
+
 ### Project install (recommended)
 
-Installs everything into a single project's `.claude/` directory:
+Installs commands, skills, agents, and schemas into a single project's `.claude/` directory.
 
-```sh
+**Windows:**
+```powershell
+cd C:\path\to\advanced-planning
+.\setup\claude-code\install.ps1 -Project C:\path\to\your\project
+```
+
+**macOS / Linux:**
+```bash
 cd /path/to/advanced-planning
 sh setup/claude-code/install.sh --project /path/to/your/project
 ```
 
-This creates `.claude/` in your project with:
+This creates `.claude/` in your project:
 
 ```
 .claude/
-├── commands/          ← Slash commands (/new-phase, /new-loop, /next-loop, /loop-status)
-├── skills/            ← Core planning skills (symlinked from core/skills/)
-├── agents/            ← Agent definitions (orchestrator, worker)
-└── settings.json      ← Claude Code configuration
+├── commands/     ← Slash commands (/new-phase, /new-loop, /next-loop, /loop-status)
+├── skills/       ← Core planning skills
+├── agents/       ← Agent definitions (orchestrator, worker)
+├── schemas/      ← JSON and Markdown schemas
+├── state/        ← Runtime state directory (loop-ready.json etc.)
+└── settings.json ← Claude Code configuration
 ```
 
-After installation, open Claude Code in your project directory and run `/next-loop` to begin.
+Open Claude Code in your project and run `/next-loop` to begin.
+
+---
 
 ### Global commands (optional)
 
-Installs slash commands globally so they are available in every Claude Code session:
+Installs slash commands globally so they are available in every Claude Code session.
 
-```sh
+**Windows:**
+```powershell
+.\setup\claude-code\install.ps1 -Global
+```
+
+**macOS / Linux:**
+```bash
 sh setup/claude-code/install.sh --global
 ```
 
-Note: skills are project-scoped, not global. Run the `--project` install per project so
-each project has its own `core/skills/` local copy for skill injection.
+Skills are project-scoped, not global. Run the project install per project so each has its
+own local copy of `core/skills/` for targeted skill injection.
 
-### Reference mode (dry run)
+---
 
-Prints the paths that would be installed without copying anything:
+### Dry run (preview only)
 
-```sh
+Prints what would be installed without writing any files.
+
+**Windows:**
+```powershell
+.\setup\claude-code\install.ps1 -Project C:\path\to\your\project -DryRun
+```
+
+**macOS / Linux:**
+```bash
 sh setup/claude-code/install.sh --dry-run --project /path/to/your/project
+```
+
+---
+
+### Symlink / Junction mode
+
+Links to `core/skills/` instead of copying, so skill updates are reflected immediately.
+
+**Windows** (creates a directory junction — no elevated permissions required):
+```powershell
+.\setup\claude-code\install.ps1 -Project C:\path\to\your\project -Symlink
+```
+
+**macOS / Linux:**
+```bash
+sh setup/claude-code/install.sh --project /path/to/your/project --symlink
 ```
 
 ---

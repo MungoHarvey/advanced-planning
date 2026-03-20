@@ -17,8 +17,16 @@ Takes you from zero to a completed first ralph loop using slash commands. Approx
 
 ### Step 1 — Install
 
-Clone the repository and run the installer:
+Clone the repository and run the installer.
 
+**Windows (PowerShell):**
+```powershell
+git clone https://github.com/MungoHarvey/advanced-planning
+cd advanced-planning
+.\setup\claude-code\install.ps1 -Project C:\path\to\your\project
+```
+
+**macOS / Linux:**
 ```bash
 git clone https://github.com/MungoHarvey/advanced-planning
 cd advanced-planning
@@ -27,12 +35,12 @@ sh setup/claude-code/install.sh --project /path/to/your/project
 
 Verify the install:
 
-```bash
-ls /path/to/your/project/.claude/
-# commands/  skills/  agents/  schemas/  state/  settings.json
+```
+your-project/.claude/
+  commands/   skills/   agents/   schemas/   state/   settings.json
 ```
 
-See `setup/claude-code/README.md` for install options (`--global`, `--symlink`, `--dry-run`).
+See `setup/claude-code/README.md` for all install options (`-Global`, `-Symlink`, `-DryRun` on Windows; `--global`, `--symlink`, `--dry-run` on macOS/Linux).
 
 ### Step 2 — Create a Phase Plan
 
