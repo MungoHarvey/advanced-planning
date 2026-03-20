@@ -39,7 +39,8 @@ git clone https://github.com/MungoHarvey/advanced-planning
 cd advanced-planning
 sh setup/claude-code/install.sh --project /path/to/your/project
 cd /path/to/your/project && claude
-/new-phase
+/plan-and-phase   # explore first, then plan
+# or: /new-phase  # jump straight to phase planning
 ```
 
 ### Cowork (desktop app)
@@ -56,7 +57,7 @@ See `setup/cowork/README.md` for full Cowork setup instructions.
 
 | Platform | Environment | Entry Point | Setup |
 |----------|-------------|-------------|-------|
-| Claude Code | Terminal / IDE | Slash commands (`/next-loop`) | `setup/claude-code/` |
+| Claude Code | Terminal / IDE | Slash commands (`/plan-and-phase`, `/next-loop`, `/progress-report`) | `setup/claude-code/` |
 | Cowork | Desktop app | Natural language triggers | `setup/cowork/` |
 | Python API | Any agent framework | Python import | `platforms/python/` |
 
@@ -166,6 +167,7 @@ plan I/O, and handoff injection. See `platforms/python/README.md`.
 |------|-------|------|
 | Phase planning | Opus | Once per phase |
 | Loop orchestration | Sonnet | Once per loop |
+| Progress reporting | Sonnet | On demand (read-only synthesis) |
 | Todo execution | Haiku | Per todo, with skill injection |
 
 ---
@@ -188,12 +190,10 @@ develop next.
 
 ### Headless Mode
 
-The current implementation requires an interactive Claude session to sequence loops — a human
-(or calling process) runs `/next-loop` or triggers the orchestrator manually between loops.
-A headless mode would allow a programme to run autonomously end-to-end: the main thread
-continuously reads `loop-complete.json`, advances to the next loop, and stops only when all
-phases are complete or a `status: failed` is returned. This is fully achievable with the
-existing state bus; it requires only a thin orchestrating script or daemon.
+`/next-loop --auto` provides autonomous loop chaining within a session: the command chains
+loops end-to-end, stopping only on phase completion or failure. For true headless operation
+across sessions — a daemon that resumes automatically after a session boundary — only a thin
+orchestrating script is needed; the state bus already supports it.
 
 ### Nested Subagent Orchestration
 

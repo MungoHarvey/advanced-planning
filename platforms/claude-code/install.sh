@@ -45,6 +45,7 @@ print_reference() {
     echo "  Read $CORE_DIR/skills/plan-todos/SKILL.md"
     echo "  Read $CORE_DIR/skills/plan-skill-identification/SKILL.md"
     echo "  Read $CORE_DIR/skills/plan-subagent-identification/SKILL.md"
+    echo "  Read $CORE_DIR/skills/progress-report/SKILL.md"
     echo ""
     echo "Agent definitions:"
     echo "  $ADAPTER_DIR/agents/ralph-orchestrator.md"
@@ -122,8 +123,8 @@ install_project() {
     echo "  1. Add the Planning State section to your CLAUDE.md:"
     echo "     cat $ADAPTER_DIR/claude-md-template.md"
     echo "  2. Open a Claude Code session in $TARGET"
-    echo "  3. Run /new-phase [description] to create your first phase plan"
-    echo "  4. Run /next-loop to begin execution"
+    echo "  3. Run /plan-and-phase [description] to explore and plan, or /new-phase to jump straight to phase planning"
+    echo "  4. Run /next-loop to begin execution (or /next-loop --auto to chain all loops)"
     echo ""
 }
 

@@ -40,7 +40,8 @@ Read the description of what the user wants and route to the matching action bel
 | **Create a new phase plan** — "plan this", "new phase", "scope this work" | Load `phase-plan-creator` skill → Generate phase plan → Save to `plans/phase-N.md` |
 | **Decompose phase into loops** — "break into loops", "new loop", "plan iterations" | Load `ralph-loop-planner` skill → Generate loop stubs → Save to `plans/phase-N-ralph-loops.md` |
 | **Execute the next loop** — "next loop", "run it", "continue", "execute" | Run the **Next Loop Cycle** (see below) |
-| **Check progress** — "loop status", "where are we", "what's left", "progress" | Run the **Loop Status Check** (see below) |
+| **Progress report** — "show progress", "what happened", "status report", "what was done" | Load `progress-report` skill → Synthesise plan files, handoffs, git history → Print report |
+| **Check loop status** — "loop status", "where are we", "what's left" | Run the **Loop Status Check** (see below) |
 | **Diagnose issues** — "something went wrong", "check execution", "why isn't it working" | Run the **Execution Diagnostic** (see below) |
 | **Verify model tiers** — "model check", "which model is running" | Run the **Model Check** (see below) |
 
@@ -77,6 +78,20 @@ Read skills/plan-todos/SKILL.md              → populate todos[]
 Read skills/plan-skill-identification/SKILL.md → assign skills
 Read skills/plan-subagent-identification/SKILL.md → assign agents
 ```
+
+---
+
+## Action: Load progress-report
+
+```
+Read skills/progress-report/SKILL.md
+Read skills/progress-report/references/progress-report-template.md
+```
+
+Follow the skill instructions. Read plan files, loop handoff summaries, todo statuses,
+and the snapshot trail to compile a structured progress report.
+
+Print the report to the conversation. Do not modify any plan files.
 
 ---
 
@@ -231,6 +246,7 @@ Read skills/ralph-loop-planner/SKILL.md        → model field
 Read skills/plan-todos/SKILL.md                → model field
 Read skills/plan-skill-identification/SKILL.md → model field
 Read skills/plan-subagent-identification/SKILL.md → model field
+Read skills/progress-report/SKILL.md           → model field
 ```
 
 Print the expected model tier table:
@@ -238,6 +254,7 @@ Print the expected model tier table:
 Component                         Expected
 ──────────────────────────────────────────
 Planning skills (new-phase pipeline)  opus
+Progress report skill                 sonnet
 Orchestrator (Agent tool spawn)       sonnet
 Worker (Agent tool spawn)             haiku
 ──────────────────────────────────────────
@@ -260,7 +277,8 @@ After setup, your workspace folder will contain:
 │   ├── ralph-loop-planner/
 │   ├── plan-todos/
 │   ├── plan-skill-identification/
-│   └── plan-subagent-identification/
+│   ├── plan-subagent-identification/
+│   └── progress-report/
 ├── agents/                     ← Agent prompts for the Agent tool
 │   ├── orchestrator-prompt.md
 │   └── worker-prompt.md

@@ -10,6 +10,7 @@ The v8 planning system assigns AI models by role and frequency of invocation, no
 |------|--------------|---------|---------------------------|
 | Phase plan authoring | Opus | Once per phase | High unit cost, low frequency |
 | Loop planning / orchestration | Sonnet | Once per loop | Medium unit cost, medium frequency |
+| Progress report synthesis | Sonnet | On demand | Medium unit cost, low frequency |
 | Todo execution (worker) | Haiku | Many times per loop | Low unit cost, high frequency |
 
 The model tier economics table: Opus is the most capable but most expensive; Haiku is fast and cheap. The system exploits this by matching model to role based on where reasoning quality matters most.
@@ -20,7 +21,7 @@ The model tier economics table: Opus is the most capable but most expensive; Hai
 
 **Opus at the strategic tier**: Phase plans require genuine strategic reasoning — scoping a 4-phase programme, identifying dependencies, estimating complexity, writing success criteria that will hold up across months of work. This is a one-time investment per phase. Opus's reasoning quality is worth the cost here.
 
-**Sonnet at the tactical tier**: The orchestrator reads a loop plan, evaluates whether todos need population, invokes planning skills, and writes `loop-ready.json`. This is medium-complexity reasoning — more than Haiku can handle reliably for the population step, but not requiring Opus. Sonnet hits the right point on the cost/quality curve.
+**Sonnet at the tactical tier**: The orchestrator reads a loop plan, evaluates whether todos need population, invokes planning skills, and writes `loop-ready.json`. This is medium-complexity reasoning — more than Haiku can handle reliably for the population step, but not requiring Opus. Sonnet hits the right point on the cost/quality curve. The `progress-report` skill also runs at Sonnet tier — it reads and synthesises existing artefacts rather than reasoning strategically, so Opus is not justified.
 
 **Haiku at the execution tier**: The worker's job is execution, not reasoning. The skill injected per-todo provides the specialist instructions; Haiku's job is to follow them accurately and efficiently. At high loop counts (a 4-phase programme might have 40–80 todos), the worker cost dominates — Haiku keeps this tractable.
 

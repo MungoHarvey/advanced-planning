@@ -125,6 +125,28 @@ For each todo with `skill: NA`:
 
 ---
 
+### `progress-report`
+
+**Model tier**: Sonnet
+**Purpose**: Reads plan files, loop handoff summaries, todo statuses, and git commit history
+to produce a structured markdown progress report. Read-only synthesis — never modifies artefacts.
+
+**When to assign:**
+
+- Todo content describes generating a progress summary or status report for a phase or programme
+- Todo is "produce a progress report" or "summarise what has been done"
+- Todo involves reading handoff summaries and todo statuses to compile an audit trail
+
+**When NOT to assign:**
+
+- Any execution work — this skill is read-only synthesis
+- Creating or modifying plan files (use `phase-plan-creator` or `ralph-loop-planner` instead)
+- Populating todos (use `plan-todos` instead)
+
+**Trigger keywords**: progress report, status report, what happened, show progress, review progress, audit, summarise completed work, loop summary
+
+---
+
 ## Pipeline Position Summary
 
 ```
@@ -154,6 +176,7 @@ Each skill operates on the output of the previous. Running them out of order pro
 | Populate todos[] in a loop | `plan-todos` |
 | Assign skill: fields in todos | `plan-skill-identification` |
 | Assign agent: fields in todos | `plan-subagent-identification` |
+| Generate progress report or status summary | `progress-report` |
 | General file I/O, git ops, simple scripting | `NA` |
 | Verification scans, grep checks | `NA` |
 | Writing handoff_summary or loop-complete.json | `NA` |

@@ -18,23 +18,29 @@ planning-system/
 │   │   ├── todo.schema.md              ← Todo item: canonical field order + rules
 │   │   └── handoff.schema.md           ← Handoff summary: 3-field protocol
 │   │
-│   ├── skills/                         ← 5 planning skills (run by Opus at plan time)
+│   ├── skills/                         ← 6 planning skills (model tier varies by skill)
 │   │   ├── phase-plan-creator/
-│   │   │   ├── SKILL.md               ← Generate structured phase plans
+│   │   │   ├── SKILL.md               ← Generate structured phase plans (Opus)
 │   │   │   └── references/
 │   │   │       └── phase-plan-template.md
 │   │   ├── ralph-loop-planner/
-│   │   │   ├── SKILL.md               ← Decompose phases into bounded loops
+│   │   │   ├── SKILL.md               ← Decompose phases into bounded loops (Sonnet)
 │   │   │   └── references/
 │   │   │       └── ralph-loop-template.md
 │   │   ├── plan-todos/
-│   │   │   ├── SKILL.md               ← Derive atomic todos from loop descriptions
+│   │   │   ├── SKILL.md               ← Derive atomic todos from loop descriptions (Opus)
 │   │   │   └── references/
 │   │   │       └── todo-schema.md      ← (symlink → core/schemas/todo.schema.md)
 │   │   ├── plan-skill-identification/
-│   │   │   └── SKILL.md               ← Assign skills to todos
-│   │   └── plan-subagent-identification/
-│   │       └── SKILL.md               ← Assign agents to todos
+│   │   │   ├── SKILL.md               ← Assign skills to todos (Opus)
+│   │   │   └── references/
+│   │   │       └── skill-catalogue.md  ← Authoritative list of all skills + trigger guidance
+│   │   ├── plan-subagent-identification/
+│   │   │   └── SKILL.md               ← Assign agents to todos (Opus)
+│   │   └── progress-report/
+│   │       ├── SKILL.md               ← Retrospective progress synthesis (Sonnet)
+│   │       └── references/
+│   │           └── progress-report-template.md
 │   │
 │   ├── agents/                         ← Abstract agent role definitions
 │   │   ├── orchestrator.md             ← Prepares loops, assigns skills/agents
@@ -51,9 +57,11 @@ planning-system/
 │   │   ├── README.md                   ← Install + usage for Claude Code
 │   │   ├── install.sh                  ← Copies/symlinks into .claude/
 │   │   ├── commands/                   ← Slash commands
+│   │   │   ├── plan-and-phase.md       ← /plan-and-phase [description]
 │   │   │   ├── new-phase.md            ← /new-phase [description]
 │   │   │   ├── new-loop.md             ← /new-loop [phase-N]
-│   │   │   ├── next-loop.md            ← /next-loop (two-agent pattern)
+│   │   │   ├── next-loop.md            ← /next-loop [--auto]
+│   │   │   ├── progress-report.md      ← /progress-report [--phase N]
 │   │   │   ├── loop-status.md          ← /loop-status
 │   │   │   ├── check-execution.md      ← /check-execution (6-area diagnostic)
 │   │   │   └── model-check.md          ← /model-check
@@ -144,7 +152,8 @@ planning-system/
 ├── state/                              ← Filesystem state bus (runtime)
 │   ├── loop-ready.json
 │   ├── loop-complete.json
-│   └── history.jsonl                   ← Append-only audit log
+│   ├── history.jsonl                   ← Append-only audit log
+│   └── planning-mode                   ← Sentinel: present during /plan-and-phase exploration
 ├── logs/
 │   └── execution.log
 └── snapshots/                          ← File-based checkpoints (Cowork adapter)

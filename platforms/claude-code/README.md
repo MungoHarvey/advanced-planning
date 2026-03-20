@@ -62,11 +62,19 @@ Paste the `## Planning State` block into your project's `CLAUDE.md`.
 
 **2. Create your first phase plan**
 
+Option A — Explore first, then plan (recommended for unfamiliar codebases):
+```
+/plan-and-phase Implement a REST API for user authentication with JWT tokens
+```
+This activates read-only planning mode, explores the codebase, presents findings for review,
+then runs the full planning pipeline.
+
+Option B — Jump straight to planning (when you already know the codebase):
 ```
 /new-phase Implement a REST API for user authentication with JWT tokens
 ```
 
-Claude will generate a structured phase plan with objectives, scope, deliverables, success criteria, and risk assessment — then automatically decompose it into 3–5 executable ralph loops.
+Both options generate a structured phase plan and automatically decompose it into executable ralph loops.
 
 **3. Check what was planned**
 
@@ -76,17 +84,29 @@ Claude will generate a structured phase plan with objectives, scope, deliverable
 
 Review the loops, todos, and skill assignments before execution begins.
 
-**4. Execute the first loop**
+**4. Execute loops**
 
+Single loop:
 ```
 /next-loop
 ```
 
-Claude spawns `ralph-orchestrator` (Sonnet) to prepare the loop, then `ralph-loop-worker` (Haiku) to execute it. Each todo is worked with its assigned skill loaded just-in-time.
+All loops, chained automatically:
+```
+/next-loop --auto
+```
 
-**5. Continue**
+Claude spawns `ralph-orchestrator` (Sonnet) to prepare each loop, then `ralph-loop-worker` (Haiku)
+to execute it. Each todo is worked with its assigned skill loaded just-in-time.
 
-Repeat `/next-loop` until the phase is complete. Each run produces a handoff summary and a git checkpoint commit.
+**5. Review progress**
+
+```
+/progress-report
+```
+
+Synthesises plan files, handoff summaries, todo statuses, and git history into a structured
+markdown report. Useful after an `--auto` run or when resuming work across sessions.
 
 ---
 
@@ -94,9 +114,11 @@ Repeat `/next-loop` until the phase is complete. Each run produces a handoff sum
 
 | Command | Description | Key Arguments |
 |---------|-------------|---------------|
+| `/plan-and-phase [description]` | Read-only exploration → human review → full planning pipeline | Description of what to accomplish |
 | `/new-phase [description]` | Full planning pipeline: phase plan → loops → todos → skills → agents | Description of what to accomplish |
 | `/new-loop [phase]` | Decompose a phase plan into ralph loops only | Phase number or file path |
-| `/next-loop` | Execute the next pending loop (two-agent pattern) | None |
+| `/next-loop` | Execute the next pending loop (two-agent pattern) | `--auto` to chain all loops |
+| `/progress-report` | Structured report from plan files, handoffs, and git history | `--phase N` to scope to one phase |
 | `/loop-status` | Show all loops with todo counts and handoff summaries | None |
 | `/check-execution` | Six-area diagnostic: hooks, workers, todos, handoffs, git, output files | None |
 | `/model-check` | Verify model tier assignments across skills and agents | None |
@@ -108,10 +130,12 @@ Repeat `/next-loop` until the phase is complete. Each run produces a handoff sum
 ```
 your-project/
 └── .claude/
-    ├── commands/           ← Slash commands (6 files)
+    ├── commands/           ← Slash commands (8 files)
+    │   ├── plan-and-phase.md
     │   ├── new-phase.md
     │   ├── new-loop.md
     │   ├── next-loop.md
+    │   ├── progress-report.md
     │   ├── loop-status.md
     │   ├── check-execution.md
     │   └── model-check.md
@@ -120,7 +144,8 @@ your-project/
     │   ├── ralph-loop-planner/
     │   ├── plan-todos/
     │   ├── plan-skill-identification/
-    │   └── plan-subagent-identification/
+    │   ├── plan-subagent-identification/
+    │   └── progress-report/
     ├── agents/             ← Agent definitions (3 files)
     │   ├── ralph-orchestrator.md   (Sonnet)
     │   ├── ralph-loop-worker.md    (Haiku)
@@ -196,7 +221,8 @@ The worker skipped the completion protocol. Run `/check-execution` Check 4. To f
 
 | Role | Model | Why |
 |------|-------|-----|
-| Planning skills (`/new-phase` pipeline) | Opus | Highest reasoning demand; runs once per phase |
+| Planning skills (`/plan-and-phase`, `/new-phase` pipeline) | Opus | Highest reasoning demand; runs once per phase |
+| `progress-report` skill | Sonnet | Read-and-synthesise work; does not require strategic reasoning |
 | `ralph-orchestrator` | Sonnet | Loop preparation: moderate complexity, reads plan, assembles context |
 | `ralph-loop-worker` | Haiku | Execution: high frequency, bounded tasks, cost matters at scale |
 | `analysis-worker` | Haiku | Delegated execution: same rationale as worker |

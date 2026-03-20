@@ -119,13 +119,31 @@ ralph-loop-002           ⏳ pending    0/3
 
 Run `/next-loop` again for the next pending loop.
 
+### Alternative: Full Explore-to-Execute Pipeline
+
+If you prefer to explore the codebase before committing to a plan, use this workflow:
+
+```
+/plan-and-phase [description]   → Read-only exploration → Human review → Phase plan → Loops → Ready
+/next-loop --auto               → Chain all loops until phase complete or failure
+/progress-report                → Structured summary of what was accomplished
+```
+
+The difference from the standard flow:
+- `/plan-and-phase` activates planning mode (read-only enforcement) during exploration
+- Findings are saved to `.claude/plans/exploration-notes.md` for review before planning starts
+- `--auto` on `/next-loop` chains loops without manual re-invocation between each one
+
 ### Command Reference
 
 | Command | What it does |
 |---------|-------------|
-| `/new-phase` | Create a phase plan using `phase-plan-creator` skill |
+| `/plan-and-phase [desc]` | Explore codebase read-only, then run full planning pipeline |
+| `/new-phase` | Create a phase plan using `phase-plan-creator` skill (no exploration step) |
 | `/new-loop [N]` | Decompose phase N into loop files using `ralph-loop-planner` skill |
 | `/next-loop` | Execute the next pending loop (full two-agent cycle) |
+| `/next-loop --auto` | Chain loops until phase complete or failure |
+| `/progress-report` | Structured report from plan files, handoffs, and git history |
 | `/loop-status` | Show progress table |
 | `/check-execution` | Diagnose if the worker isn't progressing |
 | `/model-check` | Verify agent model tiers |

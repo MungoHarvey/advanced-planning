@@ -204,7 +204,7 @@ Keeping the core platform-agnostic means all adapters benefit from improvements 
 advanced-planning/
 ├── core/
 │   ├── schemas/      ← JSON/Markdown schemas for all plan file types
-│   ├── skills/       ← Platform-agnostic planning skills (Opus-tier)
+│   ├── skills/       ← 6 planning skills (Opus/Sonnet tier, by skill)
 │   ├── agents/       ← Orchestrator and worker role definitions
 │   └── state/        ← State bus JSON schemas
 ├── platforms/

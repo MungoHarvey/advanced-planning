@@ -1,6 +1,7 @@
 ---
-description: Execute the next pending ralph loop using the two-agent handoff pattern. Spawns ralph-orchestrator (Sonnet) to prepare the loop, then spawns ralph-loop-worker (Haiku) to execute it. Run repeatedly to advance through all loops in the phase plan.
+description: Execute the next pending ralph loop using the two-agent handoff pattern. Spawns ralph-orchestrator (Sonnet) to prepare the loop, then spawns ralph-loop-worker (Haiku) to execute it. Run repeatedly to advance through all loops in the phase plan. Use --auto to chain loops until the phase completes.
 allowed-tools: Read, Write, Glob, Bash, Edit, TodoWrite, Agent
+argument-hint: "[--auto]"
 ---
 
 # /next-loop
@@ -18,7 +19,15 @@ ls .claude/plans/*.md 2>/dev/null | head -5 || echo "NONE"
 
 If no plan files found: print `No phase plan found. Run /new-phase first.` and stop.
 
-### 2. Check if all loops are complete
+### 2. Parse --auto flag
+
+If `$ARGUMENTS` contains `--auto`:
+- Set `AUTO_MODE = true`
+- Print: `⚡ Autonomous mode: will chain loops until phase complete or failure.`
+
+Otherwise: `AUTO_MODE = false` (default single-loop behaviour).
+
+### 2b. Check if all loops are complete
 
 Read the loop files in `.claude/plans/`. If all todos across all loops are `completed` or `cancelled`:
 print `✓ All loops complete. Phase finished.` and stop.
@@ -104,9 +113,34 @@ If `todos_failed > 0`:
 ⚠ [N] todos did not complete. Review .claude/plans/[loop_file] before continuing.
 ```
 
+### 11. Auto-chain decision
+
+If `AUTO_MODE` is false: stop. Print `Run /next-loop to continue.`
+
+If `AUTO_MODE` is true:
+
+- **status is "failed"** → stop. Print:
+  ```
+  ✗ Auto-chain stopped: [loop_name] failed.
+    Review .claude/plans/[loop_file] and .claude/state/loop-complete.json.
+    Fix the issue, then run /next-loop to resume.
+  ```
+
+- **All loops complete** → stop. Print:
+  ```
+  ✓ Phase complete. All loops finished.
+    Run /progress-report to see a summary of what was accomplished.
+  ```
+
+- **status is "completed" or "partial" with more loops pending** → print `Auto-chaining to next loop...`
+  and return to Step 3 (git checkpoint), beginning the next loop cycle.
+
 ## Notes
 
 - The orchestrator and worker are spawned sequentially — never concurrently
 - The main thread (this command) is the only decision-maker for loop sequencing
 - If the orchestrator writes `status: all_complete`, the phase is done
 - Run `/check-execution` if a loop completes without visible output or with unexpected results
+- Auto mode respects `on_max_iterations` — a loop that escalates will stop the chain
+- Each loop in auto mode gets its own git checkpoint (Step 3), so any failure is recoverable
+- Run `/progress-report` after an auto run to see a structured summary of what happened

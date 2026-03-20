@@ -46,15 +46,15 @@ This creates `.claude/` in your project:
 
 ```
 .claude/
-├── commands/     ← Slash commands (/new-phase, /new-loop, /next-loop, /loop-status)
-├── skills/       ← Core planning skills
+├── commands/     ← Slash commands (/plan-and-phase, /new-phase, /next-loop, /progress-report, etc.)
+├── skills/       ← Core planning skills (including progress-report)
 ├── agents/       ← Agent definitions (orchestrator, worker)
 ├── schemas/      ← JSON and Markdown schemas
 ├── state/        ← Runtime state directory (loop-ready.json etc.)
-└── settings.json ← Claude Code configuration
+└── settings.json ← Claude Code configuration (includes planning-mode hooks)
 ```
 
-Open Claude Code in your project and run `/next-loop` to begin.
+Open Claude Code in your project and run `/plan-and-phase` to explore and plan, or `/next-loop` to begin execution directly.
 
 ---
 
@@ -134,9 +134,12 @@ After installation, these commands are available in Claude Code:
 
 | Command | What it does |
 |---------|-------------|
-| `/new-phase` | Creates a phase plan document using the `phase-plan-creator` skill |
-| `/new-loop` | Decomposes a phase into ralph loops using the `ralph-loop-planner` skill |
+| `/plan-and-phase [desc]` | Read-only codebase exploration → human review → full planning pipeline |
+| `/new-phase [desc]` | Creates a phase plan document using the `phase-plan-creator` skill |
+| `/new-loop [phase]` | Decomposes a phase into ralph loops using the `ralph-loop-planner` skill |
 | `/next-loop` | Runs the next pending loop: spawns orchestrator → worker → reports back |
+| `/next-loop --auto` | Chains loops automatically until phase complete or failure |
+| `/progress-report` | Structured report from plan files, handoffs, and git history |
 | `/loop-status` | Shows current loop, todo states, and handoff summary |
 
 ---
@@ -168,17 +171,28 @@ claude  # opens Claude Code in this project
 In the Claude Code session:
 
 ```
+/plan-and-phase
+```
+
+Claude explores the codebase read-only, presents findings for review, then runs the full
+planning pipeline. Alternatively, if you already know what you want to build:
+
+```
 /new-phase
 ```
 
-Claude will guide you through creating your first phase plan. Then:
+Then run:
 
 ```
-/new-loop
-/next-loop
+/next-loop          ← execute one loop at a time
+/next-loop --auto   ← chain all loops until the phase is done
 ```
 
-And you're running.
+Check progress at any time:
+
+```
+/progress-report
+```
 
 ---
 

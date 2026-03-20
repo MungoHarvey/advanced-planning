@@ -60,6 +60,23 @@
         ]
       }
     ],
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [{
+          "type": "command",
+          "command": "if [ -f .claude/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *.claude/plans/*|*.claude/state/*) ;; *) echo 'BLOCK: Write disabled during planning mode. Allowed: .claude/plans/ and .claude/state/ only.' >&2; exit 2 ;; esac; fi"
+        }]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [{ "type": "command", "command": "if [ -f .claude/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *.claude/plans/*|*.claude/state/*) ;; *) echo 'BLOCK: Edit disabled during planning mode. Allowed: .claude/plans/ and .claude/state/ only.' >&2; exit 2 ;; esac; fi" }]
+      },
+      {
+        "matcher": "MultiEdit",
+        "hooks": [{ "type": "command", "command": "if [ -f .claude/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *.claude/plans/*|*.claude/state/*) ;; *) echo 'BLOCK: MultiEdit disabled during planning mode. Allowed: .claude/plans/ and .claude/state/ only.' >&2; exit 2 ;; esac; fi" }]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "TodoWrite",

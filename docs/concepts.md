@@ -117,6 +117,51 @@ Use `escalate` for loops whose partial completion leaves the system in an incons
 
 ---
 
+## Planning Mode
+
+**Planning mode** is a temporary read-only enforcement state activated during `/plan-and-phase`
+exploration. When active, a sentinel file `.claude/state/planning-mode` is present. The
+`PreToolUse` hooks in `settings.json` check for this sentinel and block `Write`, `Edit`,
+and `MultiEdit` tool calls to any path outside `.claude/plans/` and `.claude/state/`.
+
+This prevents accidental changes to source code during the exploration phase, when the
+goal is to read and understand — not to modify.
+
+**Lifecycle**:
+1. `/plan-and-phase` creates the sentinel: `echo "$(date -Iseconds)" > .claude/state/planning-mode`
+2. Exploration proceeds read-only (exploration notes saved to `.claude/plans/`)
+3. Human review gate — user confirms, edits, or stops
+4. Sentinel removed: `rm -f .claude/state/planning-mode`
+5. Full planning pipeline runs with writes re-enabled
+
+The sentinel is always removed before the planning pipeline runs, so no hooks interfere
+with phase plan or loop file creation.
+
+---
+
+## Progress Report
+
+The **progress report** is a retrospective synthesis produced by the `progress-report`
+skill and the `/progress-report` command. It reads existing artefacts — plan files, loop
+handoff summaries, todo statuses, and git commit history — and compiles them into a
+structured markdown report.
+
+No new logging infrastructure is needed. The report is entirely derived from data that
+the planning system already produces during normal execution.
+
+**Data sources** (in order of priority):
+1. Phase plan files (`phase-N.md`) — objectives and success criteria
+2. Loop files (`phase-N-ralph-loops.md`) — todo statuses and handoff summaries
+3. `CLAUDE.md` Planning State — current position in the plan
+4. Git log (`complete:` and `checkpoint:` commits) — timestamps for loop completions
+5. `.claude/state/loop-complete.json` — most recent loop result
+6. `.claude/logs/execution.log` — agent activity log
+
+The report is read-only. It never modifies plan files. Use `/progress-report --phase N`
+to scope the report to a single phase, or omit the flag for the full programme.
+
+---
+
 ## Platform Adapter
 
 A **platform adapter** wraps the platform-agnostic core (schemas, skills, agent protocols, state bus) in the conventions of a specific execution environment.
