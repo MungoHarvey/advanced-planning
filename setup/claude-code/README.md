@@ -58,9 +58,10 @@ Open Claude Code in your project and run `/next-loop` to begin.
 
 ---
 
-### Global commands (optional)
+### Global install (optional)
 
-Installs slash commands globally so they are available in every Claude Code session.
+Installs commands, skills, agents, and schemas globally into `~/.claude/` so they are
+available in every Claude Code session.
 
 **Windows:**
 ```powershell
@@ -72,8 +73,23 @@ Installs slash commands globally so they are available in every Claude Code sess
 sh setup/claude-code/install.sh --global
 ```
 
-Skills are project-scoped, not global. Run the project install per project so each has its
-own local copy of `core/skills/` for targeted skill injection.
+This installs into `~/.claude/`:
+
+```
+~/.claude/
+├── commands/     ← Slash commands available in every project
+├── skills/       ← Core planning skills (global fallback)
+├── agents/       ← Agent definitions (global fallback)
+└── schemas/      ← JSON and Markdown schemas
+```
+
+> **Skill path resolution** — When a command or agent references `.claude/skills/<name>/`,
+> Claude resolves it in this order:
+> 1. **Project-local** — `.claude/skills/<name>/` (preferred)
+> 2. **Global fallback** — `~/.claude/skills/<name>/` (used when no local copy is present)
+>
+> Plans and runtime state (`.claude/plans/`, `.claude/state/`, `.claude/logs/`) are always
+> project-local — there is no global fallback for these.
 
 ---
 
@@ -96,15 +112,18 @@ sh setup/claude-code/install.sh --dry-run --project /path/to/your/project
 ### Symlink / Junction mode
 
 Links to `core/skills/` instead of copying, so skill updates are reflected immediately.
+`--symlink` also works with `--global` to symlink skills into `~/.claude/skills/`.
 
 **Windows** (creates a directory junction — no elevated permissions required):
 ```powershell
 .\setup\claude-code\install.ps1 -Project C:\path\to\your\project -Symlink
+.\setup\claude-code\install.ps1 -Global -Symlink
 ```
 
 **macOS / Linux:**
 ```bash
 sh setup/claude-code/install.sh --project /path/to/your/project --symlink
+sh setup/claude-code/install.sh --global --symlink
 ```
 
 ---
@@ -190,11 +209,18 @@ When you pull a new version of this repository, re-run the install to update you
 sh setup/claude-code/install.sh --project /path/to/your/project
 ```
 
+To update a global install:
+
+```sh
+sh setup/claude-code/install.sh --global
+```
+
 Skills are copied (not symlinked by default) so each project has an independent copy.
-Use `--symlink` if you prefer to share a single skills directory:
+Use `--symlink` if you prefer to share a single skills directory across all projects:
 
 ```sh
 sh setup/claude-code/install.sh --project /path/to/your/project --symlink
+sh setup/claude-code/install.sh --global --symlink
 ```
 
 ---

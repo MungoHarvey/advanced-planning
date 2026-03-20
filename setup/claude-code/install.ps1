@@ -56,10 +56,10 @@ function Do-Junction([string]$link, [string]$target) {
     # Creates a directory junction (Windows equivalent of a symlink for directories).
     # Requires no elevated permissions on modern Windows.
     if ($DryRun) {
-        Write-Host "  [dry-run] mklink /J $link $target"
+        Write-Host "  [dry-run] New-Item Junction $link -> $target"
     } else {
         if (Test-Path $link) { Remove-Item $link -Recurse -Force }
-        cmd /c "mklink /J `"$link`" `"$target`"" | Out-Null
+        New-Item -ItemType Junction -Path $link -Target $target | Out-Null
     }
 }
 
@@ -77,24 +77,62 @@ if (-not (Test-Path (Join-Path $RepoRoot "core"))) {
 }
 
 # ---------------------------------------------------------------------------
-# Global install (commands only)
+# Global install
 # ---------------------------------------------------------------------------
 if ($Global) {
     $GlobalDir = Join-Path $HOME ".claude"
     $CommandsDir = Join-Path $GlobalDir "commands"
+    $SkillsDest  = Join-Path $GlobalDir "skills"
+    $AgentsDir   = Join-Path $GlobalDir "agents"
+    $SchemasDir  = Join-Path $GlobalDir "schemas"
 
-    Say "Installing slash commands globally to $CommandsDir"
+    Say "Installing Advanced Planning System globally to $GlobalDir"
+    Say ""
     Do-MkDir $CommandsDir
+    Do-MkDir $AgentsDir
+    Do-MkDir $SchemasDir
 
+    # Slash commands
+    Say "Installing slash commands..."
     $cmds = Get-ChildItem -Path (Join-Path $RepoRoot "platforms\claude-code\commands") -Filter "*.md" -File
     foreach ($cmd in $cmds) {
         Do-Copy $cmd.FullName $CommandsDir
         Say "  + commands\$($cmd.Name)"
     }
 
+    # Agent definitions
+    Say "Installing agent definitions..."
+    $agents = Get-ChildItem -Path (Join-Path $RepoRoot "core\agents") -Filter "*.md" -File
+    foreach ($agent in $agents) {
+        Do-Copy $agent.FullName $AgentsDir
+        Say "  + agents\$($agent.Name)"
+    }
+
+    # Skills
+    Say "Installing core skills..."
+    $skillsSrc = Join-Path $RepoRoot "core\skills"
+    if ($Symlink) {
+        Do-Junction $SkillsDest $skillsSrc
+        Say "  + skills\ -> $skillsSrc (junction)"
+    } else {
+        Do-MkDir $SkillsDest
+        $skillDirs = Get-ChildItem -Path $skillsSrc -Directory
+        foreach ($skillDir in $skillDirs) {
+            Do-Copy $skillDir.FullName $SkillsDest
+            Say ("  + skills\" + $skillDir.Name + "\")
+        }
+    }
+
+    # Schemas
+    Say "Installing schemas..."
+    $schemas = Get-ChildItem -Path (Join-Path $RepoRoot "core\schemas") -File
+    foreach ($schema in $schemas) {
+        Do-Copy $schema.FullName $SchemasDir
+        Say "  + schemas\$($schema.Name)"
+    }
+
     Say ""
     Say "Global install complete."
-    Say "Skills are NOT installed globally — run -Project per project for skill injection."
     exit 0
 }
 
@@ -180,7 +218,9 @@ if (-not $DryRun) {
             plans_dir   = "plans"
         }
     } | ConvertTo-Json -Depth 3
-    Set-Content -Path $settingsPath -Value $settings -Encoding UTF8
+    # Use UTF-8 without BOM — Set-Content -Encoding UTF8 adds a BOM in Windows PowerShell 5.x
+    $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+    [System.IO.File]::WriteAllText($settingsPath, $settings, $utf8NoBom)
 } else {
     Write-Host "  [dry-run] write $settingsPath"
 }

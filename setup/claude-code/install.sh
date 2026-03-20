@@ -11,7 +11,7 @@
 #
 # What is installed:
 #   --project: copies commands, skills, agents, settings into PROJECT/.claude/
-#   --global:  copies commands only into ~/.claude/commands/
+#   --global:  copies commands, skills, agents, and schemas into ~/.claude/
 #   --symlink: creates symlinks to core/skills/ instead of copying
 
 set -e
@@ -111,20 +111,52 @@ if [ ! -d "$REPO_ROOT/core" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Global install (commands only)
+# Global install
 # ---------------------------------------------------------------------------
 if [ "$GLOBAL" = true ]; then
     GLOBAL_DIR="$HOME/.claude"
-    say "Installing slash commands globally to $GLOBAL_DIR/commands/"
+    say "Installing globally to $GLOBAL_DIR"
     do_mkdir "$GLOBAL_DIR/commands"
+    do_mkdir "$GLOBAL_DIR/agents"
+    do_mkdir "$GLOBAL_DIR/schemas"
+
+    say "Installing slash commands..."
     for cmd in "$REPO_ROOT/platforms/claude-code/commands/"*.md; do
         [ -f "$cmd" ] || continue
         do_cp "$cmd" "$GLOBAL_DIR/commands/"
         say "  + commands/$(basename "$cmd")"
     done
+
+    say "Installing agent definitions..."
+    for agent in "$REPO_ROOT/core/agents/"*.md; do
+        [ -f "$agent" ] || continue
+        do_cp "$agent" "$GLOBAL_DIR/agents/"
+        say "  + agents/$(basename "$agent")"
+    done
+
+    say "Installing core skills..."
+    if [ "$SYMLINK" = true ]; then
+        do_ln "$REPO_ROOT/core/skills" "$GLOBAL_DIR/skills"
+        say "  + skills/ → $REPO_ROOT/core/skills (symlinked)"
+    else
+        do_mkdir "$GLOBAL_DIR/skills"
+        for skill_dir in "$REPO_ROOT/core/skills/"*/; do
+            [ -d "$skill_dir" ] || continue
+            skill_name="$(basename "$skill_dir")"
+            do_cp "$skill_dir" "$GLOBAL_DIR/skills/"
+            say "  + skills/$skill_name/"
+        done
+    fi
+
+    say "Installing schemas..."
+    for schema in "$REPO_ROOT/core/schemas/"*.md "$REPO_ROOT/core/schemas/"*.json; do
+        [ -f "$schema" ] || continue
+        do_cp "$schema" "$GLOBAL_DIR/schemas/"
+        say "  + schemas/$(basename "$schema")"
+    done
+
     say ""
     say "Global install complete."
-    say "Skills are NOT installed globally — run --project per project for skill injection."
     exit 0
 fi
 

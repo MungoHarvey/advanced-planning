@@ -19,6 +19,15 @@ Run the complete planning pipeline end-to-end. No manual steps required.
 6. Ready — run /next-loop to begin execution
 ```
 
+## Skill & Agent Path Resolution
+
+Resolve all `.claude/skills/` and `.claude/agents/` references in this order:
+1. **Project-local** — `.claude/skills/<name>/` (preferred)
+2. **Global fallback** — `~/.claude/skills/<name>/` (used when local copy absent)
+
+For Glob operations, search both locations and merge results; local takes precedence
+for any duplicate skill/agent names.
+
 ## Steps
 
 ### 1. Load phase planning skill

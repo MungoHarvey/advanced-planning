@@ -8,6 +8,15 @@ argument-hint: "[phase number or plan file path]"
 
 Decompose a phase plan into ralph loop iterations using the ralph-loop-planner skill.
 
+## Skill & Agent Path Resolution
+
+Resolve all `.claude/skills/` and `.claude/agents/` references in this order:
+1. **Project-local** — `.claude/skills/<name>/` (preferred)
+2. **Global fallback** — `~/.claude/skills/<name>/` (used when local copy absent)
+
+For Glob operations, search both locations and merge results; local takes precedence
+for any duplicate skill/agent names.
+
 ## Steps
 
 ### 1. Find the phase plan

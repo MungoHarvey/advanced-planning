@@ -29,6 +29,8 @@ The Claude Code-specific path conventions are:
 - Skills directory: `.claude/skills/` (used for targeted skill injection)
 - Plans directory: `.claude/plans/`
 - Logs directory: `.claude/logs/`
+- Skills: `.claude/skills/` (project-local preferred; fall back to `~/.claude/skills/`)
+- Agents: `.claude/agents/` (project-local preferred; fall back to `~/.claude/agents/`)
 
 ## On Start
 

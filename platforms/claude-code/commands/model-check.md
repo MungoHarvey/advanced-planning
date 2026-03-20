@@ -7,6 +7,15 @@ allowed-tools: Read, Bash
 
 Report the current model and verify model assignments across the planning system.
 
+## Skill & Agent Path Resolution
+
+Resolve all `.claude/skills/` and `.claude/agents/` references in this order:
+1. **Project-local** — `.claude/skills/<name>/` (preferred)
+2. **Global fallback** — `~/.claude/skills/<name>/` (used when local copy absent)
+
+For Glob operations, search both locations and merge results; local takes precedence
+for any duplicate skill/agent names.
+
 ## Steps
 
 ### 1. Print current model
