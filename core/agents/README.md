@@ -16,11 +16,14 @@ Main Thread
     │                               Returns
     │◄──────────────────────────────┘
     │ Reads loop-ready.json
+    │ Reads loop file → extracts skill list
+    │ Constructs worker prompt with skill paths + context
     │
-    ├─ Spawn ────────────────────────────────────► Worker (Haiku)
+    ├─ Spawn ────────────────────────────────────► Worker (Sonnet)
+    │                                                  Receives skill paths in prompt
     │                                                  Reads loop-ready.json
-    │                                                  Executes todos
-    │                                                  Loads skill per todo
+    │                                                  Executes ALL todos inline
+    │                                                  Loads skill per todo (targeted injection)
     │                                                  Writes loop-complete.json
     │                                                  Returns
     │◄────────────────────────────────────────────────┘
@@ -39,7 +42,7 @@ Each agent is **spawned once per loop cycle and returns when its work is complet
 | Role | File | Model Tier | When Spawned | Returns When |
 |------|------|-----------|-------------|--------------|
 | Orchestrator | `orchestrator.md` | Sonnet | Before each loop | `loop-ready.json` is written |
-| Worker | `worker.md` | Haiku | After orchestrator returns | `loop-complete.json` is written |
+| Worker | `worker.md` | Sonnet (default) | After orchestrator returns | `loop-complete.json` is written |
 
 ---
 
@@ -51,9 +54,9 @@ The three-tier model hierarchy aligns cost with responsibility:
 |------|------|--------------|---------------|
 | Strategic | Planning skills (phase plans, loop decomposition) | Opus | Highest reasoning demand; runs once per phase or loop, not per task |
 | Tactical | Orchestrator (loop preparation, context assembly) | Sonnet | Moderate complexity; reads plan, assembles context, makes skill assignments |
-| Execution | Worker (bounded task execution) | Haiku | High frequency; runs many tasks per loop; cost matters at scale |
+| Execution | Worker (bounded task execution) | Sonnet (default); Haiku for low-complexity | High frequency; runs many tasks per loop |
 
-Running a 12-loop programme with 5 todos per loop means the worker executes ~60 tasks. Using Haiku for those 60 executions while reserving Sonnet for the 12 orchestration cycles and Opus for the planning phase is a significant cost saving without sacrificing quality — each model is doing work proportionate to its capability.
+Running a 12-loop programme with 5 todos per loop means the worker executes ~60 tasks. Using Sonnet as the default ensures reliable compositional reasoning. Todos marked `complexity: low` can use Haiku for cost savings on genuinely simple tasks (single-file edits, command runs).
 
 ---
 
@@ -61,7 +64,11 @@ Running a 12-loop programme with 5 todos per loop means the worker executes ~60 
 
 In agent frameworks that do not support recursive subagent spawning (such as Claude Code), subagents cannot spawn further subagents. This means a subagent worker **cannot** itself spawn analysis workers or parallel agents.
 
-**The v8 solution**: the main thread handles all spawning explicitly. It spawns the orchestrator, waits for it to return, then spawns the worker. The worker executes its todos using its own capabilities — it does not delegate further.
+**The v8 solution**: the main thread handles all spawning explicitly. It spawns the orchestrator, waits for it to return, then spawns the worker. The worker executes **all** todos inline using its own capabilities — it does not delegate further. The `agent:` field in todos is planning-time metadata used for categorisation; it does not trigger subagent spawning at execution time.
+
+The worker's execution quality comes from two sources:
+1. **Frontmatter skill injection** — skills listed in the agent definition's `skills:` frontmatter are loaded at spawn time
+2. **Targeted per-todo skill injection** — the worker reads the specific SKILL.md for each todo immediately before executing it
 
 If a todo genuinely requires parallel execution, the loop plan should be decomposed into separate sequential loops rather than attempting subagent nesting.
 

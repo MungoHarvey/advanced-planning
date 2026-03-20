@@ -44,9 +44,10 @@ Provide:
 
 4. **Populate frontmatter in-place** maintaining canonical field order:
    ```
-   id → content → skill → agent → outcome → status → priority
+   id → content → skill → agent → outcome → status → complexity → priority
    ```
    Set `skill: NA` and `agent: NA` — these are filled by downstream skills.
+   Set `complexity: medium` as the default — adjusted by `plan-subagent-identification` if needed.
 
 5. **Verify** the populated todos collectively satisfy all Success Criteria.
    If any criterion has no corresponding TODO, add one.
@@ -63,6 +64,7 @@ todos:
     agent: "NA"
     outcome: "[concrete condition: file exists / test passes / value within range]"
     status: pending
+    complexity: medium
     priority: high
   - id: "loop-NNN-2"
     content: "[next atomic task]"
@@ -70,6 +72,7 @@ todos:
     agent: "NA"
     outcome: "[concrete condition]"
     status: pending
+    complexity: medium
     priority: high
   - id: "loop-NNN-3"
     content: "[downstream or verification task]"
@@ -77,6 +80,7 @@ todos:
     agent: "NA"
     outcome: "[concrete condition]"
     status: pending
+    complexity: medium
     priority: medium
 ```
 

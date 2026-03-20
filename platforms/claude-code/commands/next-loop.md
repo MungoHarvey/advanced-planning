@@ -1,5 +1,5 @@
 ---
-description: Execute the next pending ralph loop using the two-agent handoff pattern. Spawns ralph-orchestrator (Sonnet) to prepare the loop, then spawns ralph-loop-worker (Haiku) to execute it. Run repeatedly to advance through all loops in the phase plan. Use --auto to chain loops until the phase completes.
+description: Execute the next pending ralph loop using the two-agent handoff pattern. Spawns ralph-orchestrator (Sonnet) to prepare the loop, then spawns ralph-loop-worker (Sonnet) to execute it. Run repeatedly to advance through all loops in the phase plan. Use --auto to chain loops until the phase completes.
 allowed-tools: Read, Write, Glob, Bash, Edit, TodoWrite, Agent
 argument-hint: "[--auto]"
 ---
@@ -50,13 +50,22 @@ The orchestrator will:
 
 Wait for the orchestrator to complete before proceeding.
 
-### 5. Read loop-ready.json
+### 5. Read and validate loop-ready.json
 
 ```bash
 cat .claude/state/loop-ready.json
 ```
 
 If the file contains `"status": "all_complete"`: print `✓ All loops complete.` and stop.
+
+**Validate structure** before proceeding:
+- `loop_name` must be non-empty
+- `loop_file` must exist as a file
+- `todos_count` must be > 0
+- `status` must be `"ready"`
+- `handoff_injected` must contain all three fields: `done`, `failed`, `needed`
+
+If any validation fails: print the specific error (e.g. `✗ Validation failed: loop_file does not exist at [path]`) and stop.
 
 Print:
 ```
@@ -65,13 +74,44 @@ Print:
   Prior context: [handoff_injected.done, or "first loop" if empty]
 ```
 
+### 5c. Prepare worker context
+
+Before spawning the worker, the main thread reads the loop file and extracts the information
+the worker needs. This ensures the worker receives explicit context rather than discovering
+it independently:
+
+1. Read the loop file at `loop_ready.loop_file`
+2. Extract the `todos[]` array — note all unique `skill:` values (excluding `NA`)
+3. For each unique skill, resolve the path: `.claude/skills/[skill]/SKILL.md` (project-local)
+   or `~/.claude/skills/[skill]/SKILL.md` (global fallback)
+4. Build the worker prompt addendum:
+
+```
+Loop: [loop_name]
+Loop file: [loop_file path]
+Todos: [count]
+Skills needed: [comma-separated list of skill names]
+Skill paths:
+  - [skill-name]: [resolved path]
+  - [skill-name]: [resolved path]
+Prior context (handoff):
+  done: [handoff_injected.done]
+  failed: [handoff_injected.failed]
+  needed: [handoff_injected.needed]
+
+Execute all todos inline using targeted skill injection. Read each skill's SKILL.md
+before executing the corresponding todo. You cannot spawn subagents — execute everything directly.
+```
+
 ### 6. Spawn ralph-loop-worker
 
-Spawn the `ralph-loop-worker` subagent (Haiku model).
+Spawn the `ralph-loop-worker` subagent (Sonnet model) with the worker prompt addendum
+from Step 5c included in the spawn prompt.
 
 The worker will:
 - Read `.claude/state/loop-ready.json` for its assignment
-- Execute all todos in order using the targeted skill injection protocol
+- Read each skill file at the paths provided before executing the corresponding todo
+- Execute all todos inline using the targeted skill injection protocol
 - Write `.claude/state/loop-complete.json`
 
 Wait for the worker to complete before proceeding.

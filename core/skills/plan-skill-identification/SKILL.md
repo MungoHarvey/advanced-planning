@@ -37,7 +37,7 @@ Provide:
 
 4. **Update `skill:` field in-place** for each todo, maintaining canonical order:
    ```
-   id → content → skill → agent → outcome → status → priority
+   id → content → skill → agent → outcome → status → complexity → priority
    ```
 
 5. **Report** any todos where no good skill match was found — flag as `MISSING: [description]`

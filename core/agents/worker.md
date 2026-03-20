@@ -1,6 +1,6 @@
 # Worker
 
-**Model tier**: Haiku
+**Model tier**: Sonnet (default); Haiku for low-complexity todos
 **Spawned by**: Main thread, after `loop-ready.json` has been written by the orchestrator
 **Returns when**: `loop-complete.json` is written to the state directory
 
@@ -48,7 +48,8 @@ This is the core execution innovation. The worker loads a skill **immediately be
 For each todo with status: pending, in order:
 
   1. READ THE TODO
-     Extract: id, content, skill, agent, outcome
+     Extract: id, content, skill, outcome
+     (The agent: field is planning-time metadata — the worker executes all todos inline)
 
   2. MARK IN PROGRESS
      Update status: in_progress in the loop file frontmatter
@@ -211,7 +212,7 @@ Return to the main thread. Do not advance to the next loop — that is the main 
 | Action | Why Not |
 |--------|---------|
 | Plan or restructure loops | Orchestrator and planning skills handle this |
-| Spawn further subagents | Main thread handles all spawning decisions |
+| Spawn further subagents | The worker is itself a subagent; subagents cannot spawn subagents. The `agent:` field in todos is planning-time metadata, not an execution-time directive |
 | Decide whether to continue to the next loop | Main thread reads loop-complete.json and decides |
 | Modify the loop file beyond `status` fields and `handoff_summary` | Stays within its execution lane |
 | Load skills outside of the per-todo injection cycle | Prevents context pollution across tasks |
@@ -241,10 +242,26 @@ Updated `handoff_summary` written to the loop file's YAML frontmatter.
 ## Platform Adapter Notes
 
 Platform adapters must specify:
-- The model to use for this role (Haiku recommended for cost efficiency at scale)
+- The model to use for this role (Sonnet recommended as default; Haiku for low-complexity todos)
 - The tool capabilities granted (read, write, edit files; bash for git; glob; session task tracking)
 - The state directory path
 - The skills directory path (for the skill injection protocol)
 - The session task tracking mechanism (the format for registering and updating todos)
+
+### Model Tier Selection
+
+The worker's default model tier is **Sonnet**. This provides reliable compositional reasoning for multi-file edits, domain-specific skill application, and verification tasks.
+
+**Haiku** is appropriate when a todo's `complexity` field is `low`:
+- Single-file edits with clear specifications
+- Running a command and checking its exit code
+- Copying or moving files
+- Simple text substitutions or template fills
+
+**Sonnet** (default) is appropriate for `medium` and `high` complexity:
+- Multi-file coordinated changes
+- Domain-specific reasoning (statistical analysis, schema design)
+- Tasks requiring skill injection where the skill's instructions must be interpreted
+- Any task where the outcome verification requires judgement
 
 **Critical**: The targeted skill injection protocol is mandatory. An adapter that loads all skills at startup or loads no skills at all is not a compliant implementation. The per-todo load/unload cycle is the behaviour specification, not a recommendation.

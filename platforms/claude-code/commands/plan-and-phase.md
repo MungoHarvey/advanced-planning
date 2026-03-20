@@ -1,7 +1,7 @@
 ---
 description: Bridge from exploratory analysis to execution-ready planning. Explores the codebase (read-only), then runs the full planning pipeline to produce execution-ready ralph loops.
 allowed-tools: Read, Write, Glob, Grep, Bash, Edit, Agent
-argument-hint: "[description of what you want to accomplish]"
+argument-hint: "[description of what you want to accomplish] [--auto]"
 ---
 
 # /plan-and-phase
@@ -10,6 +10,14 @@ Bridge exploratory thinking into execution-ready loop plans. Explores the codeba
 presents findings for review, then runs the full planning pipeline.
 
 ## Steps
+
+### Step 0: Parse --auto flag
+
+If `$ARGUMENTS` contains `--auto`:
+- Set `AUTO_EXECUTE = true`
+- Strip `--auto` from `$ARGUMENTS` before passing to skills
+
+Otherwise: `AUTO_EXECUTE = false` (default).
 
 ### Step 1: Enter Planning Mode
 
@@ -101,8 +109,9 @@ Update:
 - `status:` — set to `ready`
 - `last_updated:` — today's date
 
-### Step 8: Print Completion Summary
+### Step 8: Print Completion Summary and Auto-Execute
 
+If `AUTO_EXECUTE` is false:
 ```
 ✓ Phase [N] — [phase name] ready for execution
   Loops:      [loop count] loops planned
@@ -113,6 +122,15 @@ Update:
 Run /next-loop to begin execution.
 Run /next-loop --auto to chain all loops until the phase completes.
 ```
+
+If `AUTO_EXECUTE` is true:
+```
+✓ Phase [N] — [phase name] — planning complete. Beginning autonomous execution...
+  Loops:      [loop count] loops planned
+  Todos:      [total todos] todos across all loops
+```
+
+Then immediately chain into `/next-loop --auto` (no confirmation gate — user chose `--auto`).
 
 ## Notes
 

@@ -6,8 +6,13 @@ description: "Read the todos[] array in a ralph loop's YAML frontmatter and upda
 
 # Plan Subagent Identification
 
-Reads a ralph loop's todos (with skills already assigned) and determines which tasks should be
-delegated to subagents. Updates the `agent:` field in-place.
+Reads a ralph loop's todos (with skills already assigned) and categorises which tasks are
+execution-focused versus coordination-focused. Updates the `agent:` field in-place.
+
+**Note**: In platforms where the worker cannot spawn subagents (e.g. Claude Code), the `agent:`
+field is planning-time metadata — it categorises the task type but does not trigger separate
+spawning during loop execution. The worker executes all todos inline. The field remains valuable
+for planning clarity, future platform adapters, and cost/complexity signalling.
 
 ## When to Use
 
@@ -35,7 +40,7 @@ Provide:
    - Task is self-contained with clear inputs and outputs
    - Task requires deep focus in a specific domain (analysis, implementation, research)
    - Task is long-running and would pollute the orchestrator's context if run inline
-   - Task benefits from a lower-cost model tier for execution work (Haiku for bounded tasks)
+   - Task benefits from an isolated execution context with its own skill injection cycle
 
    **Keep in orchestrator context (`agent: NA`) when:**
    - Task coordinates or synthesises results from other tasks
@@ -49,7 +54,7 @@ Provide:
 
 5. **Update `agent:` field in-place**, maintaining canonical order:
    ```
-   id → content → skill → agent → outcome → status → priority
+   id → content → skill → agent → outcome → status → complexity → priority
    ```
 
 ## Model Tier Economics
@@ -60,10 +65,22 @@ Subagent assignment also implies model tier selection. The three-tier model hier
 |------|---------------|-------|
 | Orchestrator / Planning | Opus | Strategic decisions, phase plans, loop decomposition |
 | Loop orchestrator | Sonnet | Loop preparation, context assembly, handoff writing |
-| Loop worker | Haiku | Bounded task execution, file operations, code runs |
+| Loop worker | Sonnet (default); Haiku for low-complexity | Bounded task execution, file operations, code runs |
 
-When assigning tasks to a worker subagent, you are delegating execution to the Haiku tier,
-keeping the more expensive Sonnet orchestrator context focused on coordination.
+When assigning tasks to a worker subagent, you are delegating execution to an isolated
+execution context, keeping the orchestrator focused on coordination. Most worker todos
+run at Sonnet tier for reliable compositional reasoning; only todos with `complexity: low`
+are eligible for Haiku.
+
+### Complexity Assessment
+
+When assigning agents, also consider the todo's `complexity` field:
+
+| Complexity | Model | Criteria |
+|-----------|-------|----------|
+| `low` | Haiku eligible | Single-file edits, command execution, file copy, template fills |
+| `medium` (default) | Sonnet | Multi-file changes, skill-guided tasks, domain reasoning |
+| `high` | Sonnet | Cross-cutting changes, complex verification, architectural decisions |
 
 ## Output Format
 
@@ -75,6 +92,7 @@ todos:
     agent: "ralph-loop-worker"    # ← was NA, now assigned (bounded execution task)
     outcome: "SKILL.md exists at target path; zero platform-specific references present"
     status: pending
+    complexity: medium
     priority: high
 
   - id: "loop-002-2"
@@ -83,6 +101,7 @@ todos:
     agent: "ralph-loop-worker"    # ← assigned (self-contained verification)
     outcome: "Zero occurrences of platform-specific terms across all core/skills/ SKILL.md files"
     status: pending
+    complexity: low
     priority: high
 
   - id: "loop-002-3"
@@ -91,6 +110,7 @@ todos:
     agent: "NA"                   # ← orchestrator task; touches plan file
     outcome: "handoff_summary.done populated with completed task list"
     status: pending
+    complexity: low
     priority: medium
 ```
 

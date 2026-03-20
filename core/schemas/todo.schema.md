@@ -10,7 +10,7 @@ Todos exist in two representations that must stay synchronised:
 
 | Layer | Location | Schema | Authority |
 |-------|----------|--------|-----------|
-| **Frontmatter** (Layer 1) | Ralph loop YAML frontmatter | Extended: `id`, `content`, `skill`, `agent`, `outcome`, `status`, `priority` | **Authoritative** — source of truth |
+| **Frontmatter** (Layer 1) | Ralph loop YAML frontmatter | Extended: `id`, `content`, `skill`, `agent`, `outcome`, `status`, `complexity`, `priority` | **Authoritative** — source of truth |
 | **Native TodoWrite** (Layer 2) | Claude Code / Cowork sidebar | Subset: `id`, `content → outcome`, `status`, `priority` | Display — derived from Layer 1 |
 
 If there is ever a conflict, Layer 1 (frontmatter) wins.
@@ -29,6 +29,7 @@ todos:
     agent: ""                      # Subagent ID from agents directory, or "NA"
     outcome: ""                    # Observable completion condition
     status: pending                # pending | in_progress | completed | cancelled
+    complexity: medium             # low | medium | high — drives model tier selection
     priority: high                 # high | medium | low
 ```
 
@@ -39,9 +40,10 @@ todos:
 | `id` | string | Yes | `loop-{NNN}-{N}` | Globally unique; matches native TodoWrite ID |
 | `content` | string | Yes | Verb-first imperative | One atomic action; no compound tasks |
 | `skill` | string | Yes | skill-name or `NA` | Must reference an existing skill, or `NA` for general tasks |
-| `agent` | string | Yes | agent-id or `NA` | Must reference an existing agent, or `NA` for orchestrator-inline tasks |
+| `agent` | string | Yes | agent-id or `NA` | Planning-time categorisation: references an agent role, or `NA` for coordination tasks. In platforms where the worker cannot spawn subagents, this field is metadata — the worker executes all todos inline |
 | `outcome` | string | Yes | Observable condition | What must exist or pass — not effort description |
 | `status` | enum | Yes | See below | Updated in-place during execution |
+| `complexity` | enum | No | `low`, `medium`, `high` | Default: `medium`. Drives worker model tier: `low` = Haiku eligible, `medium`/`high` = Sonnet |
 | `priority` | enum | Yes | `high`, `medium`, `low` | Default: `high` for blocking tasks |
 
 ### Status Values
@@ -132,7 +134,11 @@ The todo's `skill:` field holds the **todo-level** assignment. At execution time
 
 ## Agent Assignment Rules
 
-| Delegate to agent when... | Keep as `NA` (orchestrator-inline) when... |
+The `agent:` field categorises tasks for planning purposes. In platforms where the worker
+cannot spawn subagents (e.g. Claude Code), this field is metadata — the worker executes all
+todos inline using targeted skill injection.
+
+| Categorise as execution task (`agent: worker`) when... | Keep as `NA` (coordination task) when... |
 |---------------------------|--------------------------------------------|
 | Task is self-contained with clear I/O | Task coordinates or synthesises other tasks |
 | Task requires deep domain focus | Task reads/writes plan files |
@@ -145,8 +151,8 @@ The todo's `skill:` field holds the **todo-level** assignment. At execution time
 
 When agents update todos in the plan file:
 
-1. **Maintain field order**: `id → content → skill → agent → outcome → status → priority`
-2. **Only update mutable fields**: `status`, `skill`, `agent` may change; `id`, `content`, `outcome` are immutable after planning
+1. **Maintain field order**: `id → content → skill → agent → outcome → status → complexity → priority`
+2. **Only update mutable fields**: `status`, `skill`, `agent`, `complexity` may change; `id`, `content`, `outcome` are immutable after planning
 3. **One in_progress at a time**: Set previous to `completed` before starting next
 4. **Verify outcome before completing**: Read the output, run the check, confirm the condition
 
@@ -162,4 +168,5 @@ Before executing a loop's todos, verify:
 - [ ] `skill:` values reference existing skills or are `NA`
 - [ ] `agent:` values reference existing agents or are `NA`
 - [ ] All todos start as `pending`
+- [ ] `complexity:` is `low`, `medium`, or `high` (or omitted, defaulting to `medium`)
 - [ ] Fields appear in canonical order

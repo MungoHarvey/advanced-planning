@@ -17,16 +17,28 @@ For each todo with `agent: NA` (skills already assigned):
 
 The delegation decision is more important than the agent choice — settle that first.
 
+### Platform Constraint: Claude Code
+
+In Claude Code, the `ralph-loop-worker` is a subagent and **cannot spawn further subagents**.
+The `agent:` field in todos is **planning-time metadata** that categorises task types — it does
+not trigger separate agent spawning during loop execution. The worker executes all todos inline,
+using targeted skill injection for quality.
+
+The `agent:` field remains valuable for:
+- **Planning clarity**: distinguishing execution tasks from coordination tasks
+- **Future platforms**: adapters that support recursive spawning can act on this field
+- **Cost signals**: combined with `complexity:`, helps determine appropriate model tier
+
 ---
 
 ## Delegation Decision Framework
 
-### Delegate to a subagent when ALL of these are true
+### Categorise as a delegated task when ALL of these are true
 
 - The task is **self-contained**: it has clear inputs (files to read) and a clear output (files to write, command to run, result to produce)
 - The task requires **focused execution** in a specific domain without needing to coordinate other tasks
 - The task would **pollute the orchestrator's context** if run inline — long code generation, deep analysis, multi-step file operations
-- The task benefits from a **lower-cost model tier**: execution work at Haiku tier rather than Sonnet
+- The task benefits from an **isolated execution context** with its own skill injection cycle
 
 ### Keep in orchestrator context (`agent: NA`) when ANY of these is true
 
@@ -61,7 +73,7 @@ The orchestrator is rarely assigned as a `agent:` value in a todo. It is the ent
 
 ### `worker` (`core/agents/worker.md`)
 
-**Model tier**: Haiku
+**Model tier**: Sonnet (default); Haiku for low-complexity todos
 **Spawned by**: Main thread, after `loop-ready.json` written by the orchestrator
 **Returns when**: `loop-complete.json` written to state directory
 
@@ -92,9 +104,9 @@ Assign `agent: worker` for any todo that is:
 | Agent | Model | Cost profile | Best for |
 |-------|-------|-------------|----------|
 | `orchestrator` | Sonnet | Medium | Loop preparation, todo population, context assembly |
-| `worker` | Haiku | Low | Bounded task execution, file operations, code runs, verification |
+| `worker` | Sonnet (default); Haiku for low-complexity | Medium (default); Low for Haiku | Bounded task execution, file operations, code runs, verification |
 
-For cost efficiency, prefer delegating execution todos to `worker` (Haiku) and reserving `orchestrator` for planning and coordination. See `docs/model-tier-strategy.md` for detailed cost estimates.
+Delegate execution todos to `worker` for isolated execution context. Most todos run at Sonnet tier; only `complexity: low` todos are eligible for Haiku. See `docs/model-tier-strategy.md` for detailed cost estimates.
 
 ---
 

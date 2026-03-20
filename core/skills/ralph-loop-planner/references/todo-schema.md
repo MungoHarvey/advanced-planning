@@ -13,6 +13,7 @@ todos:
     agent: ""             # Agent ID from agents directory, or NA
     outcome: ""           # Observable completion condition (not effort description)
     status: pending       # pending | in_progress | completed | cancelled
+    complexity: medium    # low | medium | high — drives worker model tier selection (optional, default medium)
     priority: high        # high | medium | low
 ```
 
@@ -26,6 +27,7 @@ todos:
 | `agent` | Yes | agent-id or `NA` | Must reference an existing agent, or `NA` |
 | `outcome` | Yes | Observable condition | What must exist or pass — not effort description |
 | `status` | Yes | See below | Updated in-place during execution |
+| `complexity` | No | `low`, `medium`, `high` | Default `medium`. Drives worker model: `low` = Haiku eligible, `medium`/`high` = Sonnet |
 | `priority` | Yes | `high`, `medium`, `low` | `high` for blocking tasks (default) |
 
 ### Status Values
@@ -109,7 +111,7 @@ outcome: "All field names in agent docs match handoff.schema.md; all state file 
 
 When agents update todos in the plan file:
 
-1. **Maintain field order**: `id → content → skill → agent → outcome → status → priority`
+1. **Maintain field order**: `id → content → skill → agent → outcome → status → complexity → priority`
 2. **Only update `status`** during execution — never rewrite `id`, `content`, or `outcome`
 3. **`skill` and `agent`** may be updated by planning skills before execution; not during
 4. **One todo `in_progress` at a time** — set previous to `completed` before starting next

@@ -56,7 +56,7 @@ Read the loop's `todos[]` from its YAML frontmatter.
 3. Use `plan-subagent-identification` skill — assign agents by matching todos against available agent definitions in the agents directory
 4. Write updated todos back to the loop file in-place, maintaining canonical field order:
    ```
-   id → content → skill → agent → outcome → status → priority
+   id → content → skill → agent → outcome → status → complexity → priority
    ```
 
 ### Step 4 — Write loop-ready.json

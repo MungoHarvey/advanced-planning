@@ -16,6 +16,7 @@ todos:
     agent: "NA"                  # Left as NA by plan-todos; filled by plan-subagent-identification
     outcome: ""                  # Observable completion condition
     status: pending              # Always pending when plan-todos writes a todo
+    complexity: medium           # low | medium | high — drives worker model tier (optional, default medium)
     priority: high               # high | medium | low
 ```
 
@@ -31,6 +32,7 @@ todos:
 | `agent` | Always `NA` when plan-todos writes; filled by plan-subagent-identification |
 | `outcome` | Observable condition — what must be true, not what effort was made (see below) |
 | `status` | Always `pending` when plan-todos writes; never pre-set to in_progress or completed |
+| `complexity` | Default `medium`; set `low` for single-file edits, command runs, template fills; `high` for cross-cutting changes |
 | `priority` | `high` for blocking tasks; `medium` for important but non-blocking; `low` for optional |
 
 ---

@@ -1,7 +1,7 @@
 ---
 description: Create a new phase plan and automatically decompose it into fully-specified, execution-ready ralph loops. Runs the complete planning pipeline without manual intervention — phase plan → loops → todos → skills → agents. Pass a description of what you want to accomplish.
 allowed-tools: Read, Write, Glob, Edit, Agent
-argument-hint: "[description of what you want to accomplish]"
+argument-hint: "[description of what you want to accomplish] [--auto]"
 ---
 
 # /new-phase
@@ -29,6 +29,14 @@ For Glob operations, search both locations and merge results; local takes preced
 for any duplicate skill/agent names.
 
 ## Steps
+
+### 1a. Parse --auto flag
+
+If `$ARGUMENTS` contains `--auto`:
+- Set `AUTO_EXECUTE = true`
+- Strip `--auto` from `$ARGUMENTS` before passing to skills
+
+Otherwise: `AUTO_EXECUTE = false` (default).
 
 ### 1. Load phase planning skill
 
@@ -112,8 +120,9 @@ Read the `## Planning State` section and update:
 - `loop_file:` — set to `.claude/plans/phase-[N]-ralph-loops.md`
 - `todos_done: 0`
 
-### 12. Print completion summary
+### 12. Print completion summary and auto-execute
 
+If `AUTO_EXECUTE` is false:
 ```
 ✓ Planning complete
 
@@ -123,3 +132,14 @@ Todos:     [N] total tasks
 
 Run /next-loop to begin execution.
 ```
+
+If `AUTO_EXECUTE` is true:
+```
+✓ Planning complete. Beginning autonomous execution...
+
+Phase [N]: [name]
+Loops:     [N] loops ready
+Todos:     [N] total tasks
+```
+
+Then immediately chain into `/next-loop --auto` (no confirmation gate — user chose `--auto`).
