@@ -20,7 +20,7 @@ Tracking document for the **Advanced Planning System — Open-Source Restructure
 | 2 | Claude Code Adapter | [`phase-2.md`](phase-2.md) | **complete** | 005–007 | Commands, agents, settings, end-to-end test |
 | 3 | Cowork Adapter | [`phase-3.md`](phase-3.md) | **complete** | 008–009 | Routing skill, agent prompts, snapshot checkpoints |
 | 4 | Generic + Release | [`phase-4.md`](phase-4.md) | **complete** | 010–012 | Python API, docs, examples, GitHub release |
-| 5 | Gate Review Sub-Phase | [`phase-5-ralph-loops.md`](phase-5-ralph-loops.md) | **in_progress** | 013–018 | Gate agents, /run-gate, /next-phase, versioning utilities |
+| 5 | Gate Review Sub-Phase | [`phase-5.md`](phase-5.md) | **complete** | 013–018 | Gate agents, /run-gate, /next-phase, versioning utilities, plugin scaffold |
 
 ---
 
@@ -45,7 +45,7 @@ Tracking document for the **Advanced Planning System — Open-Source Restructure
 | 015 | 5 | Invocation & Catalogue Updates | `phase-5-ralph-loops.md` | **complete** | — | 1 |
 | 016 | 5 | Gate Commands | `phase-5-ralph-loops.md` | **complete** | — | 1 |
 | 017 | 5 | Python Versioning Utilities | `phase-5-ralph-loops.md` | **complete** | — | 1 |
-| 018 | 5 | Integration Verification | `phase-5-ralph-loops.md` | **in_progress** | `phase-5-ralph-loops.md` | 1 |
+| 018 | 5 | Integration Verification | `phase-5-ralph-loops.md` | **complete** | — | 1 |
 
 ---
 
