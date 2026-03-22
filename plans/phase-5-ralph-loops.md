@@ -789,7 +789,7 @@ max_iterations: 3
 on_max_iterations: checkpoint
 
 handoff_summary:
-  done: ""
+  done: "Traced gate-pass and gate-fail+retry scenarios (consistent across run-gate.md, next-phase.md, versioning.py); verified gate-review-mode hooks block non-verdict writes and allow plans/gate-verdicts/; confirmed no file conflicts with ralph-loop plugin; updated CLAUDE.md with Gate Review Protocol section, model tiers (gate review + closeout rows), /run-gate, /run-closeout, /next-phase commands, and plans/gate-verdicts/ in runtime tree; added frozen status to core/schemas/todo.schema.md; updated PLANS-INDEX.md with Phase 5, loops 013-018, version tracking columns, and /run-gate, /next-phase, /run-closeout in workflow; all JSON schemas valid, 70/70 Python tests pass."
   failed: ""
   needed: ""
 
@@ -799,56 +799,56 @@ todos:
     skill: "NA"
     agent: "analysis-worker"
     outcome: "Gate-pass trace documented showing: all loops complete → /run-gate creates sentinel → agents write pass verdicts → sentinel removed → gate_pass event in history.jsonl → /next-phase advances"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-018-2"
     content: "Trace gate-fail + versioned retry scenario and document state transitions"
     skill: "NA"
     agent: "analysis-worker"
     outcome: "Gate-fail trace documented showing: fail verdict → gate_fail event → versioned retry file created with failure context → original frozen → PLANS-INDEX updated → phase_retry event → /next-loop executes retry"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-018-3"
     content: "Verify gate-review-mode hooks block non-verdict writes and allow verdict writes"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "Hook behaviour confirmed: with sentinel present, Write to non-verdict path is blocked; Write to plans/gate-verdicts/ is allowed; removing sentinel unblocks all writes"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-018-4"
     content: "Verify ralph-loop plugin compatibility — no file conflicts with our state files"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "Confirmed: .claude/state/ files do not conflict with .claude/ralph-loop.local.md; both /next-loop --auto and /ralph-loop can be available simultaneously"
-    status: pending
+    status: completed
     priority: medium
   - id: "loop-018-5"
     content: "Update CLAUDE.md with gate review protocol, updated model tiers, commands list, runtime directory, and ralph-loop compatibility note"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "CLAUDE.md contains Gate Review Protocol subsection; Model Tiers table includes gate review (Sonnet) and closeout (Sonnet); commands table includes /run-gate, /run-closeout, /next-phase; runtime directory tree includes plans/gate-verdicts/"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-018-6"
     content: "Update core/schemas/todo.schema.md with frozen as valid terminal status"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "todo.schema.md Status Values table includes frozen with description: set by versioning system when loop file is superseded by retry version"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-018-7"
     content: "Update plans/PLANS-INDEX.md with Phase 5 entry and version tracking columns"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "PLANS-INDEX.md Phases table includes Phase 5; Ralph Loops table includes loops 013-018; version tracking columns (Active File, Attempt) added"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-018-8"
     content: "Run final validation: all JSON schemas valid, all Python tests pass"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "JSON schema validation exits 0; python -m pytest platforms/python/tests/ -v exits 0 with all tests passing"
-    status: pending
+    status: completed
     priority: medium
 
 prompt: |

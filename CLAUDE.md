@@ -52,11 +52,20 @@ Three files in the `state/` directory coordinate the two-agent cycle:
 
 During `/plan-and-phase` exploration, a `planning-mode` sentinel file is created. `PreToolUse` hooks in `settings.json` block `Write`/`Edit`/`MultiEdit` to any path outside `.claude/plans/` and `.claude/state/` while this sentinel exists. This prevents accidental code changes during the exploration phase.
 
+### Gate Review Protocol
+
+At each phase boundary, `/run-gate` spawns gate agents (default: `code-review-agent`, `phase-goals-agent`) sequentially to evaluate whether phase success criteria have been met. While agents are running, a `gate-review-mode` sentinel at `.claude/state/gate-review-mode` restricts writes to `plans/gate-verdicts/` and `.claude/state/` only — preventing agents from modifying artefacts they are evaluating.
+
+- **Gate pass**: All agents return `verdict: pass`. `/next-phase` marks the current phase complete, advances `CLAUDE.md` to the next phase, and appends a `gate_pass` event to `history.jsonl`.
+- **Gate fail**: Any agent returns `verdict: fail`. `/next-phase` creates a versioned retry file (`phase-N-ralph-loops-v2.md`) with `gate_failure_context` injected into affected loops, freezes the original file (`status: frozen`), updates `PLANS-INDEX.md`, and appends `gate_fail` and `phase_retry` events to `history.jsonl`.
+- **Versioning utilities**: `platforms/python/versioning.py` provides `create_retry_version`, `inject_failure_context`, `get_active_version`, and `freeze_loop_file` — the Python API backing `/next-phase`'s retry logic.
+- **Ralph-loop plugin compatibility**: This framework's state files live in `.claude/state/` (e.g. `loop-ready.json`, `loop-complete.json`). The ralph-loop plugin uses `.claude/ralph-loop.local.md` — no naming conflicts. Both `/next-loop --auto` and the plugin's `/ralph-loop` command can be active simultaneously.
+
 ## Platform Adapters
 
 | Adapter | Location | Entry Point |
 |---------|----------|-------------|
-| Claude Code | `platforms/claude-code/` | Slash commands (`/plan-and-phase`, `/new-phase`, `/next-loop`, `/next-loop --auto`, `/progress-report`, `/loop-status`, `/check-execution`, `/model-check`) |
+| Claude Code | `platforms/claude-code/` | Slash commands (`/plan-and-phase`, `/new-phase`, `/next-loop`, `/next-loop --auto`, `/run-gate`, `/run-closeout`, `/next-phase`, `/progress-report`, `/loop-status`, `/check-execution`, `/model-check`) |
 | Cowork | `platforms/cowork/` | Routing `SKILL.md` + natural language |
 | Python API | `platforms/python/` | `state_manager.py`, `plan_io.py`, `handoff.py` |
 
@@ -73,6 +82,8 @@ During `/plan-and-phase` exploration, a `planning-mode` sentinel file is created
 ├── state/       ← Filesystem state bus (loop-ready.json, loop-complete.json, history.jsonl)
 ├── logs/        ← execution.log (written by session hooks)
 └── settings.json
+plans/
+└── gate-verdicts/  ← Verdict JSON files written by gate agents during /run-gate
 ```
 
 ## Model Tiers
@@ -83,6 +94,8 @@ During `/plan-and-phase` exploration, a `planning-mode` sentinel file is created
 | Loop orchestration | Sonnet | Once per loop |
 | Todo execution (worker) | Sonnet | Per todo (default) |
 | Low-complexity todos | Haiku | Per todo (when `complexity: low`) |
+| Gate review | Sonnet | Once per phase boundary |
+| Closeout synthesis | Sonnet | Once per programme |
 | Progress reporting | Sonnet | On demand |
 
 Override tiers via the `model:` field in skill/agent frontmatter. Use `/model-check` to verify assignments.

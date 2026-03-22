@@ -28,7 +28,7 @@ todos:
     skill: ""                      # Skill name from skills directory, or "NA"
     agent: ""                      # Subagent ID from agents directory, or "NA"
     outcome: ""                    # Observable completion condition
-    status: pending                # pending | in_progress | completed | cancelled
+    status: pending                # pending | in_progress | completed | cancelled | frozen
     complexity: medium             # low | medium | high — drives model tier selection
     priority: high                 # high | medium | low
 ```
@@ -42,7 +42,7 @@ todos:
 | `skill` | string | Yes | skill-name or `NA` | Must reference an existing skill, or `NA` for general tasks |
 | `agent` | string | Yes | agent-id or `NA` | Planning-time categorisation: references an agent role, or `NA` for coordination tasks. In platforms where the worker cannot spawn subagents, this field is metadata — the worker executes all todos inline |
 | `outcome` | string | Yes | Observable condition | What must exist or pass — not effort description |
-| `status` | enum | Yes | See below | Updated in-place during execution |
+| `status` | enum | Yes | See Status Values | Updated in-place during execution; `frozen` is set by versioning system only |
 | `complexity` | enum | No | `low`, `medium`, `high` | Default: `medium`. Drives worker model tier: `low` = Haiku eligible, `medium`/`high` = Sonnet |
 | `priority` | enum | Yes | `high`, `medium`, `low` | Default: `high` for blocking tasks |
 
@@ -54,6 +54,7 @@ todos:
 | `in_progress` | Currently being executed | `pending` |
 | `completed` | Done — outcome verified | `in_progress` |
 | `cancelled` | Explicitly skipped with documented reason | `pending`, `in_progress` |
+| `frozen` | Set by versioning system when a loop file is superseded by a retry version. Terminal state — no further updates. | `pending`, `in_progress` |
 
 **Rule**: Only ONE todo may be `in_progress` at a time. Set the current todo to `completed` or `cancelled` before starting the next.
 
