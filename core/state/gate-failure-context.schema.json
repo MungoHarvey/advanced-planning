@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "gate-failure-context",
+  "description": "Injected into versioned retry loop files when a gate fails. Provides the retry attempt with the context it needs to avoid repeating the same mistakes. Written into ralph loop frontmatter as gate_failure_context.",
+  "type": "object",
+  "required": ["attempt", "verdict_file", "summary", "loops_reverted", "do_not_repeat"],
+  "properties": {
+    "attempt": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "The failed attempt number that triggered this context injection"
+    },
+    "verdict_file": {
+      "type": "string",
+      "description": "Relative path to the gate verdict JSON file for the failed attempt, e.g. gate-verdicts/phase-2-attempt-1.json"
+    },
+    "summary": {
+      "type": "string",
+      "description": "One-sentence summary of why the gate failed. Injected as opening context for the retry."
+    },
+    "loops_reverted": {
+      "type": "array",
+      "description": "Loops whose outputs were invalidated by the gate failure and must be re-executed.",
+      "items": {
+        "type": "object",
+        "required": ["loop", "reason"],
+        "properties": {
+          "loop": {
+            "type": "string",
+            "pattern": "^ralph-loop-\\d{3}$",
+            "description": "Loop identifier, e.g. ralph-loop-002"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why this loop's outputs are invalid and must be re-executed"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "do_not_repeat": {
+      "type": "array",
+      "description": "Explicit constraints for the retry attempt. Each entry is an actionable prohibition derived from gate findings.",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

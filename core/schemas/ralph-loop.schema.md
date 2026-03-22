@@ -95,6 +95,42 @@ prompt: |                                # Execution prompt injected at runtime
 | `handoff_summary.needed` | string | Yes | One sentence max; empty string if fully done |
 | `todos` | array | Yes | Array of todo objects (see todo.schema.md) |
 | `prompt` | string | Yes | Multi-line execution prompt with handoff injection block |
+| `gate_failure_context` | object | No | Injected on retry after gate failure; absent on first attempt |
+
+### Gate Failure Context (Optional)
+
+The `gate_failure_context` block is injected into versioned retry loop files when a gate review fails. It is never present on first-attempt loop files. Its purpose is to give the retry attempt the context it needs to avoid repeating the same mistakes.
+
+**When present:** The executing worker must read and respect all `do_not_repeat` constraints before beginning any todo. The `summary` provides a one-sentence account of why the previous attempt failed.
+
+```yaml
+gate_failure_context:
+  attempt: 1
+  verdict_file: gate-verdicts/phase-2-attempt-1.json
+  summary: "Code review found unhandled NA values in batch 3 normalisation."
+  loops_reverted:
+    - loop: ralph-loop-002
+      reason: "Normalisation function incomplete — batch 3 edge case"
+    - loop: ralph-loop-003
+      reason: "Integration depends on normalised.rds which is invalid"
+  do_not_repeat:
+    - "Do not use na.rm=TRUE as a workaround — address the upstream cause"
+    - "Do not skip batch 3 — all samples must be included"
+```
+
+#### gate_failure_context Field Rules
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `attempt` | integer | Yes | The failed attempt number that triggered this injection |
+| `verdict_file` | string | Yes | Relative path to the gate verdict JSON for the failed attempt |
+| `summary` | string | Yes | One sentence explaining why the gate failed |
+| `loops_reverted` | array | Yes | Loops whose outputs are invalid and must be re-executed |
+| `loops_reverted[].loop` | string | Yes | Loop identifier, e.g. `ralph-loop-002` |
+| `loops_reverted[].reason` | string | Yes | Why this loop's outputs are invalid |
+| `do_not_repeat` | array | Yes | Actionable prohibitions for the retry; derived from gate findings |
+
+See `core/state/gate-failure-context.schema.json` for the full JSON Schema.
 
 ### on_max_iterations Behaviour
 

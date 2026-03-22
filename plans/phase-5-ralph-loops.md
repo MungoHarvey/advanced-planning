@@ -14,7 +14,7 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "Created gate-verdict.schema.json and gate-failure-context.schema.json in core/state/, extended ralph-loop.schema.md with optional gate_failure_context block, and updated core/state/README.md with four new event types and a Gate Review Protocol section; all schemas validate."
   failed: ""
   needed: ""
 
@@ -24,35 +24,35 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "core/state/gate-verdict.schema.json exists; contains $schema draft-07, required fields (phase, attempt, timestamp, agent, verdict, confidence, findings, loops_to_revert, failure_notes); findings items have severity/location/description/evidence; parses as valid JSON"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-013-2"
     content: "Create core/state/gate-failure-context.schema.json with failure context fields"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "core/state/gate-failure-context.schema.json exists; contains required fields (attempt, verdict_file, summary, loops_reverted, do_not_repeat); loops_reverted items have loop/reason; parses as valid JSON"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-013-3"
     content: "Update core/schemas/ralph-loop.schema.md to document optional gate_failure_context frontmatter block"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "core/schemas/ralph-loop.schema.md contains a Gate Failure Context section documenting the optional block with field specs and an example"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-013-4"
     content: "Update core/state/README.md with gate_pass, gate_fail, phase_retry, and closeout event types and gate review protocol section"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "core/state/README.md contains all four new event types with example JSONL entries and a Gate Review Protocol section"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-013-5"
     content: "Validate all JSON schemas in core/state/ parse without errors"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "python -c command parsing all core/state/*.json files exits 0 with no exceptions"
-    status: pending
+    status: completed
     priority: medium
 
 prompt: |

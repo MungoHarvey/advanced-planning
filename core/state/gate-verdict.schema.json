@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "gate-verdict",
+  "description": "Written by a gate review agent after evaluating a phase's outputs. One file per attempt, never overwritten. Stored in gate-verdicts/ directory.",
+  "type": "object",
+  "required": ["phase", "attempt", "timestamp", "agent", "verdict", "confidence", "findings", "loops_to_revert", "failure_notes"],
+  "properties": {
+    "phase": {
+      "type": "string",
+      "description": "Phase identifier being reviewed, e.g. phase-2"
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Attempt number for this phase; increments on each retry"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when the gate verdict was written"
+    },
+    "agent": {
+      "type": "string",
+      "description": "Identifier of the gate agent that produced this verdict, e.g. code-review-agent"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["pass", "fail"],
+      "description": "Gate outcome: pass advances the phase; fail triggers versioned retry"
+    },
+    "confidence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Confidence score 0–100. Findings with confidence below threshold do not trigger rollbacks."
+    },
+    "findings": {
+      "type": "array",
+      "description": "List of issues found during the gate review. Empty array on pass.",
+      "items": {
+        "type": "object",
+        "required": ["severity", "location", "description", "evidence"],
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "warning", "info"],
+            "description": "critical: blocks pass; warning: noted but may not block; info: informational only"
+          },
+          "location": {
+            "type": "string",
+            "description": "File path, function, or loop identifier where the issue was found"
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of the issue"
+          },
+          "evidence": {
+            "type": "string",
+            "description": "Concrete evidence supporting the finding, e.g. file path, line number, value observed"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "loops_to_revert": {
+      "type": "array",
+      "description": "Loop identifiers whose outputs are invalid and must be re-executed on retry. Empty array on pass.",
+      "items": {
+        "type": "string",
+        "pattern": "^ralph-loop-\\d{3}$"
+      }
+    },
+    "failure_notes": {
+      "type": "array",
+      "description": "Actionable constraints for the retry attempt. Injected into new loop files as do_not_repeat. Empty array on pass.",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

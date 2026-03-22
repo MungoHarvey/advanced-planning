@@ -116,6 +116,24 @@ Append-only log. Each line is a JSON object recording one state transition:
 
 This provides a timeline of all loop executions without modifying the ephemeral state files.
 
+#### Gate Review Event Types
+
+Four additional event types are appended by the main thread when gate review runs. These events are immutable — once written they are never updated or removed.
+
+| Event Type | Trigger |
+|------------|---------|
+| `gate_pass` | All configured gate agents return `pass` verdicts; phase can advance |
+| `gate_fail` | Any gate agent returns a `fail` verdict; versioned retry files are created |
+| `phase_retry` | New versioned loop files created after gate failure; retry loop begins |
+| `closeout` | Programme closeout synthesis completed by the programme-reporter agent |
+
+```jsonl
+{"event": "gate_pass", "phase": "phase-2", "attempt": 1, "timestamp": "2026-03-22T12:00:00Z", "agents": ["code-review-agent", "phase-goals-agent"], "verdict_files": ["gate-verdicts/phase-2-attempt-1-code-review.json", "gate-verdicts/phase-2-attempt-1-phase-goals.json"]}
+{"event": "gate_fail", "phase": "phase-2", "attempt": 1, "timestamp": "2026-03-22T12:05:00Z", "agent": "code-review-agent", "verdict_file": "gate-verdicts/phase-2-attempt-1-code-review.json", "loops_to_revert": ["ralph-loop-002", "ralph-loop-003"]}
+{"event": "phase_retry", "phase": "phase-2", "attempt": 2, "timestamp": "2026-03-22T12:10:00Z", "new_loop_file": "plans/phase-2-ralph-loops-v2.md", "original_loop_file": "plans/phase-2-ralph-loops.md"}
+{"event": "closeout", "timestamp": "2026-03-22T18:00:00Z", "phases_completed": 5, "total_loops": 28, "total_retries": 2, "report_file": "docs/programme-closeout.md"}
+```
+
 ---
 
 ## Runtime Directory
@@ -138,3 +156,63 @@ This provides a timeline of all loop executions without modifying the ephemeral 
 | Read state files | /next-loop command | Routing SKILL.md | `state_manager.read_ready()` |
 | Append to history.jsonl | /next-loop command | Routing SKILL.md | `state_manager.append_history()` |
 | State directory location | `.claude/state/` | Workspace folder | Configurable |
+
+---
+
+## Gate Review Protocol
+
+The gate review sub-phase runs between phase completion and phase advancement. Gate agents coordinate via a dedicated `gate-verdicts/` directory alongside the standard state bus files.
+
+### Gate Verdict Files
+
+Each gate agent writes a verdict to `gate-verdicts/` when it completes its review. Verdict files are immutable — one file per agent per attempt, never overwritten. File naming convention:
+
+```
+gate-verdicts/{phase}-attempt-{N}-{agent}.json
+```
+
+Example: `gate-verdicts/phase-2-attempt-1-code-review.json`
+
+See `gate-verdict.schema.json` for the full JSON Schema.
+
+### Gate Review Sequence
+
+```
+Main Thread          Gate Agent(s)
+    │
+    ├─ Spawn ────────►│
+    │                 ├─ Read phase plan + all loop files
+    │                 ├─ Read all produced outputs
+    │                 ├─ Evaluate against phase success criteria
+    │                 ├─ Write gate-verdicts/{phase}-attempt-{N}-{agent}.json
+    │                 └─ Return
+    │◄────────────────┘
+    │
+    ├─ Read all verdict files for this phase + attempt
+    ├─ If ALL verdicts = pass:
+    │   ├─ Append gate_pass to history.jsonl
+    │   └─ Advance to next phase
+    │
+    └─ If ANY verdict = fail:
+        ├─ Append gate_fail to history.jsonl
+        ├─ Create versioned retry files (phase-N-ralph-loops-v{attempt+1}.md)
+        ├─ Inject gate_failure_context into new loop files
+        ├─ Update PLANS-INDEX.md active pointer
+        ├─ Append phase_retry to history.jsonl
+        └─ Begin retry cycle
+```
+
+### Gate Failure Context Injection
+
+When a gate fails, the structured failure context is injected into every new versioned loop file as a `gate_failure_context` frontmatter block. This gives the retry attempt full context without requiring it to re-read the verdict file.
+
+See `gate-failure-context.schema.json` for the full JSON Schema and `core/schemas/ralph-loop.schema.md` for how this block appears in loop frontmatter.
+
+### Immutability Constraints
+
+| Artefact | Constraint |
+|----------|-----------|
+| Gate verdict files | Written once per agent per attempt; never overwritten |
+| Original loop files | Frozen after gate failure; status fields not updated on retry |
+| history.jsonl | Append-only; gate events are never removed or modified |
+| Failure notes | Preserved in `gate_failure_context.do_not_repeat` across all retries |
