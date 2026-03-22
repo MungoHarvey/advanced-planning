@@ -166,7 +166,7 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "Created core/agents/gate-reviewer.md (abstract gate role, 6-step protocol, no .claude/ paths) and five concrete gate agents in platforms/claude-code/agents/: code-review-agent.md, phase-goals-agent.md, security-agent.md, test-agent.md, and programme-reporter.md; all have YAML frontmatter with name/description/model/tools/triggers, all reference gate-verdict.schema.json and the [phase]-attempt-[N]-[agent-name].json verdict path, all document confidence ≥80 threshold."
   failed: ""
   needed: ""
 
@@ -176,49 +176,49 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "core/agents/gate-reviewer.md exists; contains model tier, spawned-by, returns-when sections; documents 6-step gate protocol with confidence threshold; zero occurrences of '.claude/' in file"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-014-2"
     content: "Create platforms/claude-code/agents/code-review-agent.md with YAML frontmatter and code quality evaluation protocol"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "code-review-agent.md exists with name, description, model: sonnet, tools: Read/Glob/Grep/Bash, triggers fields in frontmatter; body documents evaluation criteria, confidence scoring, and verdict output path"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-014-3"
     content: "Create platforms/claude-code/agents/phase-goals-agent.md with success criteria verification protocol"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "phase-goals-agent.md exists with complete frontmatter (name, description, model, tools, triggers); body documents how to read phase plan success criteria and verify each against actual artifacts"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-014-4"
     content: "Create platforms/claude-code/agents/security-agent.md with security scanning protocol"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "security-agent.md exists with complete frontmatter; body documents secret detection, credential scanning, and injection pattern checks; marked as optional in description"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-014-5"
     content: "Create platforms/claude-code/agents/test-agent.md with test verification protocol"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "test-agent.md exists with complete frontmatter (tools: Read, Bash); body documents test suite execution, coverage threshold checking; marked as optional"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-014-6"
     content: "Create platforms/claude-code/agents/programme-reporter.md with closeout synthesis protocol"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "programme-reporter.md exists with complete frontmatter (tools include Write); body documents how to read complete documentary record and produce closeout narrative"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-014-7"
     content: "Verify all 6 agent files cross-reference gate-verdict.schema.json and use consistent verdict naming convention"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "All 5 concrete agents reference verdict output path [phase]-attempt-[N]-[agent-name].json; all mention confidence ≥80 threshold"
-    status: pending
+    status: completed
     priority: medium
 
 prompt: |
