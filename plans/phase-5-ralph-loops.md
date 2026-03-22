@@ -502,7 +502,7 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "Created run-gate.md (10 numbered steps: phase resolution, loop-complete check, agent list, sentinel management, sequential agent spawning, verdict aggregation, history.jsonl append), run-closeout.md (6 steps: completion check, documentary record gather, programme-reporter spawn, report verification, closeout event), and next-phase.md (7 steps: gate review inline, pass/fail branching, versioned retry file creation, failure context injection, loop file freezing, PLANS-INDEX.md update, phase_retry event); all 3 copied to .claude/commands/ and verified identical to source."
   failed: ""
   needed: ""
 
@@ -512,35 +512,35 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "run-gate.md exists with frontmatter (description, allowed-tools, argument-hint); numbered steps covering phase resolution, loop completion check, sentinel creation, agent spawning, sentinel removal, verdict aggregation, history.jsonl append, and summary output"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-016-2"
     content: "Create platforms/claude-code/commands/run-closeout.md with programme-reporter spawning"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "run-closeout.md exists with correct frontmatter; steps spawn programme-reporter agent, write closeout-report.md, append closeout event to history.jsonl"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-016-3"
     content: "Create platforms/claude-code/commands/next-phase.md with gate integration and versioned retry on failure"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "next-phase.md exists with frontmatter; steps include gate review, on-pass advancement (gate_pass event, CLAUDE.md update), on-fail retry (create_retry_version, inject_failure_context, freeze_loop_file, PLANS-INDEX.md update, phase_retry event)"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-016-4"
     content: "Copy all 3 new commands to .claude/commands/"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "run-gate.md, run-closeout.md, and next-phase.md all exist in .claude/commands/ matching their source copies"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-016-5"
     content: "Verify all commands have consistent frontmatter and follow the next-loop.md pattern"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "All 3 commands have description, allowed-tools, argument-hint fields; steps are numbered with markdown code blocks for shell commands"
-    status: pending
+    status: completed
     priority: medium
 
 prompt: |
