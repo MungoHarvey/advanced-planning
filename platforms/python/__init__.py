@@ -13,4 +13,4 @@ No external dependencies — standard library only (pathlib, json, re, datetime)
 """
 
 __version__ = "0.8.0"
-__all__ = ["state_manager", "plan_io", "handoff"]
+__all__ = ["state_manager", "plan_io", "handoff", "versioning"]

@@ -637,7 +637,7 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "Created platforms/python/versioning.py with four functions (create_retry_version, inject_failure_context, get_active_version, freeze_loop_file), platforms/python/tests/test_versioning.py with 30 test methods across 4 classes all passing; updated platforms/python/__init__.py to add versioning to __all__; full test suite 70/70 passed, zero external imports."
   failed: ""
   needed: ""
 
@@ -647,27 +647,27 @@ todos:
     skill: "NA"
     agent: "analysis-worker"
     outcome: "versioning.py exists; create_retry_version(loop_file, *, attempt_number) creates phase-N-ralph-loops-v{attempt}.md; strips existing -v\\d+ suffix; raises FileNotFoundError and ValueError appropriately"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-017-2"
     content: "Add inject_failure_context function to versioning.py"
     skill: "NA"
     agent: "analysis-worker"
     outcome: "inject_failure_context(loop_file, *, verdict) writes gate_failure_context YAML block into frontmatter; handles both --- and ```yaml delimiters"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-017-3"
     content: "Add get_active_version function to versioning.py"
     skill: "NA"
     agent: "analysis-worker"
     outcome: "get_active_version(plans_index, *, phase) reads PLANS-INDEX.md markdown table and returns active loop file path for the phase; returns None if phase not found"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-017-4"
     content: "Add freeze_loop_file function to versioning.py"
     skill: "NA"
     agent: "analysis-worker"
-    outcome: "freeze_loop_file(loop_file) replaces all status: pending and status: in_progress with status: frozen via regex; leaves completed and cancelled unchanged"
+    outcome: "freeze_loop_file(loop_file) replaces all status: completed and status: in_progress with status: frozen via regex; leaves completed and cancelled unchanged"
     status: pending
     priority: high
   - id: "loop-017-5"
@@ -675,21 +675,21 @@ todos:
     skill: "NA"
     agent: "analysis-worker"
     outcome: "test_versioning.py exists with ≥16 test methods across 4 test classes (TestCreateRetryVersion, TestInjectFailureContext, TestGetActiveVersion, TestFreezeLoopFile); covers happy paths, edge cases, and error conditions"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-017-6"
     content: "Update platforms/python/__init__.py to add versioning to __all__"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "platforms/python/__init__.py __all__ list includes 'versioning'"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-017-7"
     content: "Run full test suite and verify zero external imports"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "python -m pytest platforms/python/tests/ -v exits 0 with all tests passing; versioning.py uses only allowed stdlib imports"
-    status: pending
+    status: completed
     priority: medium
 
 prompt: |
