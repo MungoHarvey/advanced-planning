@@ -3,6 +3,7 @@ name: ralph-orchestrator
 description: "Prepares the next pending ralph loop for execution. Reads the phase plan, identifies the next loop, populates todos/skills/agents if needed, injects prior handoff context, and writes loop-ready.json to signal readiness. Spawned by /next-loop before each loop execution. Returns immediately once loop-ready.json is written."
 model: sonnet
 tools: Read, Write, Edit, Glob
+triggers: "prepare loop, orchestrate, loop preparation, populate todos"
 skills:
   - plan-todos
   - plan-skill-identification

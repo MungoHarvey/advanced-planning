@@ -1,0 +1,6 @@
+{
+  "name": "advanced-planning",
+  "description": "Hierarchical multi-agent planning framework with bounded execution, targeted skill injection, and gate review verification.",
+  "version": "1.0.0",
+  "author": { "name": "Advanced Planning Contributors" }
+}

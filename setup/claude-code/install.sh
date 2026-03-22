@@ -134,6 +134,13 @@ if [ "$GLOBAL" = true ]; then
         say "  + agents/$(basename "$agent")"
     done
 
+    # Copy platform-specific agent definitions
+    for agent in "$REPO_ROOT/platforms/claude-code/agents/"*.md; do
+        [ -f "$agent" ] || continue
+        do_cp "$agent" "$GLOBAL_DIR/agents/"
+        say "  + agents/$(basename "$agent")"
+    done
+
     say "Installing core skills..."
     if [ "$SYMLINK" = true ]; then
         do_ln "$REPO_ROOT/core/skills" "$GLOBAL_DIR/skills"
@@ -193,6 +200,13 @@ done
 # Copy agent definitions
 say "Installing agent definitions..."
 for agent in "$REPO_ROOT/core/agents/"*.md; do
+    [ -f "$agent" ] || continue
+    do_cp "$agent" "$CLAUDE_DIR/agents/"
+    say "  + agents/$(basename "$agent")"
+done
+
+# Copy platform-specific agent definitions
+for agent in "$REPO_ROOT/platforms/claude-code/agents/"*.md; do
     [ -f "$agent" ] || continue
     do_cp "$agent" "$CLAUDE_DIR/agents/"
     say "  + agents/$(basename "$agent")"

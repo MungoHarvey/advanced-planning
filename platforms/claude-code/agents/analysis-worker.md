@@ -3,6 +3,7 @@ name: analysis-worker
 description: "General-purpose bounded execution agent for delegated todos. Handles self-contained implementation, analysis, research, or code generation tasks. Operates on files and reports results; does not coordinate or plan. Assign via agent: analysis-worker in a todo's frontmatter when the task is self-contained, domain-focused, or long-running enough to warrant isolated execution."
 model: sonnet
 tools: Read, Write, Edit, Bash, Glob
+triggers: "analysis, implementation, research, standalone task, isolated execution"
 ---
 
 # Analysis Worker

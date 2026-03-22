@@ -1,0 +1,65 @@
+{
+  "SubagentStart": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "echo \"[$(date '+%H:%M:%S')] AGENT START: ${CLAUDE_AGENT_NAME:-unknown} model:${CLAUDE_MODEL:-unknown}\" >> .claude/logs/execution.log"
+        }
+      ]
+    }
+  ],
+  "SubagentStop": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "echo \"[$(date '+%H:%M:%S')] AGENT STOP:  ${CLAUDE_AGENT_NAME:-unknown}\" >> .claude/logs/execution.log"
+        }
+      ]
+    }
+  ],
+  "PreToolUse": [
+    {
+      "matcher": "Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "if [ -f .claude/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *.claude/plans/*|*.claude/state/*) ;; *) echo 'BLOCK: Write disabled during planning mode. Allowed: .claude/plans/ and .claude/state/ only.' >&2; exit 2 ;; esac; fi"
+        },
+        {
+          "type": "command",
+          "command": "if [ -f .claude/state/gate-review-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/gate-verdicts/*|*.claude/state/*) ;; *) echo 'BLOCK: Write disabled during gate review mode. Allowed: plans/gate-verdicts/ and .claude/state/ only.' >&2; exit 2 ;; esac; fi"
+        }
+      ]
+    },
+    {
+      "matcher": "Edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "if [ -f .claude/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *.claude/plans/*|*.claude/state/*) ;; *) echo 'BLOCK: Edit disabled during planning mode. Allowed: .claude/plans/ and .claude/state/ only.' >&2; exit 2 ;; esac; fi"
+        },
+        {
+          "type": "command",
+          "command": "if [ -f .claude/state/gate-review-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/gate-verdicts/*|*.claude/state/*) ;; *) echo 'BLOCK: Edit disabled during gate review mode. Allowed: plans/gate-verdicts/ and .claude/state/ only.' >&2; exit 2 ;; esac; fi"
+        }
+      ]
+    },
+    {
+      "matcher": "MultiEdit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "if [ -f .claude/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *.claude/plans/*|*.claude/state/*) ;; *) echo 'BLOCK: MultiEdit disabled during planning mode. Allowed: .claude/plans/ and .claude/state/ only.' >&2; exit 2 ;; esac; fi"
+        },
+        {
+          "type": "command",
+          "command": "if [ -f .claude/state/gate-review-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/gate-verdicts/*|*.claude/state/*) ;; *) echo 'BLOCK: MultiEdit disabled during gate review mode. Allowed: plans/gate-verdicts/ and .claude/state/ only.' >&2; exit 2 ;; esac; fi"
+        }
+      ]
+    }
+  ]
+}

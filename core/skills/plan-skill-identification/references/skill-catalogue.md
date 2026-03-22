@@ -180,6 +180,8 @@ Each skill operates on the output of the previous. Running them out of order pro
 | General file I/O, git ops, simple scripting | `NA` |
 | Verification scans, grep checks | `NA` |
 | Writing handoff_summary or loop-complete.json | `NA` |
+| Gate review evaluation (phase boundary) | `NA` — handled by gate agents, not skills |
+| Programme closeout synthesis | `NA` — handled by `programme-reporter` agent |
 
 ---
 
@@ -194,6 +196,8 @@ Set `skill: NA` when the task is any of the following:
 - Updating `handoff_summary` in a loop file
 - Creating a snapshot checkpoint
 - Simple bash scripting without domain-specific logic
+- **Gate review evaluation** — handled entirely by gate agents (`code-review-agent`, `phase-goals-agent`, `security-agent`, `test-agent`), not by skills. Assign `skill: NA` and leave the task out of the loop system; gate agents are spawned separately by `/run-gate`.
+- **Programme closeout** — handled by the `programme-reporter` agent spawned by `/run-closeout`. Assign `skill: NA`; do not flag as `MISSING:`.
 
 ---
 

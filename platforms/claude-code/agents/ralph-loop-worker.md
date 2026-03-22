@@ -3,6 +3,7 @@ name: ralph-loop-worker
 description: "Executes a single ralph loop. Reads loop-ready.json for its assignment, executes ALL todos inline using targeted skill injection (loads SKILL.md per todo, unloads between todos), updates todo statuses in-place, and writes loop-complete.json on finish. Spawned by /next-loop after ralph-orchestrator has prepared the loop. Cannot spawn subagents — executes everything directly."
 model: sonnet
 tools: Read, Write, Edit, Bash, Glob, TodoWrite
+triggers: "execute loop, run todos, worker, execute tasks, skill injection"
 skills:
   - plan-todos
 ---

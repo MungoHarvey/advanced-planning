@@ -108,6 +108,13 @@ if ($Global) {
         Say "  + agents\$($agent.Name)"
     }
 
+    # Platform-specific agent definitions
+    $platformAgents = Get-ChildItem -Path (Join-Path $RepoRoot "platforms\claude-code\agents") -Filter "*.md" -File
+    foreach ($agent in $platformAgents) {
+        Do-Copy $agent.FullName $AgentsDir
+        Say "  + agents\$($agent.Name)"
+    }
+
     # Skills
     Say "Installing core skills..."
     $skillsSrc = Join-Path $RepoRoot "core\skills"
@@ -171,6 +178,13 @@ foreach ($cmd in $cmds) {
 Say "Installing agent definitions..."
 $agents = Get-ChildItem -Path (Join-Path $RepoRoot "core\agents") -Filter "*.md" -File
 foreach ($agent in $agents) {
+    Do-Copy $agent.FullName (Join-Path $ClaudeDir "agents")
+    Say "  + agents\$($agent.Name)"
+}
+
+# Platform-specific agent definitions
+$platformAgents = Get-ChildItem -Path (Join-Path $RepoRoot "platforms\claude-code\agents") -Filter "*.md" -File
+foreach ($agent in $platformAgents) {
     Do-Copy $agent.FullName (Join-Path $ClaudeDir "agents")
     Say "  + agents\$($agent.Name)"
 }

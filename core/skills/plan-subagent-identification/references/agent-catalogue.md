@@ -99,14 +99,96 @@ Assign `agent: worker` for any todo that is:
 
 ---
 
+## Gate Review Agents
+
+Gate review agents are evaluation-only agents spawned at phase boundaries by `/run-gate` or `/run-closeout`. They read outputs and write verdicts; they do not modify code or execute tasks.
+
+### `gate-reviewer` (`core/agents/gate-reviewer.md`)
+
+**Model tier**: Sonnet
+**Spawned by**: Main thread after all loops in a phase complete
+**Returns when**: Verdict JSON written to gate-verdicts/ directory
+
+**Purpose**: Abstract gate reviewer role. Evaluates a phase's outputs against its stated objectives, applies a 6-step gate protocol, and produces a structured verdict with confidence scoring. If confidence falls below 80, verdict is `fail`; if 80 or above, verdict is `pass`. Triggers versioned retry with injected failure context on fail.
+
+**When to assign to a todo**: Rarely used as a `agent:` value in todos. It is the abstract role that concrete gate agents implement. Assign a concrete gate agent (see below) for specific review tasks.
+
+---
+
+### `code-review-agent` (`platforms/claude-code/agents/code-review-agent.md`)
+
+**Model tier**: Sonnet
+**Spawned by**: Main thread via `/run-gate` at phase boundaries
+**Returns when**: Verdict JSON written to gate-verdicts/
+
+**Purpose**: Reviews code produced during a phase for quality, patterns, CLAUDE.md compliance, and correctness. Produces a structured verdict with confidence scoring. Read-only (no code modifications).
+
+**When to assign**: Use when a phase produces significant code output that must be evaluated against quality standards and CLAUDE.md conventions before advancement.
+
+---
+
+### `phase-goals-agent` (`platforms/claude-code/agents/phase-goals-agent.md`)
+
+**Model tier**: Sonnet
+**Spawned by**: Main thread via `/run-gate` at phase boundaries
+**Returns when**: Verdict JSON written to gate-verdicts/
+
+**Purpose**: Verifies that a phase's outputs satisfy all stated success criteria in the phase plan. Reads each criterion, locates the corresponding artefact, and confirms it meets the specification.
+
+**When to assign**: Use for every gate review — this is the primary gate agent that checks phase success criteria are satisfied.
+
+---
+
+### `security-agent` (`platforms/claude-code/agents/security-agent.md`)
+
+**Model tier**: Sonnet
+**Spawned by**: Main thread via `/run-gate` when security scanning is enabled
+**Returns when**: Verdict JSON written to gate-verdicts/
+
+**Purpose**: Optional gate agent that scans phase outputs for security issues including secret exposure, hardcoded credentials, and injection pattern risks.
+
+**When to assign**: Use when a phase produces code that handles credentials, environment variables, network calls, or user input — any output where accidental secret exposure is a realistic risk.
+
+---
+
+### `test-agent` (`platforms/claude-code/agents/test-agent.md`)
+
+**Model tier**: Sonnet
+**Spawned by**: Main thread via `/run-gate` when test verification is enabled
+**Returns when**: Verdict JSON written to gate-verdicts/
+
+**Purpose**: Optional gate agent that runs the test suite for phase outputs and verifies coverage thresholds. Executes pytest, captures output, and produces a structured verdict.
+
+**When to assign**: Use when a phase produces Python modules or scripts that have associated tests in the repository. Not applicable to documentation-only or planning phases.
+
+---
+
+### `programme-reporter` (`platforms/claude-code/agents/programme-reporter.md`)
+
+**Model tier**: Sonnet
+**Spawned by**: Main thread via `/run-closeout` at programme completion
+**Returns when**: Closeout narrative written (uses Write tool)
+
+**Purpose**: Closeout synthesis agent. Reads the complete documentary record of a programme — all phase plans, loop files, handoff summaries, gate verdicts, and history.jsonl — and produces a structured closeout narrative.
+
+**When to assign**: Use only at programme completion, after all phases have passed gate review. Not for individual phase or loop review tasks.
+
+---
+
 ## Model Tier Summary
 
 | Agent | Model | Cost profile | Best for |
 |-------|-------|-------------|----------|
 | `orchestrator` | Sonnet | Medium | Loop preparation, todo population, context assembly |
 | `worker` | Sonnet (default); Haiku for low-complexity | Medium (default); Low for Haiku | Bounded task execution, file operations, code runs, verification |
+| `gate-reviewer` | Sonnet | Medium | Abstract gate role (use concrete agents below) |
+| `code-review-agent` | Sonnet | Medium | Code quality and standards evaluation at phase boundary |
+| `phase-goals-agent` | Sonnet | Medium | Success criteria verification at phase boundary |
+| `security-agent` | Sonnet | Medium | Secret and credential scanning at phase boundary |
+| `test-agent` | Sonnet | Medium | Test suite execution and coverage verification |
+| `programme-reporter` | Sonnet | Medium | Programme closeout narrative synthesis |
 
-Delegate execution todos to `worker` for isolated execution context. Most todos run at Sonnet tier; only `complexity: low` todos are eligible for Haiku. See `docs/model-tier-strategy.md` for detailed cost estimates.
+Delegate execution todos to `worker` for isolated execution context. Most todos run at Sonnet tier; only `complexity: low` todos are eligible for Haiku. See `docs/model-tier-strategy.md` for detailed cost estimates. Gate agents run at Sonnet tier and are spawned outside the loop system — they are never assigned as `agent:` values in regular todos.
 
 ---
 
@@ -123,6 +205,11 @@ Delegate execution todos to `worker` for isolated execution context. Most todos 
 | Write `handoff_summary` in the loop file | `NA` (orchestrator inline) |
 | Simple one-liner (git commit, file copy) | `NA` (orchestrator inline) |
 | Tasks requiring full session context | `NA` |
+| Gate review — verify phase success criteria | `phase-goals-agent` (spawned by `/run-gate`) |
+| Gate review — code quality evaluation | `code-review-agent` (spawned by `/run-gate`) |
+| Gate review — security scan | `security-agent` (spawned by `/run-gate`) |
+| Gate review — test suite execution | `test-agent` (spawned by `/run-gate`) |
+| Programme closeout narrative | `programme-reporter` (spawned by `/run-closeout`) |
 
 ---
 

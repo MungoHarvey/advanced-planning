@@ -331,7 +331,7 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "Added triggers: field to 3 existing platform agents; updated agent-catalogue.md with ## Gate Review Agents section (6 new agents with model tier, spawned-by, purpose, when-to-assign) and updated quick-reference/model-tier tables; updated skill-catalogue.md with NA entries for gate review and programme closeout; fixed install.sh and install.ps1 to copy platforms/claude-code/agents/*.md in both project and global modes; created platforms/claude-code/.claude-plugin/plugin.json; created platforms/claude-code/hooks/hooks.json with planning-mode and gate-review-mode guards and AGENT START/STOP subagent logging; updated settings.json with gate-review-mode PreToolUse hooks and renamed WORKER to AGENT in SubagentStart/Stop; mirrored all 6 gate agent files (gate-reviewer + 5 concrete) to .claude/agents/."
   failed: ""
   needed: ""
 
@@ -341,63 +341,63 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "All 3 existing platform agents in platforms/claude-code/agents/ contain a triggers: field with comma-separated discovery keywords"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-015-2"
     content: "Update agent-catalogue.md with Gate Review Agents section listing all 6 new agents"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "core/skills/plan-subagent-identification/references/agent-catalogue.md contains ## Gate Review Agents section with entries for gate-reviewer, code-review-agent, phase-goals-agent, security-agent, test-agent, programme-reporter; quick-reference and model tier tables updated"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-015-3"
     content: "Update skill-catalogue.md to note gate review = NA (handled by agents, not skills)"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "core/skills/plan-skill-identification/references/skill-catalogue.md contains entries noting gate review evaluation and programme closeout are NA (done by agents)"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-015-4"
     content: "Fix install.sh to copy platform agents from platforms/claude-code/agents/ in addition to core/agents/"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "setup/claude-code/install.sh contains a loop copying platforms/claude-code/agents/*.md to target; --dry-run shows both core and platform agents"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-015-5"
     content: "Fix install.ps1 with equivalent platform agent copy logic"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "setup/claude-code/install.ps1 contains equivalent PowerShell loop for platform agents"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-015-6"
     content: "Create platforms/claude-code/.claude-plugin/plugin.json manifest following ralph-loop plugin pattern"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "platforms/claude-code/.claude-plugin/plugin.json exists with name, description, version, author fields"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-015-7"
     content: "Create platforms/claude-code/hooks/hooks.json with planning-mode and gate-review-mode guards and subagent logging"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "platforms/claude-code/hooks/hooks.json exists with PreToolUse hooks for both sentinel files and SubagentStart/SubagentStop logging"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-015-8"
     content: "Update platforms/claude-code/settings.json with gate-review-mode PreToolUse hooks and rename WORKER to AGENT in SubagentStart/Stop"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "settings.json PreToolUse hooks block writes when gate-review-mode sentinel exists (allowing plans/gate-verdicts/ only); SubagentStart/Stop log AGENT START/STOP instead of WORKER"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-015-9"
     content: "Mirror all new gate agent files to .claude/agents/ for project-local use"
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "All 6 new agent files (gate-reviewer + 5 concrete) exist in .claude/agents/ matching their source copies"
-    status: pending
+    status: completed
     priority: medium
 
 prompt: |
