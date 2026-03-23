@@ -8,7 +8,8 @@ The system structures complex work into three tiers:
 
 - **Phase plans** (Opus) — strategic scope, deliverables, and success criteria per phase
 - **Ralph loops** (Sonnet) — bounded, verifiable iterations with explicit todo lists
-- **Todo execution** (Haiku) — atomic task execution with targeted skill loading per task
+- **Todo execution** (Sonnet; Haiku for `complexity: low`) — atomic task execution with targeted skill loading per task
+- **Gate review** (Sonnet) — inter-phase quality gates with versioned retry on failure
 
 Each loop produces a concise handoff summary (done/failed/needed) that carries context across sessions without dragging forward full conversation history.
 
@@ -112,12 +113,28 @@ markdown report. Useful after an `--auto` run or when resuming work across sessi
 
 ## Command Reference
 
+### Planning
 | Command | Description | Key Arguments |
 |---------|-------------|---------------|
 | `/plan-and-phase [description]` | Read-only exploration → human review → full planning pipeline | Description of what to accomplish |
 | `/new-phase [description]` | Full planning pipeline: phase plan → loops → todos → skills → agents | Description of what to accomplish |
 | `/new-loop [phase]` | Decompose a phase plan into ralph loops only | Phase number or file path |
+
+### Execution
+| Command | Description | Key Arguments |
+|---------|-------------|---------------|
 | `/next-loop` | Execute the next pending loop (two-agent pattern) | `--auto` to chain all loops |
+
+### Gate Review
+| Command | Description | Key Arguments |
+|---------|-------------|---------------|
+| `/run-gate` | Spawn gate agents, aggregate pass/fail verdicts | `--phase N`, `--agents code-review,phase-goals` |
+| `/next-phase` | Run gate review then advance or create versioned retry | `--skip-gate`, `--force` |
+| `/run-closeout` | Programme closeout synthesis via programme-reporter agent | None |
+
+### Diagnostics
+| Command | Description | Key Arguments |
+|---------|-------------|---------------|
 | `/progress-report` | Structured report from plan files, handoffs, and git history | `--phase N` to scope to one phase |
 | `/loop-status` | Show all loops with todo counts and handoff summaries | None |
 | `/check-execution` | Six-area diagnostic: hooks, workers, todos, handoffs, git, output files | None |
@@ -130,30 +147,32 @@ markdown report. Useful after an `--auto` run or when resuming work across sessi
 ```
 your-project/
 └── .claude/
-    ├── commands/           ← Slash commands (8 files)
-    │   ├── plan-and-phase.md
-    │   ├── new-phase.md
-    │   ├── new-loop.md
+    ├── commands/           ← Slash commands (11 files)
+    │   ├── plan-and-phase.md, new-phase.md, new-loop.md
     │   ├── next-loop.md
-    │   ├── progress-report.md
-    │   ├── loop-status.md
-    │   ├── check-execution.md
-    │   └── model-check.md
-    ├── skills/             ← Core planning skills (symlinked from core/)
-    │   ├── phase-plan-creator/
-    │   ├── ralph-loop-planner/
-    │   ├── plan-todos/
-    │   ├── plan-skill-identification/
-    │   ├── plan-subagent-identification/
+    │   ├── run-gate.md, run-closeout.md, next-phase.md  ← gate review
+    │   ├── progress-report.md, loop-status.md
+    │   └── check-execution.md, model-check.md
+    ├── skills/             ← Core planning skills (6 skills)
+    │   ├── phase-plan-creator/, ralph-loop-planner/, plan-todos/
+    │   ├── plan-skill-identification/, plan-subagent-identification/
     │   └── progress-report/
-    ├── agents/             ← Agent definitions (3 files)
-    │   ├── ralph-orchestrator.md   (Sonnet)
-    │   ├── ralph-loop-worker.md    (Haiku)
-    │   └── analysis-worker.md      (Haiku)
-    ├── settings.json       ← Permissions + execution logging hooks
-    ├── plans/              ← Phase plans and ralph loop files (created at runtime)
-    ├── state/              ← loop-ready.json, loop-complete.json (runtime)
+    ├── agents/             ← Agent definitions (9 files)
+    │   ├── orchestrator.md, worker.md                   ← abstract core roles
+    │   ├── ralph-orchestrator.md (Sonnet)               ← loop orchestrator
+    │   ├── ralph-loop-worker.md (Sonnet)                ← loop worker
+    │   ├── analysis-worker.md (Sonnet)                  ← standalone tasks
+    │   ├── gate-reviewer.md                             ← abstract gate role
+    │   ├── code-review-agent.md, phase-goals-agent.md   ← default gate agents
+    │   ├── security-agent.md, test-agent.md             ← optional gate agents
+    │   └── programme-reporter.md                        ← closeout agent
+    ├── settings.json       ← Permissions, planning-mode hooks, gate-review-mode hooks
+    ├── state/              ← loop-ready.json, loop-complete.json, sentinels (runtime)
     └── logs/               ← execution.log (runtime)
+plans/
+├── phase-N.md, phase-N-ralph-loops.md                   ← plan files (runtime)
+├── PLANS-INDEX.md                                       ← master tracker
+└── gate-verdicts/                                       ← verdict JSON files (runtime)
 ```
 
 ---
@@ -171,7 +190,7 @@ Each `/next-loop` cycle runs two agents sequentially:
     │
     ├─ Read loop-ready.json → print summary
     │
-    ├─ Spawn ralph-loop-worker (Haiku)
+    ├─ Spawn ralph-loop-worker (Sonnet)
     │    Reads loop-ready.json → executes todos → writes loop-complete.json
     │    Returns
     │
@@ -224,5 +243,8 @@ The worker skipped the completion protocol. Run `/check-execution` Check 4. To f
 | Planning skills (`/plan-and-phase`, `/new-phase` pipeline) | Opus | Highest reasoning demand; runs once per phase |
 | `progress-report` skill | Sonnet | Read-and-synthesise work; does not require strategic reasoning |
 | `ralph-orchestrator` | Sonnet | Loop preparation: moderate complexity, reads plan, assembles context |
-| `ralph-loop-worker` | Haiku | Execution: high frequency, bounded tasks, cost matters at scale |
-| `analysis-worker` | Haiku | Delegated execution: same rationale as worker |
+| `ralph-loop-worker` | Sonnet | Execution: default for medium/high complexity todos |
+| `ralph-loop-worker` (low complexity) | Haiku | Execution: when todo has `complexity: low` (single-file edits, commands) |
+| `analysis-worker` | Sonnet | Delegated execution: self-contained implementation tasks |
+| Gate agents (code-review, phase-goals, etc.) | Sonnet | Phase evaluation: single-pass review with confidence scoring |
+| `programme-reporter` | Sonnet | Closeout synthesis: reads full documentary record |

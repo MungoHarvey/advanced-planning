@@ -101,7 +101,9 @@ your project's `.claude/skills/[skill-name]/` directory, and reference it by nam
 
 **State bus**: `loop-ready.json` → `loop-complete.json` → `history.jsonl`
 
-**Two-agent pattern**: Orchestrator (Sonnet) prepares → Worker (Haiku) executes → Main thread advances
+**Two-agent pattern**: Orchestrator (Sonnet) prepares → Worker (Sonnet) executes → Main thread advances
+
+**Gate review**: `/run-gate` spawns review agents at phase boundaries → verdicts → `/next-phase` advances or retries
 
 See `docs/architecture.md` for the full explanation.
 
@@ -156,8 +158,8 @@ write_loop_ready("state", loop_name=loop["loop_name"], ...)
 result = read_loop_complete("state")
 ```
 
-No external dependencies. Standard library only. 40 unit tests across state management,
-plan I/O, and handoff injection. See `platforms/python/README.md`.
+No external dependencies. Standard library only. 70 unit tests across state management,
+plan I/O, handoff injection, and versioning utilities. See `platforms/python/README.md`.
 
 ---
 
@@ -167,8 +169,11 @@ plan I/O, and handoff injection. See `platforms/python/README.md`.
 |------|-------|------|
 | Phase planning | Opus | Once per phase |
 | Loop orchestration | Sonnet | Once per loop |
+| Todo execution (default) | Sonnet | Per todo, with skill injection |
+| Todo execution (low complexity) | Haiku | Per todo, when `complexity: low` |
+| Gate review | Sonnet | Once per phase boundary |
+| Closeout synthesis | Sonnet | Once per programme |
 | Progress reporting | Sonnet | On demand (read-only synthesis) |
-| Todo execution | Haiku | Per todo, with skill injection |
 
 ---
 

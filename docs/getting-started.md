@@ -91,7 +91,7 @@ Full two-agent cycle:
 
 1. Git checkpoint — saves state before the loop begins
 2. Orchestrator (Sonnet) — reads plan, populates todos if needed, writes `loop-ready.json`
-3. Worker (Haiku) — reads `loop-ready.json`, executes todos with targeted skill injection, writes `loop-complete.json`
+3. Worker (Sonnet) — reads `loop-ready.json`, executes todos with targeted skill injection, writes `loop-complete.json`
 4. Updates planning state and commits all outputs
 
 **Expected output:**
@@ -134,15 +134,30 @@ The difference from the standard flow:
 - Findings are saved to `.claude/plans/exploration-notes.md` for review before planning starts
 - `--auto` on `/next-loop` chains loops without manual re-invocation between each one
 
+### Step 6 — Gate Review (after all loops complete)
+
+```
+/run-gate
+```
+
+Spawns gate agents (code-review-agent, phase-goals-agent) to evaluate whether the phase's
+success criteria are actually met. Each agent writes a verdict JSON to `plans/gate-verdicts/`.
+
+If all pass: run `/next-phase` to advance. If any fail: `/next-phase` creates versioned
+retry files with failure context injected, so the retry starts knowing what went wrong.
+
 ### Command Reference
 
 | Command | What it does |
 |---------|-------------|
 | `/plan-and-phase [desc]` | Explore codebase read-only, then run full planning pipeline |
-| `/new-phase` | Create a phase plan using `phase-plan-creator` skill (no exploration step) |
+| `/new-phase` | Full pipeline: phase plan → loops → todos → skills → agents |
 | `/new-loop [N]` | Decompose phase N into loop files using `ralph-loop-planner` skill |
 | `/next-loop` | Execute the next pending loop (full two-agent cycle) |
 | `/next-loop --auto` | Chain loops until phase complete or failure |
+| `/run-gate` | Spawn gate agents to evaluate phase outputs (verdicts in `plans/gate-verdicts/`) |
+| `/next-phase` | Run gate review → advance on pass, create versioned retry on fail |
+| `/run-closeout` | Programme closeout — final narrative from complete documentary record |
 | `/progress-report` | Structured report from plan files, handoffs, and git history |
 | `/loop-status` | Show progress table |
 | `/check-execution` | Diagnose if the worker isn't progressing |
