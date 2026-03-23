@@ -10,7 +10,7 @@ The Cowork adapter gives you a three-tier planning workflow directly in your Cow
 
 - **Phases** (strategic, Opus) → break a project into bounded phases
 - **Ralph loops** (tactical, Sonnet) → plan each loop as a sequence of verifiable todos
-- **Todos** (execution, Haiku) → actually do the work, one task at a time, with the right skill loaded for each
+- **Todos** (execution, Sonnet default; Haiku for `complexity: low`) → actually do the work, one task at a time, with the right skill loaded for each
 
 ---
 
@@ -96,7 +96,7 @@ You → SKILL.md (routing)
     Agent tool (model: sonnet)
     ← reads loop plan → writes state/loop-ready.json
          ↓
-    Agent tool (model: haiku)
+    Agent tool (model: sonnet)
     ← reads loop-ready.json → executes todos → writes state/loop-complete.json
          ↓
     Main session reads loop-complete.json → updates planning-state.md
@@ -113,11 +113,11 @@ Agent tool:
          + "Workspace path: [path to your workspace folder]"
 ```
 
-### Spawning the worker (Haiku)
+### Spawning the worker (Sonnet)
 
 ```
 Agent tool:
-  model: haiku
+  model: sonnet
   prompt: [contents of agents/worker-prompt.md]
          + "Workspace path: [path to your workspace folder]"
 ```

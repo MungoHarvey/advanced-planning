@@ -95,9 +95,9 @@ The **model tier** describes which class of AI model is used at each level of th
 |------|--------------|------|-----------|
 | Strategic | Opus | Phase plan authoring | Once per phase |
 | Tactical | Sonnet | Orchestrator (loop preparation) | Once per loop |
-| Execution | Haiku | Worker (todo execution) | Many times per loop |
+| Execution | Sonnet (default); Haiku for low-complexity | Worker (todo execution) | Many times per loop |
 
-The model choice at each tier is driven by economics: Opus is expensive and powerful, used only where strategic reasoning is required. Haiku is fast and cheap, used for the high-frequency execution work where the quality bar is set by the skill being injected, not the model's baseline capability.
+The model choice at each tier is driven by economics: Opus is expensive and powerful, used only where strategic reasoning is required. Sonnet is the default execution tier, chosen for its compositional reasoning on multi-file tasks. Haiku is available for todos marked `complexity: low`, where the task is simple enough that a lighter model suffices.
 
 See `docs/model-tier-strategy.md` for cost estimates and guidance on overriding defaults.
 
@@ -192,7 +192,7 @@ Core protocol: `core/agents/orchestrator.md`
 
 ## Worker
 
-The **worker** is a Haiku-tier agent responsible for loop execution. It reads its assignment from `loop-ready.json`, applies the targeted skill injection protocol for each todo, verifies outcomes, writes the handoff summary, and writes `loop-complete.json`. It does not plan, restructure, or decide whether to continue to the next loop.
+The **worker** is a Sonnet-tier agent (by default) responsible for loop execution. It reads its assignment from `loop-ready.json`, applies the targeted skill injection protocol for each todo, verifies outcomes, writes the handoff summary, and writes `loop-complete.json`. It does not plan, restructure, or decide whether to continue to the next loop. Haiku may be substituted for individual todos marked `complexity: low`.
 
 The worker is spawned once per loop cycle by the main thread, after the orchestrator returns.
 
@@ -207,3 +207,40 @@ A **snapshot checkpoint** is a file-based backup of `plans/` and `state/` at a p
 The `platforms/cowork/checkpoint.sh` script provides `save`, `restore`, and `list` subcommands.
 
 See `docs/adapting-to-new-platforms.md` for the git checkpoint equivalent used in the Claude Code adapter.
+
+---
+
+## Gate Review
+
+### Gate Reviewer
+
+A **gate reviewer** is an agent that evaluates the outputs of a completed phase before the programme advances. Gate reviewers are single-pass — they read artefacts, apply their evaluation criteria, and write a verdict file. They do not execute tasks or modify plan files. Each gate reviewer is spawned by the main thread, consistent with the two-agent pattern.
+
+### Gate Verdict
+
+A **gate verdict** is a structured assessment written by a gate reviewer to `plans/gate-verdicts/`. Each verdict includes:
+
+- A pass/fail decision
+- Confidence scoring per finding (0–100); only findings with confidence ≥80 trigger failure
+- Severity-tagged findings (critical, warning, info)
+- A summary suitable for injection into retry context
+
+Verdict files are immutable — one file per agent per attempt, never overwritten. A `gate_pass` event is appended to `history.jsonl` when all required agents pass.
+
+### Versioned Retry
+
+**Versioned retry** is the mechanism for recovering from a failed gate. Rather than editing the original loop file, a new versioned file is created:
+
+- The original (`phase-N-ralph-loops.md`) is frozen; all todos are set to `status: frozen`
+- A retry file (`phase-N-ralph-loops-v2.md`) is created with affected todos reset to pending
+- `PLANS-INDEX.md` is updated to track the active version and attempt number
+
+This preserves a complete audit trail of what was tried and why it failed.
+
+### Gate-Review-Mode
+
+**Gate-review-mode** is a sentinel-based enforcement state, analogous to Planning Mode, that restricts agents to read-only operations during gate evaluation. When the sentinel is present, `Write`, `Edit`, and `MultiEdit` calls to paths outside `plans/gate-verdicts/` are blocked. This prevents gate agents from accidentally modifying the artefacts they are evaluating.
+
+### Failure Context Injection
+
+**Failure context injection** is the mechanism that makes retries smarter than the original attempt. When a gate fails, a `gate_failure_context` YAML block is injected into the retry loop file. This block contains a summary of what failed, which findings triggered the failure, and targeted guidance for the retry. The orchestrator reads this context when preparing the retry loop, so the worker begins with precise knowledge of what went wrong.

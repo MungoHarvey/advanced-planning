@@ -24,6 +24,7 @@ Then import:
 from platforms.python.state_manager import write_loop_ready, read_loop_complete
 from platforms.python.plan_io import find_next_loop, get_pending_todos
 from platforms.python.handoff import inject_handoff, make_empty_handoff
+from platforms.python.versioning import create_retry_version, inject_failure_context
 ```
 
 ---
@@ -121,6 +122,28 @@ Return the full parsed frontmatter for a named loop, including `todos[]`, `hando
 #### `get_loop_handoff(loop_file, loop_name) → dict`
 
 Return the `handoff_summary` dict (`done`, `failed`, `needed`) for a named loop.
+
+---
+
+### `versioning.py` — Versioned retry files
+
+Creates and manages versioned loop files for gate-review retry cycles.
+
+#### `create_retry_version(loop_file, *, attempt_number)`
+
+Create a versioned copy of a loop file for a gate-review retry attempt (e.g. `phase-1-ralph-loops-v2.md`).
+
+#### `inject_failure_context(loop_file, *, verdict)`
+
+Inject a `gate_failure_context` YAML block into a loop file, carrying forward structured gate verdict information so the retry starts with full failure context.
+
+#### `get_active_version(plans_index, *, phase)`
+
+Read `PLANS-INDEX.md` to determine the currently active loop file version for a given phase.
+
+#### `freeze_loop_file(loop_file)`
+
+Freeze all todo statuses in a superseded loop file, marking it as a historical record that should not be re-executed.
 
 ---
 
@@ -229,4 +252,4 @@ cd advanced-planning
 python -m pytest platforms/python/tests/ -v
 ```
 
-All 40 tests cover state manager round-trips, plan file parsing, todo extraction, status updates, and handoff injection.
+All 70 tests cover state manager round-trips, plan file parsing, todo extraction, status updates, handoff injection, and versioned retry file management.

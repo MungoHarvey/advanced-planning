@@ -12,6 +12,8 @@ The v8 planning system assigns AI models by role and frequency of invocation, no
 | Loop planning / orchestration | Sonnet | Once per loop | Medium unit cost, medium frequency |
 | Progress report synthesis | Sonnet | On demand | Medium unit cost, low frequency |
 | Todo execution (worker) | Sonnet (default); Haiku for low-complexity | Many times per loop | Medium unit cost, high frequency |
+| Gate review (code-review, phase-goals, security, test) | Sonnet | Once per phase boundary | Medium unit cost, low frequency |
+| Closeout synthesis (programme-reporter) | Sonnet | Once per programme | Medium unit cost, one-time |
 
 The model tier economics table: Opus is the most capable but most expensive; Haiku is fast and cheap. The system exploits this by matching model to role based on where reasoning quality matters most.
 
@@ -37,6 +39,7 @@ For a typical 4-phase programme with 3 loops per phase and 5 todos per loop:
 | Sonnet | 12 | Orchestrator (once per loop) |
 | Sonnet (worker) | ~48 | Worker todos at default tier (80% of ~60 todos) |
 | Haiku (worker) | ~12 | Low-complexity worker todos (20% of ~60 todos) |
+| Sonnet (gate) | ~2-4 | Gate agents at phase boundaries (1-2 per phase) |
 
 At approximate 2024 API pricing:
 - Opus: ~$0.40–1.20 per invocation → **$2–5 for the programme**
@@ -57,9 +60,11 @@ The model assignment is specified in the frontmatter of each skill and agent fil
 ```yaml
 ---
 name: my-skill
-model: opus   # or sonnet, haiku
+description: "What this skill does."
 ---
 ```
+
+Skills no longer have a `model:` field — they are model-agnostic instruction sets. The executing agent's model determines capability.
 
 **In an adapter's agent file** (`platforms/claude-code/agents/ralph-loop-worker.md`):
 ```yaml

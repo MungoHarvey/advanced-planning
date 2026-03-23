@@ -181,13 +181,20 @@ advanced-planning/
 │   │   └── [skill-name]/
 │   │       ├── SKILL.md
 │   │       └── references/   <- Templates, worked examples, reference catalogues
-│   ├── agents/               <- Orchestrator and worker role definitions
+│   ├── agents/               <- Orchestrator, worker, and gate-reviewer role definitions
 │   └── state/                <- JSON schemas for state bus files
 │
 ├── platforms/                <- Platform-specific wrappers
 │   ├── claude-code/          <- Slash commands, hooks, settings.json
+│   │   ├── commands/         <- Slash commands (plan-and-phase, next-loop, run-gate, run-closeout, next-phase, …)
+│   │   ├── agents/           <- ralph-orchestrator, ralph-loop-worker, analysis-worker,
+│   │   │                        code-review-agent, phase-goals-agent, security-agent,
+│   │   │                        test-agent, programme-reporter
+│   │   ├── .claude-plugin/   <- Plugin manifest (plugin.json)
+│   │   └── hooks/            <- Hook definitions (hooks.json)
 │   ├── cowork/               <- Routing SKILL.md, agent prompts, checkpoint.sh
 │   └── python/               <- Python API + unit tests + framework examples
+│       └── versioning.py     <- Loop file versioning utilities
 │
 ├── setup/                    <- Installation guides and scripts
 │   ├── claude-code/          <- install.sh + setup guide

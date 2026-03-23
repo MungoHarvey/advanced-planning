@@ -25,7 +25,7 @@ entry point — describe what you want to do and the skill dispatches to the rig
 
 The two-agent execution cycle uses **Cowork's Agent tool** directly:
 - Orchestrator (Sonnet) → spawned via Agent tool to prepare the next loop
-- Worker (Haiku) → spawned via Agent tool to execute todos with skill injection
+- Worker (Sonnet) → spawned via Agent tool to execute todos with skill injection
 
 All plan files and state live in your **workspace folder** — they persist between sessions.
 

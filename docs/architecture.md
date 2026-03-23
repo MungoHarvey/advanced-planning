@@ -17,9 +17,9 @@ Phase Plan (strategic)
 │   │   Planned by a Sonnet-tier orchestrator.
 │   │   Decomposed into verifiable todos.
 │   │
-│   ├── Todo 1 ─ execute with skill A (Haiku)
-│   ├── Todo 2 ─ execute with skill B (Haiku)
-│   └── Todo 3 ─ execute (no skill) (Haiku)
+│   ├── Todo 1 ─ execute with skill A (Sonnet)
+│   ├── Todo 2 ─ execute with skill B (Sonnet)
+│   └── Todo 3 ─ execute (no skill) (Sonnet)
 │
 ├── Ralph Loop 002
 │   └── ...
@@ -27,7 +27,7 @@ Phase Plan (strategic)
 └── Ralph Loop N
 ```
 
-**Why three tiers?** Each tier operates at the right level of abstraction. Opus reasons strategically and is called infrequently (once per phase). Sonnet reasons tactically about the current loop. Haiku executes repeatedly with laser focus on individual tasks, guided by injected skills.
+**Why three tiers?** Each tier operates at the right level of abstraction. Opus reasons strategically and is called infrequently (once per phase). Sonnet reasons tactically about the current loop. Sonnet executes by default with compositional reasoning for multi-file tasks, guided by injected skills. Haiku is available for todos marked `complexity: low`.
 
 ---
 
@@ -46,7 +46,7 @@ Main Thread
     │                                               │
     ├─ reads loop-ready.json                        │
     │                                               │
-    ├─ spawn Worker (Haiku)                         │
+    ├─ spawn Worker (Sonnet)                         │
     │       reads loop-ready.json                   │
     │       executes todos (targeted skill inject)  │
     │       writes handoff_summary to loop file     │
@@ -171,6 +171,39 @@ The core (schemas, skills, agent protocols, state bus) is platform-agnostic. Eac
 | State directory | `.claude/state/` | `state/` | Configurable |
 | Checkpoints | `git commit` | `checkpoint.sh` | User-defined |
 | Session tracking | TodoWrite hook | TodoWrite tool | Optional |
+| Gate agent spawning | Agent tool from /run-gate | Agent tool | Framework-specific |
+
+---
+
+## Gate Review Sub-Phase
+
+After all loops in a phase complete, the gate review sub-phase verifies outputs before advancement. Gate agents are spawned by the main thread — consistent with the two-agent pattern.
+
+### Gate Agents
+
+| Agent | Purpose | Model |
+|-------|---------|-------|
+| `code-review-agent` | Code quality, patterns, CLAUDE.md compliance | Sonnet |
+| `phase-goals-agent` | Verifies outputs against phase success criteria | Sonnet |
+| `security-agent` | Secret detection, injection patterns (optional) | Sonnet |
+| `test-agent` | Test suite execution, coverage thresholds (optional) | Sonnet |
+| `programme-reporter` | Closeout synthesis from documentary record | Sonnet |
+
+### Gate Verdict Protocol
+
+Each agent writes a structured verdict to `plans/gate-verdicts/`:
+
+- **Confidence scoring**: Findings scored 0–100; only ≥80 confidence triggers failure
+- **Immutable verdicts**: One file per agent per attempt, never overwritten
+- **On pass**: `gate_pass` event in `history.jsonl`; phase advances
+- **On fail**: Versioned retry file created (`phase-N-ralph-loops-v2.md`) with `gate_failure_context` injected; original file frozen
+
+### Versioned Retry
+
+Failed gates produce new loop files rather than editing originals:
+- Original: `phase-2-ralph-loops.md` (frozen, all todos set to `status: frozen`)
+- Retry: `phase-2-ralph-loops-v2.md` (failure context injected, affected todos reset to pending)
+- `PLANS-INDEX.md` tracks the active version and attempt number
 
 ---
 
@@ -186,7 +219,7 @@ Carrying the full loop output as context between loops grows unboundedly. Three 
 
 ### 3. Model tiers by frequency, not capability
 
-Opus is expensive; Haiku is cheap. The planning operations that justify Opus (phase decomposition, loop sequencing) happen once. The execution operations that use Haiku happen many times. Assigning model tier by frequency of invocation is economically optimal.
+Opus is expensive; Sonnet is the default execution tier. The planning operations that justify Opus (phase decomposition, loop sequencing) happen once. The execution operations happen many times — Sonnet handles these by default, with Haiku available for todos marked `complexity: low` where the task is simple enough that a lighter model suffices. Assigning model tier by frequency and complexity of invocation is economically optimal.
 
 ### 4. Targeted skill injection over preloading
 

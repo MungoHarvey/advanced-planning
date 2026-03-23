@@ -58,7 +58,7 @@ Every loop cycle follows the same sequence:
 Main Thread
 ├── spawn Orchestrator (Sonnet) → writes loop-ready.json → returns
 ├── reads loop-ready.json
-├── spawn Worker (Haiku) → executes todos → writes loop-complete.json → returns
+├── spawn Worker (Sonnet) → executes todos → writes loop-complete.json → returns
 ├── reads loop-complete.json
 ├── updates planning state
 └── advance to next loop (or stop)

@@ -138,3 +138,36 @@ A curated log of the key decisions made during the v8 Advanced Planning System d
 **Rationale**: This is a planning framework primarily made up of Markdown documents, prompt templates, and a small Python utility library. The primary goal is maximum adoption and minimum friction. MIT is the most universally understood permissive licence, imposes no conditions beyond attribution, and is the default expectation in the broader open-source community. The patent protections offered by Apache 2.0 are not a material concern for a project of this nature.
 
 **Consequence**: Commercial use, modification, and distribution are all permitted. The only requirement is that the copyright notice and licence text are included in copies. No contributor licence agreement is required.
+
+---
+
+## Decision 9 — Gate Review at Phase Boundaries (not inline verification)
+
+**Context**: After all loops in a phase complete, how to verify the outputs actually meet the phase plan's stated success criteria before advancing.
+
+**Alternatives considered**:
+1. No verification — trust that completed todos mean the phase succeeded
+2. Inline verification during each loop (worker checks phase-level criteria per todo)
+3. Dedicated gate review sub-phase with specialist agents at phase boundaries
+
+**Decision**: Option 3 — dedicated gate agents at phase boundaries.
+
+**Rationale**: Option 1 is the gap this addresses — a worker can mark all todos complete while producing outputs that miss the phase-level success criteria. Option 2 mixes strategic evaluation with tactical execution, overloading the worker's context. Option 3 separates evaluation from execution: gate agents (code-review, phase-goals, security, test) run as single-pass evaluators after all loops complete, writing structured verdicts with confidence scoring. On failure, versioned retry files carry the failure context forward so the retry starts smarter.
+
+**Consequence**: The gate sub-phase adds one sequential evaluation step per phase boundary. The versioned retry mechanism (new files rather than in-place edits) preserves the complete documentary record. The confidence threshold (≥80) prevents low-confidence findings from triggering unnecessary rollbacks.
+
+---
+
+## Decision 10 — Skills Are Model-Agnostic (no model field in skill frontmatter)
+
+**Context**: Originally, each SKILL.md had a `model:` field in its YAML frontmatter (e.g. `model: opus`). This was intended to indicate which model tier should execute that skill.
+
+**Alternatives considered**:
+1. Keep `model:` in skill frontmatter — skills declare their required model tier
+2. Remove `model:` — skills are instruction sets loaded by whatever agent is running
+
+**Decision**: Option 2 — skills are model-agnostic.
+
+**Rationale**: Skills are not agents — they are instruction sets loaded into an agent's context via targeted injection. The executing agent's model tier (specified in agent frontmatter) determines capability, not the skill's. A skill loaded by a Sonnet worker executes at Sonnet capability; the same skill loaded by a Haiku worker executes at Haiku capability. The `model:` field in skills was misleading and created false coupling between instruction content and execution environment.
+
+**Consequence**: Skill frontmatter requires only `name` and `description`. Model tier decisions live exclusively in agent definitions. This simplifies the skill authoring contract and makes skills truly portable across agent tiers.
