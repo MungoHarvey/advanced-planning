@@ -83,10 +83,21 @@ This is the core execution protocol. For each todo with `status: pending`, in or
 `agent: analysis-worker`, `agent: ralph-loop-worker`, or `agent: NA`, you execute it
 directly. You are the sole execution agent for this loop.
 
-## Using plan-todos for Vague Tasks
+## Skill Loading Reference
+
+Skills are loaded by reading the SKILL.md file at the path indicated by the todo's `skill:` field:
+
+```
+Path: .claude/skills/[skill-name]/SKILL.md
+Fallback: ~/.claude/skills/[skill-name]/SKILL.md
+```
+
+**How to load**: Read the full SKILL.md file. Follow its **Process** section for the approach, and its **Output Format** section for deliverable structure. After the todo completes, discard the skill context.
+
+### Using plan-todos for Vague Tasks
 
 If a todo's `content` is too vague to execute directly:
-- Read `.claude/skills/plan-todos/SKILL.md`
+- Read `.claude/skills/plan-todos/SKILL.md` and follow its Process section
 - Decompose into sub-steps as inline notes
 - Execute each sub-step, then mark the parent todo complete
 

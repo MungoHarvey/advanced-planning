@@ -49,15 +49,22 @@ Read the loop's `todos[]` from its YAML frontmatter.
 
 **Skip this step if** all todos have non-`NA` `skill` and `agent` fields — the loop is already fully specified.
 
-**Run this step if** `todos[]` is empty, or all todos have `skill: NA` and `agent: NA`:
+**Run this step if** `todos[]` is empty, or all todos have `skill: NA` and `agent: NA`.
 
-1. Use `plan-todos` skill — derive atomic tasks from the loop's `## Overview`, `## Success Criteria`, `## Inputs`, and `## Outputs` sections
-2. Use `plan-skill-identification` skill — assign skills by matching todo content/outcome against available SKILL.md files in the skills directory
-3. Use `plan-subagent-identification` skill — assign agents by matching todos against available agent definitions in the agents directory
+Run the three planning skills **in sequence** — each operates on the output of the previous:
+
+1. **Load and execute `plan-todos`** — Read `[skills_directory]/plan-todos/SKILL.md` and follow its Process section. Derive atomic tasks from the loop's `## Overview`, `## Success Criteria`, `## Inputs`, and `## Outputs` sections. All new todos start with `skill: NA`, `agent: NA`.
+
+2. **Load and execute `plan-skill-identification`** — Read `[skills_directory]/plan-skill-identification/SKILL.md` and follow its Process section. Discover available skills by listing all `[skills_directory]/*/SKILL.md` files. Match each todo's `content` and `outcome` against skill `description` fields. Update `skill:` in-place.
+
+3. **Load and execute `plan-subagent-identification`** — Read `[skills_directory]/plan-subagent-identification/SKILL.md` and follow its Process section. Discover available agents by listing all `[agents_directory]/*.md` files. Assess each todo for delegation suitability. Update `agent:` in-place.
+
 4. Write updated todos back to the loop file in-place, maintaining canonical field order:
    ```
    id → content → skill → agent → outcome → status → complexity → priority
    ```
+
+**Skill loading protocol**: Read the full SKILL.md file into context, follow its Process section, then discard the skill before loading the next one. This is the same targeted injection pattern used by the worker, applied here at the planning level.
 
 ### Step 4 — Write loop-ready.json
 
@@ -125,13 +132,17 @@ The formal JSON Schema is at `core/state/loop-ready.schema.json`.
 
 ## Skills Available
 
-The orchestrator has access to the three planning skills used in the todo population step:
+The orchestrator has access to the three planning skills used in the todo population step. Each is loaded by reading its SKILL.md file from the skills directory:
 
-- `plan-todos` — derives atomic tasks from a loop's description
-- `plan-skill-identification` — assigns skills per todo
-- `plan-subagent-identification` — assigns agents per todo
+| Skill | File | Purpose | Invocation |
+|-------|------|---------|------------|
+| `plan-todos` | `[skills_dir]/plan-todos/SKILL.md` | Derives atomic tasks from loop description | Read SKILL.md → follow Process section |
+| `plan-skill-identification` | `[skills_dir]/plan-skill-identification/SKILL.md` | Assigns skills per todo | Read SKILL.md → follow Process section |
+| `plan-subagent-identification` | `[skills_dir]/plan-subagent-identification/SKILL.md` | Assigns agents per todo | Read SKILL.md → follow Process section |
 
-These are the Opus-tier skills; when the orchestrator invokes them it is delegating to a higher planning capability specifically for the population step.
+**Invocation pattern**: Read the SKILL.md file into context, follow its **Process** section step by step, then discard it before loading the next skill. These are Opus-tier skills; the orchestrator delegates planning-level reasoning to them.
+
+**Pipeline order is mandatory**: `plan-todos` → `plan-skill-identification` → `plan-subagent-identification`. Each skill operates on the output of the previous. Running out of order produces incomplete or invalid results.
 
 ---
 

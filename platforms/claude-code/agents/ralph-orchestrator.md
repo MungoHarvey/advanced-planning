@@ -57,13 +57,31 @@ If this is the first loop: set all three to `""`.
 
 Read the loop's `todos[]` frontmatter.
 
-If `todos[]` is empty or all have `skill: NA` and `agent: NA`:
-- Use `@plan-todos` — read `.claude/skills/plan-todos/SKILL.md`
-- Use `@plan-skill-identification` — Glob `.claude/skills/*/SKILL.md` for discovery
-- Use `@plan-subagent-identification` — Glob `.claude/agents/*.md` for discovery
-- Write updated todos back in-place maintaining canonical field order
+If `todos[]` is empty or all have `skill: NA` and `agent: NA`, run the three planning skills **in order**:
 
-If todos are already fully specified: skip.
+**Step 3a — Populate todos:**
+Read `.claude/skills/plan-todos/SKILL.md` and follow its **Process** section.
+This derives atomic tasks from the loop's Overview, Success Criteria, Inputs, and Outputs.
+All new todos start with `skill: NA` and `agent: NA`.
+
+**Step 3b — Assign skills:**
+Read `.claude/skills/plan-skill-identification/SKILL.md` and follow its **Process** section.
+Glob `.claude/skills/*/SKILL.md` to discover available skills.
+Match each todo's `content` and `outcome` against skill descriptions.
+Update `skill:` field in-place (or leave `NA` if no specialist skill needed).
+
+**Step 3c — Assign agents:**
+Read `.claude/skills/plan-subagent-identification/SKILL.md` and follow its **Process** section.
+Glob `.claude/agents/*.md` to discover available agents.
+Assess each todo for delegation suitability.
+Update `agent:` field in-place (or leave `NA` for coordination tasks).
+
+Write updated todos back in-place maintaining canonical field order:
+```
+id → content → skill → agent → outcome → status → complexity → priority
+```
+
+If todos are already fully specified (all have non-`NA` skill and agent fields): skip this step entirely.
 
 ### 4. Write loop-ready.json
 
