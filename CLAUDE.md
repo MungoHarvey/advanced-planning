@@ -98,7 +98,7 @@ plans/
 | Closeout synthesis | Sonnet | Once per programme |
 | Progress reporting | Sonnet | On demand |
 
-Override tiers via the `model:` field in skill/agent frontmatter. Use `/model-check` to verify assignments.
+Override agent tiers via the `model:` field in agent frontmatter. Skills are model-agnostic (no `model:` field). Use `/model-check` to verify agent assignments.
 
 ## Code Conventions
 
@@ -115,7 +115,7 @@ Override tiers via the `model:` field in skill/agent frontmatter. Use `/model-ch
 - Python 3.10+ required
 - The Python API must remain zero-dependency (standard library only) — CI enforces this with an AST import checker. Allowed imports: `json`, `pathlib`, `re`, `datetime`, `typing`, `os`, `sys`, `tempfile`, `textwrap`, `argparse`, `asyncio`
 - Core files must never reference platform-specific paths (no `.claude/` in core)
-- New skills require frontmatter (`name`, `model`, `description`) and sections: `## When to Use`, `## Process`, `## Output Format`
+- New skills require frontmatter (`name`, `description`) and sections: `## When to Use`, `## Process`, `## Output Format`. Skills are model-agnostic — the executing agent's model determines capability, not the skill.
 - Plan files use YAML frontmatter in markdown; ralph loops contain `todos[]` arrays with canonical field order (`id`/`content`/`skill`/`agent`/`outcome`/`status`/`priority`)
 
 ## CI

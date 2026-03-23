@@ -22,7 +22,6 @@ For each todo with `skill: NA`:
 
 ### `phase-plan-creator`
 
-**Model tier**: Opus
 **Purpose**: Creates a phase plan document from a programme description, defining scope, outputs, loop count, and success criteria for an entire phase.
 
 **When to assign:**
@@ -43,7 +42,6 @@ For each todo with `skill: NA`:
 
 ### `ralph-loop-planner`
 
-**Model tier**: Sonnet (orchestrator)
 **Purpose**: Decomposes a single phase into bounded ralph loops. Writes the loop YAML stubs (name, task_name, max_iterations, on_max_iterations, handoff_summary skeleton, empty todos[]) into a phase's ralph loops file.
 
 **When to assign:**
@@ -64,7 +62,6 @@ For each todo with `skill: NA`:
 
 ### `plan-todos`
 
-**Model tier**: Opus
 **Purpose**: Reads a ralph loop's Overview, Success Criteria, Inputs, and Outputs and derives an atomic, verifiable `todos[]` array for the YAML frontmatter. Writes each todo with `skill: NA` and `agent: NA` (to be filled by downstream skills).
 
 **When to assign:**
@@ -85,7 +82,6 @@ For each todo with `skill: NA`:
 
 ### `plan-skill-identification`
 
-**Model tier**: Opus
 **Purpose**: Reads todos with `skill: NA` and assigns the best-fit skill from the available SKILL.md files. Updates the `skill:` field in-place using the canonical field order. Flags `MISSING:` when no skill covers a task.
 
 **When to assign:**
@@ -106,7 +102,6 @@ For each todo with `skill: NA`:
 
 ### `plan-subagent-identification`
 
-**Model tier**: Opus
 **Purpose**: Reads todos with skills already assigned and determines which tasks should be delegated to subagents. Updates the `agent:` field in-place. Flags `MISSING:` when a task warrants delegation but no suitable agent exists.
 
 **When to assign:**
@@ -127,7 +122,6 @@ For each todo with `skill: NA`:
 
 ### `progress-report`
 
-**Model tier**: Sonnet
 **Purpose**: Reads plan files, loop handoff summaries, todo statuses, and git commit history
 to produce a structured markdown progress report. Read-only synthesis — never modifies artefacts.
 

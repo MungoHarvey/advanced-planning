@@ -1,6 +1,5 @@
 ---
 name: plan-todos
-model: opus
 description: "Derive atomic TODO tasks from a ralph loop description and populate the todos[] array in its YAML frontmatter. Use after ralph-loop-planner has generated loop stubs, to fill in the concrete task breakdown before skill and agent assignment. Reads the loop's Overview, Success Criteria, Inputs, and Outputs to derive tasks; writes them into the frontmatter in canonical schema order. Triggers: populate todos, break down loop, decompose loop tasks, fill in todos, expand loop."
 ---
 

@@ -1,6 +1,5 @@
 ---
 name: ralph-loop-planner
-model: opus
 description: "Decompose phase plans into executable ralph loop iterations with verifiable outcomes, concise handoffs, and session task tracking. Use after phase-plan-creator to generate task-based iterations ready for execution. Each iteration includes YAML frontmatter with todos (id/content/skill/agent/outcome/status/priority), a handoff_summary block (done/failed/needed), max_iterations with on_max_iterations recovery, and a complete execution prompt. Triggers: decompose phase, plan iterations, create loops, break down phase, execution planning."
 ---
 

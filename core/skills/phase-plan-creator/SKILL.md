@@ -1,6 +1,5 @@
 ---
 name: phase-plan-creator
-model: opus
 description: "Generate structured, verifiable phase plans for project phases. Use when starting a new project phase, establishing scope and dependencies, or documenting success criteria before loop decomposition. Creates comprehensive phase plans that feed into the ralph-loop-planner skill. Triggers: new phase, project plan, phase plan, plan a project, scope this out, plan this work, start a project, what's the approach."
 ---
 

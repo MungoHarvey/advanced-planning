@@ -1,6 +1,5 @@
 ---
 name: plan-subagent-identification
-model: opus
 description: "Read the todos[] array in a ralph loop's YAML frontmatter and update the agent: field for each todo in-place. Determines which tasks benefit from subagent delegation versus running in the main orchestrator context; assigns agent IDs from the agents directory. Run after plan-skill-identification. Maintains canonical field order when editing. Triggers: assign agents, identify agents for todos, agent mapping, fill agent fields, subagent delegation, who does this task."
 ---
 

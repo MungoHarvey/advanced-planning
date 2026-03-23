@@ -1,6 +1,5 @@
 ---
 name: progress-report
-model: sonnet
 description: "Generate a structured progress report by reading plan files, loop handoff summaries, todo statuses, and git commit history. Use when reviewing programme progress, preparing status updates, or auditing completed work. Triggers: progress report, status report, what happened, show progress, review progress, audit."
 ---
 

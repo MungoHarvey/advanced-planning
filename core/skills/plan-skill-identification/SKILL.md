@@ -1,6 +1,5 @@
 ---
 name: plan-skill-identification
-model: opus
 description: "Read the todos[] array in a ralph loop's YAML frontmatter and update the skill: field for each todo in-place. Matches each task's content and outcome against available skills to find the best fit; sets skill: NA for tasks that require no specialist skill. Run after plan-todos and before plan-subagent-identification. Maintains canonical field order when editing. Triggers: assign skills, identify skills for todos, skill mapping, fill skill fields, match skills to tasks."
 ---
 

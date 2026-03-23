@@ -129,10 +129,11 @@ Core skills live in `core/skills/[skill-name]/SKILL.md`. A skill is a self-conta
 ```yaml
 ---
 name: my-skill
-model: opus        # or sonnet, haiku
 description: "One sentence: what this skill does and when to load it."
 ---
 ```
+
+Skills are model-agnostic — they are loaded as instructions into whatever agent is executing. The agent's `model:` field (in agent frontmatter) determines the model tier, not the skill.
 
 **Required sections in the skill body:**
 
