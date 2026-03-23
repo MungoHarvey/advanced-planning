@@ -12,7 +12,7 @@ Fields must appear in this exact order. Maintaining order prevents schema drift 
 todos:
   - id: "loop-{NNN}-{N}"       # e.g. loop-003-1 — globally unique
     content: ""                  # Verb-first, one atomic action
-    skill: "NA"                  # Left as NA by plan-todos; filled by plan-skill-identification
+    skill: "NA"                  # Left as NA by plan-todos; filled by plan-skill-identification (single, array, or NA)
     agent: "NA"                  # Left as NA by plan-todos; filled by plan-subagent-identification
     outcome: ""                  # Observable completion condition
     status: pending              # Always pending when plan-todos writes a todo

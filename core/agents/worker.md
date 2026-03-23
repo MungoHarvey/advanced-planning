@@ -55,13 +55,27 @@ For each todo with status: pending, in order:
      Update status: in_progress in the loop file frontmatter
      Update status in the session tracking display
 
-  3. LOAD SKILL (if skill ≠ "NA")
-     Read the SKILL.md at: [skills_directory]/[skill]/SKILL.md
-     Load its full contents into the working context
+  3. LOAD SKILL(S) (if skill ≠ "NA")
+     The skill: field can be a single string or an array of strings.
+
+     If single string:
+       Read the SKILL.md at: [skills_directory]/[skill]/SKILL.md
+       Load its full contents into the working context
+
+     If array of strings:
+       For each skill name in the array, in order:
+         Read the SKILL.md at: [skills_directory]/[skill-name]/SKILL.md
+         Load its contents into the working context
+       All loaded skills are active simultaneously for this todo.
+       When skills overlap, the more specific skill takes precedence.
+
+     Path resolution:
+       1. Project-local: [skills_directory]/[skill-name]/SKILL.md
+       2. Global fallback: ~/.claude/skills/[skill-name]/SKILL.md
 
   4. EXECUTE THE TASK
      Perform the work described in content
-     The loaded skill's instructions govern how to approach this task
+     The loaded skill(s) instructions govern how to approach this task
      Do not proceed to the next todo until this one is done
 
   5. VERIFY OUTCOME
@@ -73,9 +87,9 @@ For each todo with status: pending, in order:
        - Is the metric within range?
      Do NOT mark complete on effort alone — verify the condition
 
-  6. UNLOAD SKILL
-     The skill context from step 3 is no longer active
-     Do not carry its instructions forward to the next todo
+  6. UNLOAD ALL SKILLS
+     All skill context from step 3 is no longer active
+     Do not carry any instructions forward to the next todo
 
   7. MARK COMPLETE
      Update status: completed in the loop file frontmatter
@@ -89,15 +103,24 @@ For each todo with status: pending, in order:
 for todo in todos where todo.status == "pending":
     mark_in_progress(todo.id)
 
-    if todo.skill != "NA":
-        skill_content = read_file(skills_dir + "/" + todo.skill + "/SKILL.md")
+    # Normalise skill field: string → [string], "NA" → []
+    skills = []
+    if todo.skill is a list:
+        skills = todo.skill
+    elif todo.skill != "NA":
+        skills = [todo.skill]
+
+    # Load each assigned skill in order
+    for skill_name in skills:
+        path = resolve_skill_path(skill_name)  # project-local, then global fallback
+        skill_content = read_file(path + "/SKILL.md")
         load_into_context(skill_content)
 
-    execute(todo.content)  # using skill instructions if loaded
+    execute(todo.content)  # using all loaded skill instructions
 
     verify(todo.outcome)   # observable condition check; raise if not met
 
-    unload_skill()         # skill context cleared before next iteration
+    unload_all_skills()    # all skill context cleared before next iteration
 
     mark_complete(todo.id)
 ```
@@ -116,9 +139,10 @@ Targeted injection solves both: each task gets exactly one skill's instructions,
 
 | Event | Entry Condition | Exit Condition |
 |-------|-----------------|----------------|
-| Skill load | Todo transitions from `pending` to `in_progress` | Skill is loaded; do not execute before this |
-| Skill unload | Todo outcome verified and `completed` | Skill cleared; next todo begins fresh |
-| No skill | `skill: NA` — proceed directly to execute | No load/unload cycle needed |
+| Skill load | Todo transitions from `pending` to `in_progress` | All assigned skill(s) loaded; do not execute before this |
+| Skill unload | Todo outcome verified and `completed` | All skill context cleared; next todo begins fresh |
+| No skill | `skill: NA` or `skill: []` — proceed directly to execute | No load/unload cycle needed |
+| Multiple skills | `skill: [skill-1, skill-2]` — load each in order | All loaded simultaneously; unload all after |
 
 ---
 

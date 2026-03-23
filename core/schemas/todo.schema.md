@@ -25,7 +25,7 @@ Fields MUST appear in this canonical order. Agents must maintain this order when
 todos:
   - id: "loop-{NNN}-{N}"          # Globally unique: loop number + todo number
     content: ""                    # Atomic task description (verb-first, specific)
-    skill: ""                      # Skill name from skills directory, or "NA"
+    skill: ""                      # Skill name(s): single string, array of strings, or "NA"
     agent: ""                      # Subagent ID from agents directory, or "NA"
     outcome: ""                    # Observable completion condition
     status: pending                # pending | in_progress | completed | cancelled | frozen
@@ -39,7 +39,7 @@ todos:
 |-------|------|----------|--------|-------|
 | `id` | string | Yes | `loop-{NNN}-{N}` | Globally unique; matches native TodoWrite ID |
 | `content` | string | Yes | Verb-first imperative | One atomic action; no compound tasks |
-| `skill` | string | Yes | skill-name or `NA` | Must reference an existing skill, or `NA` for general tasks |
+| `skill` | string or array | Yes | skill-name, `[skill-1, skill-2]`, or `NA` | Single skill name, array of skill names for multi-skill tasks, or `NA`. All names must reference existing skills in the skills directory. Worker loads each in order before executing the todo. |
 | `agent` | string | Yes | agent-id or `NA` | Planning-time categorisation: references an agent role, or `NA` for coordination tasks. In platforms where the worker cannot spawn subagents, this field is metadata — the worker executes all todos inline |
 | `outcome` | string | Yes | Observable condition | What must exist or pass — not effort description |
 | `status` | enum | Yes | See Status Values | Updated in-place during execution; `frozen` is set by versioning system only |
@@ -129,7 +129,12 @@ Skills are identified at three levels during planning. The `skill:` field in a t
 | Loop-level (specific) | `@ralph-loop-planner` | `data-processing`, `output-formatting` |
 | Todo-level (precise) | `@plan-skill-identification` | `schema-design`, `docx` |
 
-The todo's `skill:` field holds the **todo-level** assignment. At execution time, the worker agent loads the corresponding `SKILL.md` before executing the todo (see `core/agents/worker.md` for the skill injection protocol).
+The todo's `skill:` field holds the **todo-level** assignment. It can be:
+- `"NA"` — no specialist skill needed
+- `"skill-name"` — a single skill loaded before execution
+- `["skill-1", "skill-2"]` — multiple skills loaded sequentially before execution
+
+At execution time, the worker agent loads each assigned `SKILL.md` in order before executing the todo. Multiple skills are useful when a task spans domains (e.g. schema design + documentation). See `core/agents/worker.md` for the skill injection protocol.
 
 ---
 
@@ -166,7 +171,7 @@ Before executing a loop's todos, verify:
 - [ ] Every todo has a unique `id` following `loop-{NNN}-{N}` format
 - [ ] Every `content` starts with a verb and describes one atomic action
 - [ ] Every `outcome` is an observable condition, not an effort description
-- [ ] `skill:` values reference existing skills or are `NA`
+- [ ] `skill:` values reference existing skills (single string or array of strings) or are `NA`
 - [ ] `agent:` values reference existing agents or are `NA`
 - [ ] All todos start as `pending`
 - [ ] `complexity:` is `low`, `medium`, or `high` (or omitted, defaulting to `medium`)

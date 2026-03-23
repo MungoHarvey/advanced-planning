@@ -1,12 +1,14 @@
 ---
 name: plan-skill-identification
-description: "Read the todos[] array in a ralph loop's YAML frontmatter and update the skill: field for each todo in-place. Matches each task's content and outcome against available skills to find the best fit; sets skill: NA for tasks that require no specialist skill. Run after plan-todos and before plan-subagent-identification. Maintains canonical field order when editing. Triggers: assign skills, identify skills for todos, skill mapping, fill skill fields, match skills to tasks."
+description: "Read the todos[] array in a ralph loop's YAML frontmatter and update the skill: field for each todo in-place. Discovers available skills from both project-local (.claude/skills/) and global (~/.claude/skills/) directories. Assigns one skill, multiple skills (as an array), or NA per todo. Run after plan-todos and before plan-subagent-identification. Maintains canonical field order when editing. Triggers: assign skills, identify skills for todos, skill mapping, fill skill fields, match skills to tasks."
 ---
 
 # Plan Skill Identification
 
-Reads a ralph loop's populated `todos[]` and assigns the most appropriate skill to each task.
-Edits the `skill:` field in-place, maintaining canonical schema order.
+Reads a ralph loop's populated `todos[]` and assigns the most appropriate skill(s) to each task.
+Discovers skills from both project-local and global directories. Assigns a single skill, multiple
+skills (as a YAML array), or `NA` per todo. Edits the `skill:` field in-place, maintaining
+canonical schema order.
 
 ## When to Use
 
@@ -24,15 +26,22 @@ Provide:
 
 1. **Read the loop file** — extract all todos with `skill: NA`
 
-2. **Discover available skills:**
-   - List all `SKILL.md` files in the skills directory (e.g. `core/skills/*/SKILL.md`)
+2. **Discover available skills from all locations:**
+   - **Project-local**: Glob `.claude/skills/*/SKILL.md` (or equivalent project skills path)
+   - **Global fallback**: Glob `~/.claude/skills/*/SKILL.md`
+   - Merge results; project-local takes precedence for duplicate skill names
    - Read each SKILL.md's frontmatter `name` and `description` fields
-   - Also check for globally available skills in any additional skill locations
+   - Build a complete catalogue of available skills across both locations
 
-3. **For each todo:**
+3. **For each todo, determine skill assignment:**
    - Read `content` and `outcome`
    - Match against skill descriptions using the three-level cascade (see below)
-   - Assign the best-fit skill name, or `NA` if no specialist skill is needed
+   - Determine how many skills apply:
+     - **No skill needed** → set `skill: NA` (straightforward file I/O, git ops, simple tasks)
+     - **One skill fits** → set `skill: "skill-name"` (single string)
+     - **Multiple skills needed** → set `skill: ["skill-1", "skill-2"]` (YAML array)
+   - Multiple skills are appropriate when a task genuinely spans domains (e.g. schema design + documentation, or data processing + statistical analysis)
+   - Do NOT assign multiple skills just because they are vaguely related — each must contribute specific, distinct instructions the worker needs
 
 4. **Update `skill:` field in-place** for each todo, maintaining canonical order:
    ```
@@ -65,37 +74,44 @@ precise tier. The phase and loop level skills inform which specialist sub-skills
 
 - Use the skill's exact `name` from its SKILL.md frontmatter
 - Assign `NA` for tasks that are straightforward file I/O, git operations, simple scripting, or general reference writing
-- If two skills both fit, choose the **more specific** one
+- **Single skill**: when one skill clearly covers the task, assign it as a string: `skill: "skill-name"`
+- **Multiple skills**: when a task genuinely requires expertise from two or more distinct domains, assign as an array: `skill: ["skill-1", "skill-2"]`. The worker loads each in order. Use this sparingly — only when each skill contributes distinct instructions.
+- **Ordering**: when assigning multiple skills, put the primary/structural skill first and supplementary skills after
 - If a task clearly needs a skill that does not exist yet, flag it as `MISSING: [description]` rather than leaving `NA` — this surfaces skill gaps for the project owner to address
 - Do not assign skills to the handoff update task or git checkpoint tasks — these are `NA`
 
 ## Output Format
 
-Updates `skill:` in each todo in-place:
+Updates `skill:` in each todo in-place. The field accepts three forms:
 
 ```yaml
 todos:
+  # Single skill — one specialist domain
   - id: "loop-002-1"
     content: "Migrate phase-plan-creator skill into core/skills/phase-plan-creator/"
-    skill: "skill-creator"        # ← was NA, now assigned
+    skill: "skill-creator"
     agent: "NA"
     outcome: "SKILL.md exists at target path; zero platform-specific references present"
     status: pending
     priority: high
 
+  # Multiple skills — task spans two domains
   - id: "loop-002-2"
-    content: "Write git checkpoint commit before starting work"
-    skill: "NA"                   # ← simple git operation; no specialist skill needed
+    content: "Create gate-verdict.schema.json with field documentation and worked examples"
+    skill:
+      - "schema-design"
+      - "documentation"
     agent: "NA"
-    outcome: "git log shows checkpoint commit before loop work begins"
+    outcome: "gate-verdict.schema.json validates as draft-07; inline field docs present"
     status: pending
     priority: high
 
+  # No skill — straightforward task
   - id: "loop-002-3"
-    content: "Verify all five skills are platform-agnostic with a scan"
-    skill: "NA"                   # ← general verification; no specialist skill needed
+    content: "Write git checkpoint commit before starting work"
+    skill: "NA"
     agent: "NA"
-    outcome: "Zero occurrences of platform-specific terms across all core/skills/ SKILL.md files"
+    outcome: "git log shows checkpoint commit before loop work begins"
     status: pending
     priority: high
 ```

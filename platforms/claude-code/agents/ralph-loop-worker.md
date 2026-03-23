@@ -67,13 +67,16 @@ skill and proceed without it — do not halt the entire loop.
 This is the core execution protocol. For each todo with `status: pending`, in order:
 
 1. Mark `status: in_progress` in frontmatter and TodoWrite
-2. **If `skill: != "NA"`**: Read `.claude/skills/[skill]/SKILL.md` into context.
-   **This is mandatory, not optional.** The skill file contains the specialist instructions
-   that govern how to approach this specific task. Read it fully before proceeding.
-3. Execute `content` following the skill's instructions if loaded. The skill defines
+2. **Load skill(s)** — the `skill:` field can be a single string, an array, or `"NA"`:
+   - If `skill: "NA"` → no skill to load, proceed to step 3
+   - If `skill: "skill-name"` (single string) → read `.claude/skills/[skill-name]/SKILL.md`
+   - If `skill: ["skill-1", "skill-2"]` (array) → read each SKILL.md **in order**, loading all into context
+   **This is mandatory, not optional.** Each skill file contains specialist instructions
+   that govern how to approach this task. Read each fully before proceeding.
+3. Execute `content` following the loaded skill(s) instructions. The skills define
    the approach, output format, and quality standards for this task.
 4. Verify the `outcome:` condition is actually met (do not mark complete on effort alone)
-5. Clear the skill from context (do not carry its instructions forward to the next todo)
+5. Clear **all** skill context (do not carry instructions forward to the next todo)
 6. Mark `status: completed` in frontmatter and TodoWrite
 7. Log: `echo "[$(date '+%H:%M:%S')] TODO DONE: [id]" >> .claude/logs/execution.log`
 
@@ -85,14 +88,21 @@ directly. You are the sole execution agent for this loop.
 
 ## Skill Loading Reference
 
-Skills are loaded by reading the SKILL.md file at the path indicated by the todo's `skill:` field:
+Skills are loaded by reading SKILL.md files. The `skill:` field determines what to load:
 
 ```
-Path: .claude/skills/[skill-name]/SKILL.md
-Fallback: ~/.claude/skills/[skill-name]/SKILL.md
+Single:   skill: "schema-design"      → load 1 SKILL.md
+Multiple: skill: ["schema-design", "documentation"]  → load 2 SKILL.md files in order
+None:     skill: "NA"                 → no skill loaded
 ```
 
-**How to load**: Read the full SKILL.md file. Follow its **Process** section for the approach, and its **Output Format** section for deliverable structure. After the todo completes, discard the skill context.
+**Path resolution** (for each skill name):
+```
+1. Project-local: .claude/skills/[skill-name]/SKILL.md
+2. Global fallback: ~/.claude/skills/[skill-name]/SKILL.md
+```
+
+**How to load**: Read the full SKILL.md file. Follow its **Process** section for the approach, and its **Output Format** section for deliverable structure. When multiple skills are loaded, all are active simultaneously — the more task-specific skill takes precedence where instructions overlap. After the todo completes, discard all skill context.
 
 ### Using plan-todos for Vague Tasks
 

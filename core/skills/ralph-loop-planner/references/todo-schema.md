@@ -9,7 +9,7 @@ maintain this order when editing to prevent schema drift and ensure reliable par
 todos:
   - id: "loop-NNN-N"     # Format: loop-{loop-number}-{todo-number}; globally unique
     content: ""           # Atomic task description (verb-first, one action)
-    skill: ""             # Skill name from skills directory, or NA
+    skill: ""             # Skill name(s): string, array of strings, or "NA"
     agent: ""             # Agent ID from agents directory, or NA
     outcome: ""           # Observable completion condition (not effort description)
     status: pending       # pending | in_progress | completed | cancelled
@@ -23,7 +23,7 @@ todos:
 |-------|----------|-------------|-------|
 | `id` | Yes | `loop-NNN-N` | Globally unique; matches session tracking ID |
 | `content` | Yes | Verb-first string | One atomic action per todo; no compound tasks |
-| `skill` | Yes | skill-name or `NA` | Must reference an existing skill, or `NA` |
+| `skill` | Yes | skill-name, `[skill-1, skill-2]`, or `NA` | Single skill, array of skills for multi-domain tasks, or `NA` |
 | `agent` | Yes | agent-id or `NA` | Must reference an existing agent, or `NA` |
 | `outcome` | Yes | Observable condition | What must exist or pass — not effort description |
 | `status` | Yes | See below | Updated in-place during execution |
