@@ -134,6 +134,18 @@ The difference from the standard flow:
 - Findings are saved to `.claude/plans/exploration-notes.md` for review before planning starts
 - `--auto` on `/next-loop` chains loops without manual re-invocation between each one
 
+### Full Autonomous Pipeline
+
+For multi-phase programmes with a master plan, chain everything end-to-end:
+
+```
+/next-phase --auto    → Gate review → plan next phase → execute loops → gate → repeat
+```
+
+This chains across phase boundaries: gate review → plan next phase → execute all loops →
+gate review → repeat until the programme completes or a gate/loop fails. Gate failures
+always stop auto mode (manual review required for versioned retry).
+
 ### Step 6 — Gate Review (after all loops complete)
 
 ```

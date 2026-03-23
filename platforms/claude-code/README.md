@@ -129,7 +129,7 @@ markdown report. Useful after an `--auto` run or when resuming work across sessi
 | Command | Description | Key Arguments |
 |---------|-------------|---------------|
 | `/run-gate` | Spawn gate agents, aggregate pass/fail verdicts | `--phase N`, `--agents code-review,phase-goals` |
-| `/next-phase` | Run gate review then advance or create versioned retry | `--skip-gate`, `--force` |
+| `/next-phase` | Run gate review then advance or create versioned retry | `--auto`, `--skip-gate`, `--force` |
 | `/run-closeout` | Programme closeout synthesis via programme-reporter agent | None |
 
 ### Diagnostics

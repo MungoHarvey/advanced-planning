@@ -182,7 +182,7 @@ After installation, these commands are available in Claude Code:
 | Command | What it does |
 |---------|-------------|
 | `/run-gate` | Spawns gate agents (code-review, phase-goals) to evaluate phase outputs |
-| `/next-phase` | Runs gate review → on pass advances; on fail creates versioned retry files |
+| `/next-phase` | Runs gate review → on pass advances; on fail creates versioned retry files. Use `--auto` to chain across phases. |
 | `/run-closeout` | Spawns programme-reporter for final narrative synthesis |
 
 ### Diagnostic commands

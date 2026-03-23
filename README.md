@@ -98,7 +98,7 @@ See `setup/cowork/README.md` for full Cowork setup instructions.
 | Command | What it does |
 |---------|-------------|
 | `/run-gate` | Spawn gate agents to evaluate phase outputs against success criteria |
-| `/next-phase` | Run gate review → on pass advance; on fail create versioned retry |
+| `/next-phase` | Run gate review → advance or retry. Use `--auto` to chain across phases |
 | `/run-closeout` | Programme closeout — final narrative from documentary record |
 
 ### Diagnostics

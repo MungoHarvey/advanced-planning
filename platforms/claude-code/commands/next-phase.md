@@ -1,7 +1,7 @@
 ---
-description: Advance to the next phase. Runs the gate review first; on pass advances, on fail creates versioned retry files with injected failure context.
-allowed-tools: Read, Write, Glob, Bash, Edit, Agent
-argument-hint: "[--skip-gate] [--force]"
+description: Advance to the next phase. Runs gate review first; on pass advances. Use --auto to chain across phase boundaries — gate review → plan next phase → execute loops → repeat until programme complete or failure.
+allowed-tools: Read, Write, Glob, Bash, Edit, TodoWrite, Agent
+argument-hint: "[--auto] [--skip-gate] [--force]"
 ---
 
 # /next-phase
@@ -10,6 +10,9 @@ Advance from the current phase to the next. By default this command runs the ful
 review first. On gate pass, the current phase is marked complete and you are prompted to
 plan the next phase. On gate fail, versioned retry files are created with injected failure
 context so the retry loop has full information.
+
+Use `--auto` to chain across phase boundaries autonomously: gate review → plan next phase →
+execute all loops → gate review → repeat until the programme completes or a gate/loop fails.
 
 ## Steps
 
@@ -28,8 +31,13 @@ Print: `→ Current phase: Phase [N]`
 ### 2. Parse flags
 
 Check `$ARGUMENTS` for:
+- `--auto`: autonomous phase chaining — after gate pass, plan and execute the next phase automatically
 - `--skip-gate`: bypass gate review entirely, treat as pass
 - `--force`: if gate fails, advance anyway (with a warning)
+
+If `--auto` is set:
+- Set `AUTO_PHASE_MODE = true`
+- Print: `Autonomous phase mode: will chain phases until programme complete or failure.`
 
 If `--skip-gate` is set, skip Steps 3–5 and proceed directly to Step 6 (gate pass path).
 
@@ -143,12 +151,116 @@ Print:
 ```
 ✓ Phase [N] gate PASSED.
   Status updated in CLAUDE.md.
-  Phase [N+1] is ready to plan.
-
-Run /new-phase to plan Phase [N+1].
 ```
 
-Stop.
+If `AUTO_PHASE_MODE = false`: print `Run /new-phase to plan Phase [N+1].` and stop.
+
+If `AUTO_PHASE_MODE = true`: proceed to Step 8 (auto-continuation).
+
+---
+
+### 8. Auto-continuation (--auto only)
+
+This step runs only when `AUTO_PHASE_MODE = true`. It chains phase planning, loop execution,
+and gate review into a continuous autonomous pipeline.
+
+#### 8a. Check for next phase
+
+Read `plans/PLANS-INDEX.md` and `plans/master-plan.md` (if they exist) to determine if more
+phases are planned:
+
+- If a master plan exists with a defined Phase [N+1] description: use that description as input
+- If PLANS-INDEX.md lists a Phase [N+1] with status `not_started`: use its name as input
+- If no more phases are defined anywhere:
+  print `Programme complete. All planned phases passed gate review.` and stop
+- If uncertain (no master plan, no pre-defined phases):
+  print `Phase [N] complete. No next phase defined in master plan. Run /new-phase to plan manually.` and stop
+
+#### 8b. Plan the next phase (inline planning pipeline)
+
+Run the full planning pipeline for Phase [N+1] (same steps as `/new-phase`):
+
+1. Auto-increment phase number: `N+1`
+2. Load `.claude/skills/phase-plan-creator/SKILL.md` and follow its Process section
+   - Use the description from Step 8a as input
+   - Save to `plans/phase-[N+1].md`
+3. Load `.claude/skills/ralph-loop-planner/SKILL.md` and follow its Process section
+   - Read the phase plan just created
+   - Save to `plans/phase-[N+1]-ralph-loops.md`
+4. Load `.claude/skills/plan-todos/SKILL.md` and follow its Process section
+   - Populate `todos[]` for every loop
+5. Load `.claude/skills/plan-skill-identification/SKILL.md` and follow its Process section
+   - Glob `.claude/skills/*/SKILL.md` to discover available skills
+   - Assign `skill:` fields in-place
+6. Load `.claude/skills/plan-subagent-identification/SKILL.md` and follow its Process section
+   - Glob `.claude/agents/*.md` to discover available agents
+   - Assign `agent:` fields in-place
+7. Update `CLAUDE.md` `## Planning State` with the new phase and first loop
+
+```bash
+git add -A && git commit -m "plan: phase-[N+1] — [phase name], [loop count] loops, [todo count] todos"
+```
+
+Print:
+```
+✓ Phase [N+1] planned: [phase name]
+  Loops: [count]
+  Todos: [count]
+  Beginning execution...
+```
+
+#### 8c. Execute all loops (inline loop chaining)
+
+Run the loop execution cycle for Phase [N+1] (same logic as `/next-loop --auto`):
+
+**For each pending loop:**
+
+1. Git checkpoint:
+   ```bash
+   git add -A && git commit -m "checkpoint: before next-loop cycle" 2>/dev/null || true
+   ```
+
+2. Spawn `ralph-orchestrator` (Sonnet):
+   - Identifies next pending loop
+   - Populates todos if needed
+   - Writes `.claude/state/loop-ready.json`
+   - Returns
+
+3. Read `.claude/state/loop-ready.json`
+   - If `status: all_complete`: all loops done, proceed to Step 8d
+   - Otherwise: print loop summary
+
+4. Spawn `ralph-loop-worker` (Sonnet):
+   - Reads `loop-ready.json` for assignment
+   - Executes all todos with targeted skill injection
+   - Writes `.claude/state/loop-complete.json`
+   - Returns
+
+5. Read `.claude/state/loop-complete.json`
+
+6. Update `CLAUDE.md` `## Planning State`:
+   - Advance loop pointer
+   - Increment `todos_done`
+
+7. Git commit:
+   ```bash
+   git add -A && git commit -m "complete: [loop_name] — [handoff.done]"
+   ```
+
+8. Check continuation:
+   - If loop `status: failed`: **STOP**. Print failure details and exit auto mode.
+   - If more loops pending: return to sub-step 1 (next loop)
+   - If all loops complete: proceed to Step 8d
+
+#### 8d. Return to gate review
+
+All loops in Phase [N+1] are complete. Increment `N` and return to **Step 3** (gate review)
+to evaluate this phase before advancing further.
+
+Print:
+```
+✓ Phase [N+1] loops complete. Running gate review...
+```
 
 ### 7. Gate FAIL — create versioned retry files
 
@@ -246,3 +358,14 @@ Run /next-loop to begin Phase [N] retry (attempt [next_attempt]).
 - Versioned retry files preserve all completed work; only `loops_to_revert` are reset
 - The `do_not_repeat` field in `gate_failure_context` is carried forward through all retries
 - After all phases complete, run `/run-closeout` to produce the programme narrative
+
+### Auto mode stop conditions
+
+| Condition | Behaviour |
+|-----------|-----------|
+| Gate FAIL | Create versioned retry, STOP (manual review required) |
+| Loop FAIL during execution | STOP with loop failure details |
+| All planned phases complete | STOP with "Programme complete" message |
+| No master plan / no next phase description | STOP, prompt user to run `/new-phase` manually |
+| `--skip-gate` combined with `--auto` | Gates skipped, phases advance without review |
+| `--force` combined with `--auto` | Gate failures logged but do not stop progression |

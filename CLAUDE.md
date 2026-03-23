@@ -65,7 +65,7 @@ At each phase boundary, `/run-gate` spawns gate agents (default: `code-review-ag
 
 | Adapter | Location | Entry Point |
 |---------|----------|-------------|
-| Claude Code | `platforms/claude-code/` | Slash commands (`/plan-and-phase`, `/new-phase`, `/next-loop`, `/next-loop --auto`, `/run-gate`, `/run-closeout`, `/next-phase`, `/progress-report`, `/loop-status`, `/check-execution`, `/model-check`) |
+| Claude Code | `platforms/claude-code/` | Slash commands (`/plan-and-phase`, `/new-phase`, `/next-loop`, `/next-loop --auto`, `/run-gate`, `/run-closeout`, `/next-phase`, `/next-phase --auto`, `/progress-report`, `/loop-status`, `/check-execution`, `/model-check`) |
 | Cowork | `platforms/cowork/` | Routing `SKILL.md` + natural language |
 | Python API | `platforms/python/` | `state_manager.py`, `plan_io.py`, `handoff.py` |
 
