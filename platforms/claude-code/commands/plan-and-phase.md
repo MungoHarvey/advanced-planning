@@ -92,7 +92,6 @@ Save to `.claude/plans/phase-[N].md` (increment N based on existing phase files)
 
 Check if Plannotator is available:
 - Look for `.claude/commands/plannotator-annotate.md` (plugin command)
-- Or check if the `plannotator` binary is on PATH
 
 **If Plannotator is detected:**
 
