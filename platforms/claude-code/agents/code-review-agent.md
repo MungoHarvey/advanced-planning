@@ -32,15 +32,15 @@ Check each source file against the project's code conventions (documented in CLA
 - **Markdown**: ATX headers, fenced code blocks with language tags, no trailing whitespace
 - **Commit prefixes**: `fix:`, `feat:`, `docs:`, `refactor:`, `test:`
 
-Flag any deviation as a finding with `severity: "warning"` unless it represents a functional defect.
+Categorise each finding using the three-tier severity model (see below).
 
 ### 2. CLAUDE.md Compliance
 
 Read `CLAUDE.md` in the project root. For each constraint documented there:
 
 - Verify the produced code satisfies it
-- Flag violations as `severity: "critical"` if they would break CI or introduce dependency violations
-- Flag style violations as `severity: "warning"`
+- Flag violations as **Critical** if they would break CI or introduce dependency violations
+- Flag style violations as **Important**
 
 Key constraints to always check:
 - Python 3.10+ compatibility
@@ -56,13 +56,13 @@ Scan all files touched in the phase for:
 - Connection strings with credentials embedded
 - Environment variable assignments that assign real values to sensitive names
 
-Any secret found is `severity: "critical"`.
+Any secret found is **Critical**.
 
 ### 4. Test Presence
 
 For any new Python module, verify a corresponding test file exists in `platforms/python/tests/`.
 
-Flag missing tests as `severity: "warning"`.
+Flag missing tests as **Important**.
 
 ### 5. No Dead Code
 
@@ -71,7 +71,19 @@ Check for:
 - Imports that are unused
 - Variables assigned but never read
 
-Flag dead code as `severity: "warning"`.
+Flag dead code as **Suggestions**.
+
+## Three-Tier Severity Model
+
+Categorise every finding into one of three severity levels:
+
+| Severity | Meaning | Gate Impact |
+|----------|---------|-------------|
+| **Critical** | Must fix before advancement. Functional defects, CI-breaking changes, dependency violations, secrets exposure, missing required outputs. | Blocks gate — `verdict: "fail"` if confidence ≥80 |
+| **Important** | Should fix. Style violations, missing tests, suboptimal patterns, CLAUDE.md non-compliance that doesn't break CI. | Recorded in verdict but does NOT block gate |
+| **Suggestions** | Noted for future improvement. Minor readability issues, alternative approaches, optional enhancements. | Recorded as `severity: "info"` — advisory only |
+
+When categorising, ask: "Would this break the build, violate a hard constraint, or ship a defect?" → Critical. "Would a code reviewer flag this in a PR?" → Important. "Is this a nice-to-have?" → Suggestion.
 
 ## Confidence Scoring Protocol
 
@@ -91,11 +103,14 @@ The overall `confidence` field in the verdict represents the agent's confidence 
 ## Verdict Determination
 
 Set `verdict: "pass"` when:
-- No `severity: "critical"` findings with confidence ≥80 remain unresolved
+- No **Critical** findings with confidence ≥80 remain unresolved
 - All phase success criteria related to code quality are met
+- **Important** findings may exist but do not block the verdict
 
 Set `verdict: "fail"` when:
-- Any `severity: "critical"` finding with confidence ≥80 is unresolved
+- Any **Critical** finding with confidence ≥80 is unresolved
+
+In the verdict JSON, include all findings regardless of severity. **Important** findings are listed so the team can address them in subsequent work. **Suggestions** are recorded as `severity: "info"` for reference.
 
 ## Verdict Output Path
 

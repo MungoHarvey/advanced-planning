@@ -88,6 +88,28 @@ plus `$ARGUMENTS` as input. Follow the skill's process to produce a phase plan.
 
 Save to `.claude/plans/phase-[N].md` (increment N based on existing phase files).
 
+### Step 5b: PLANNOTATOR REVIEW (conditional)
+
+Check if Plannotator is available:
+- Look for `.claude/commands/plannotator-annotate.md` (plugin command)
+- Or check if the `plannotator` binary is on PATH
+
+**If Plannotator is detected:**
+
+Invoke `/plannotator-annotate .claude/plans/phase-[N].md` to open the phase plan in the
+browser for visual review. The user can:
+- Review the high-level plan structure
+- Annotate phases and success criteria
+- Read and tailor review gate configuration (which agents run, thresholds, criteria)
+- Approve or deny the plan
+
+**On approve:** proceed to Step 6 with the (possibly modified) phase plan.
+
+**On deny:** the annotations are returned as feedback. Re-run Step 5 with the annotation
+feedback injected as additional context for the phase-plan-creator skill. Repeat until approved.
+
+**If Plannotator is NOT detected:** skip this step and proceed directly to Step 6.
+
 ### Step 6: FULL PIPELINE
 
 Run each remaining planning skill in sequence, exactly as `/new-phase` does:

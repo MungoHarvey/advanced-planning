@@ -154,7 +154,7 @@ plans/PLANS-INDEX.md                ← Update Ralph Loops table with new entrie
 
 1. Update `plans/PLANS-INDEX.md` — add each loop to the Ralph Loops table
 2. Run `plan-todos` to expand any vague todos into atomic tasks
-3. Run `plan-skill-identification` to assign skills to each todo
+3. **MANDATORY**: Run `plan-skill-identification` to assign skills to each todo. This step is NOT optional — every todo must have a `skill:` field assigned (either a specific skill or `NA`) before execution begins. Skipping this step produces incomplete loop files.
 4. Run `plan-subagent-identification` to assign agents where appropriate
 5. Execute the first loop using the adapter's execution mechanism
 

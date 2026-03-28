@@ -120,6 +120,29 @@ For each todo with `skill: NA`:
 
 ---
 
+### `verification-before-completion`
+
+**Purpose**: Enforces evidence-based completion claims. Before marking any todo as complete, the worker must run verification commands and confirm output matches expected outcomes. Prevents false completion claims and ensures observable done conditions are actually met.
+
+**When to assign:**
+
+- Todo involves implementation work that produces files, code, or configuration
+- Todo has an outcome condition that can be verified by running a command or reading a file
+- Todo claims work is "complete", "fixed", or "passing"
+- Todo involves file creation, modification, or deletion where the result can be checked
+- Todo requires running tests, builds, or validation scripts to confirm success
+
+**When NOT to assign:**
+
+- Planning-only todos (creating plan files, writing design docs)
+- Read-only analysis or exploration tasks
+- Todos where the outcome is purely observational ("identify the insertion point")
+- Git operations (commits, checkpoints) — these are mechanical, not verification-worthy
+
+**Trigger keywords**: verify, confirm, check, validate, ensure, complete, done, passing, implementation, build, test, fix
+
+---
+
 ### `progress-report`
 
 **Purpose**: Reads plan files, loop handoff summaries, todo statuses, and git commit history
@@ -138,6 +161,26 @@ to produce a structured markdown progress report. Read-only synthesis — never 
 - Populating todos (use `plan-todos` instead)
 
 **Trigger keywords**: progress report, status report, what happened, show progress, review progress, audit, summarise completed work, loop summary
+
+---
+
+### `companion-detection`
+
+**Purpose**: Detects whether companion tools (Superpowers, Plannotator) are installed and recommends them when relevant. Produces no files — outputs conversational recommendations only.
+
+**When to assign:**
+
+- Todo content describes checking for companion tools or recommending integrations
+- Todo involves session setup or environment verification
+- Todo is "check for available integrations" or "recommend companion tools"
+
+**When NOT to assign:**
+
+- Any execution work — this skill is advisory-only
+- Todos that need actual companion functionality (use the companion's skills directly)
+- Already inside a loop where companions are being used
+
+**Trigger keywords**: companion detection, check integrations, recommend tools, session setup, environment check
 
 ---
 
@@ -171,6 +214,8 @@ Each skill operates on the output of the previous. Running them out of order pro
 | Assign skill: fields in todos | `plan-skill-identification` |
 | Assign agent: fields in todos | `plan-subagent-identification` |
 | Generate progress report or status summary | `progress-report` |
+| Implementation todos claiming completion | `verification-before-completion` |
+| Check for companion tools, recommend integrations | `companion-detection` |
 | General file I/O, git ops, simple scripting | `NA` |
 | Verification scans, grep checks | `NA` |
 | Writing handoff_summary or loop-complete.json | `NA` |
