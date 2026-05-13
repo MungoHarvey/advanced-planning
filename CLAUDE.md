@@ -15,6 +15,9 @@ python -m pytest platforms/python/tests/ -v
 # Run a single test file
 python -m pytest platforms/python/tests/test_state_manager.py -v
 
+# Run a single test by node id
+python -m pytest platforms/python/tests/test_state_manager.py::TestClassName::test_name -v
+
 # Validate JSON schemas
 python -c "import json, pathlib; [json.loads(f.read_text()) for f in pathlib.Path('core/state').glob('*.json')]"
 
@@ -28,7 +31,7 @@ powershell setup/claude-code/install.ps1 -Project /path/to/your/project  # Windo
 **Core** (`core/`) is platform-agnostic. **Adapters** (`platforms/`) wrap it for specific environments. Adapters reference the core but never duplicate it.
 
 - `core/schemas/` — Markdown schema definitions for phase-plan, ralph-loop, todo, handoff
-- `core/skills/` — Six planning skills loaded per-todo by targeted injection (load → execute → unload)
+- `core/skills/` — Seven planning skills loaded per-todo by targeted injection (load → execute → unload). Includes `companion-detection`, which scans todos for Plannotator review opportunities.
 - `core/agents/` — Abstract orchestrator, worker, and gate-reviewer role definitions
 - `core/state/` — JSON schemas for the filesystem state bus
 
@@ -68,6 +71,8 @@ At each phase boundary, `/run-gate` spawns gate agents (default: `code-review-ag
 | Claude Code | `platforms/claude-code/` | Slash commands (`/plan-and-phase`, `/new-phase`, `/next-loop`, `/next-loop --auto`, `/run-gate`, `/run-closeout`, `/next-phase`, `/next-phase --auto`, `/progress-report`, `/loop-status`, `/check-execution`, `/model-check`) |
 | Cowork | `platforms/cowork/` | Routing `SKILL.md` + natural language |
 | Python API | `platforms/python/` | `state_manager.py`, `plan_io.py`, `handoff.py` |
+
+**`--auto` flag**: `/next-loop --auto` chains loops until the phase plan is exhausted; `/next-phase --auto` chains gate review → next-phase planning → loop execution across phase boundaries until the programme completes or a gate fails.
 
 ### Runtime Directory
 
@@ -117,6 +122,7 @@ Override agent tiers via the `model:` field in agent frontmatter. Skills are mod
 - Core files must never reference platform-specific paths (no `.claude/` in core)
 - New skills require frontmatter (`name`, `description`) and sections: `## When to Use`, `## Process`, `## Output Format`. Skills are model-agnostic — the executing agent's model determines capability, not the skill.
 - Plan files use YAML frontmatter in markdown; ralph loops contain `todos[]` arrays with canonical field order (`id`/`content`/`skill`/`agent`/`outcome`/`status`/`priority`)
+- Todos may declare a single skill (string) or multiple skills (array); discovery checks both project-local (`.claude/skills/`) and global (`~/.claude/skills/`) directories
 
 ## CI
 

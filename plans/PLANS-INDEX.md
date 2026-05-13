@@ -21,6 +21,21 @@ Tracking document for the **Advanced Planning System — Open-Source Restructure
 | 3 | Cowork Adapter | [`phase-3.md`](phase-3.md) | **complete** | 008–009 | Routing skill, agent prompts, snapshot checkpoints |
 | 4 | Generic + Release | [`phase-4.md`](phase-4.md) | **complete** | 010–012 | Python API, docs, examples, GitHub release |
 | 5 | Gate Review Sub-Phase | [`phase-5.md`](phase-5.md) | **complete** | 013–018 | Gate agents, /run-gate, /next-phase, versioning utilities, plugin scaffold |
+| 6 | Compaction Schema Audit & Lock | [`phase-6.md`](phase-6.md) | **pending** | 019–022 | Verdict audit, cold/hot schemas, retrospective worked example for Phase 5 |
+
+---
+
+## Compaction Programme (Phases 6–10)
+
+Building the Phase-End Compaction System per design doc `~/.gstack/projects/MungoHarvey-advanced-planning/mharvey2-main-design-20260513-103520.md`.
+
+| Phase | Name | Status | Purpose |
+|-------|------|--------|---------|
+| 6 | Compaction Schema Audit & Lock | **pending** | Foundation: schemas + worked example |
+| 7 | `/phase-compact` Slash Command | not yet planned | Manual end-to-end implementation |
+| 8 | `phase-compactor` Agent Promotion | not yet planned | Convert slash command to agent (Sonnet) |
+| 9 | Automatic Trigger via `gate_pass` | not yet planned | history.jsonl polling, /clear + reload |
+| 10 | `/load-phase-context` Retrieval | not yet planned | On-demand cold artefact loading |
 
 ---
 
@@ -46,6 +61,10 @@ Tracking document for the **Advanced Planning System — Open-Source Restructure
 | 016 | 5 | Gate Commands | `phase-5-ralph-loops.md` | **complete** | — | 1 |
 | 017 | 5 | Python Versioning Utilities | `phase-5-ralph-loops.md` | **complete** | — | 1 |
 | 018 | 5 | Integration Verification | `phase-5-ralph-loops.md` | **complete** | — | 1 |
+| 019 | 6 | Verdict Format Audit | `phase-6-ralph-loops.md` | **pending** | — | 1 |
+| 020 | 6 | Schema Drafts | `phase-6-ralph-loops.md` | **pending** | — | 1 |
+| 021 | 6 | Retrospective Worked Example | `phase-6-ralph-loops.md` | **pending** | — | 1 |
+| 022 | 6 | Schema Lock & Cross-Reference | `phase-6-ralph-loops.md` | **pending** | — | 1 |
 
 ---
 
