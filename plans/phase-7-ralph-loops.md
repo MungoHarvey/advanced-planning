@@ -157,9 +157,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "Wrote platforms/claude-code/commands/phase-compact.md with frontmatter, description, 12-step numbered Steps section, Error Modes table, and Notes; covers arg parsing, anchor SHA resolution with history.jsonl fallback, gate verdict read, history slice, git log range, cold artefact write with idempotency, hot manifest write with idempotency, schema validation against both locked schema checklists, and gate-fail artefact naming."
   failed: ""
-  needed: ""
+  needed: "Proceed to loop 025: execute /phase-compact 6 step-by-step against Phase 6 to produce plans/phase-completes/phase-6-complete.md and a PLANS-INDEX.md manifest entry, then verify idempotency."
 
 todos:
   - id: "loop-024-1"
@@ -167,7 +167,7 @@ todos:
     skill: "writing-skills"
     agent: "ralph-loop-worker"
     outcome: "platforms/claude-code/commands/phase-compact.md exists with proper frontmatter, a one-paragraph description, and a numbered Steps section; matches the structural pattern of platforms/claude-code/commands/run-gate.md and platforms/claude-code/commands/next-phase.md"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-024-2"
@@ -175,7 +175,7 @@ todos:
     skill: "writing-skills"
     agent: "ralph-loop-worker"
     outcome: "phase-compact.md Steps section includes explicit Step for parsing phase-id, reading phase plan frontmatter for anchor_sha, falling back to history.jsonl inference if absent, and erroring clearly if neither resolves"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-024-3"
@@ -183,7 +183,7 @@ todos:
     skill: "writing-skills"
     agent: "ralph-loop-worker"
     outcome: "phase-compact.md Steps section enumerates inputs read (phase plan path, gate-verdict path, history.jsonl filter, git log <anchor>..<end>) with concrete commands shown for each"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-024-4"
@@ -191,7 +191,7 @@ todos:
     skill: "writing-skills"
     agent: "ralph-loop-worker"
     outcome: "phase-compact.md Steps section enumerates write outputs with paths, explicit idempotency rules (detect existing cold artefact / manifest entry for the same phase and update-in-place rather than duplicating), and a validation step that runs the schema checklists from docs/phase-complete.schema.md and docs/phase-manifest-entry.schema.md"
-    status: pending
+    status: completed
     complexity: high
     priority: high
   - id: "loop-024-5"
@@ -199,7 +199,7 @@ todos:
     skill: "writing-skills"
     agent: "ralph-loop-worker"
     outcome: "phase-compact.md includes an 'Error Modes' or 'Notes' section listing: missing phase plan (error), missing anchor SHA (error after fallback fails), schema validation failure (error with checklist diff), gate-failed input (writes phase-N-complete-v<attempt>-failed.md per design doc rather than the pass-form artefact)"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
 

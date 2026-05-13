@@ -1,0 +1,342 @@
+---
+description: Compact a completed phase into a cold artefact and hot manifest entry. Run after gate review passes to produce plans/phase-completes/phase-N-complete.md and update plans/PLANS-INDEX.md. Idempotent — safe to re-run.
+allowed-tools: Read, Write, Glob, Bash, Edit
+argument-hint: "<phase-id>"
+---
+
+# /phase-compact
+
+Produce the phase compaction artefacts for a completed phase. This command runs on the main
+thread immediately after a gate pass. It reads the phase plan, gate verdict, history, and git
+log, then writes a cold artefact (`plans/phase-completes/phase-N-complete.md`) and updates the
+hot manifest (`plans/PLANS-INDEX.md`). Both outputs are validated against their locked schemas
+before any file is written. The command is idempotent: if artefacts already exist for this
+phase, it updates them in-place rather than duplicating.
+
+## Steps
+
+### 1. Parse `<phase-id>` argument
+
+Read `$ARGUMENTS`. Accept either a bare integer (`6`) or the prefixed form (`phase-6`). Strip
+the `phase-` prefix if present and set `N` to the resulting integer.
+
+If `$ARGUMENTS` is empty or does not resolve to a positive integer:
+```
+Error: /phase-compact requires a phase-id argument.
+Usage: /phase-compact <phase-id>   (e.g. /phase-compact 6  or  /phase-compact phase-6)
+```
+Stop.
+
+Print: `→ Compacting phase [N]`
+
+### 2. Locate phase plan
+
+Locate the phase plan file:
+
+```bash
+ls plans/phase-[N].md 2>/dev/null || ls plans/phase-[N]-*.md 2>/dev/null | head -1
+```
+
+If no file is found:
+```
+Error: Phase plan not found. Expected plans/phase-[N].md (or plans/phase-[N]-*.md).
+Cannot compact a phase with no plan on disk.
+```
+Stop.
+
+Set `PHASE_PLAN` to the resolved path. Read the file's YAML frontmatter.
+
+### 3. Resolve `anchor_sha`
+
+**Primary path:** read `anchor_sha:` from `PHASE_PLAN` frontmatter. If present and non-empty,
+set `ANCHOR_SHA` to that value and continue to Step 4.
+
+**Fallback path:** if `anchor_sha` is absent from frontmatter, infer from `history.jsonl`:
+
+```bash
+# Find earliest event for phase N
+grep '"phase":"phase-[N]"' .claude/state/history.jsonl | head -1
+```
+
+Extract the `timestamp` field from the first matching event. Then:
+
+```bash
+git log --before="<timestamp>" -1 --format=%h
+```
+
+Set `ANCHOR_SHA` to the result.
+
+If neither path resolves a SHA:
+```
+Error: Cannot determine anchor SHA for phase [N].
+  Checked: plans/phase-[N].md frontmatter (anchor_sha field absent)
+  Checked: .claude/state/history.jsonl (no events for phase [N] found)
+Cannot write a conforming artefact without a verifiable anchor SHA.
+```
+Stop.
+
+Verify the SHA resolves:
+
+```bash
+git rev-parse --short [ANCHOR_SHA]
+```
+
+Print: `  anchor_sha: [ANCHOR_SHA]`
+
+### 4. Resolve `end_sha`
+
+Scan the git log for the gate-pass commit or the last commit that belongs to phase N.
+
+```bash
+git log --oneline | grep -i "gate.*pass\|phase.*[N].*gate\|complete.*phase.*[N]" | head -5
+```
+
+If a gate-pass commit is identifiable, use its short SHA. Otherwise use the most recent commit
+whose message references phase N, or fall back to the latest commit prior to or at the
+gate-pass history event timestamp:
+
+```bash
+# Timestamp of gate_pass event for phase N
+grep '"event":"gate_pass","phase":"phase-[N]"' .claude/state/history.jsonl | tail -1
+# then:
+git log --before="<gate_pass_timestamp>" -1 --format=%h
+```
+
+Set `END_SHA`.
+
+Print: `  end_sha: [END_SHA]`
+
+### 5. Read gate verdict file
+
+Determine the latest attempt number for phase N:
+
+```bash
+ls plans/gate-verdicts/phase-[N]-attempt-*-phase-goals-agent.json 2>/dev/null | sort | tail -1
+```
+
+If a file is found, set `VERDICT_PATH` to that path. Read the file and extract:
+- `verdict` field (`pass` or `fail`)
+- `criteria_outcomes` array (if present) — used in Step 8
+- `phase_title` field (if present) — used as title fallback
+
+If no verdict file is found, set `VERDICT_PATH` to the sentinel string
+`"n/a — pre-gate-review phase"` and set `VERDICT_NOTE` to a one-sentence explanation
+(e.g. `"Phase completed before gate review system was introduced"`).
+
+**Gate-fail input:** if `verdict` is `"fail"`, do not write the standard pass-form artefact.
+See the Error Modes section below.
+
+Print: `  gate_verdict_ref: [VERDICT_PATH]`
+
+### 6. Slice `history.jsonl` for phase N
+
+```bash
+grep '"phase":"phase-[N]"' .claude/state/history.jsonl
+```
+
+Collect all events. Note the count of `loop_complete` events — this is the `loop_count` for
+the cold artefact. Note the `gate_pass` event (confirms the phase passed).
+
+Print: `  loop_count: [count]`
+
+### 7. Capture git commit range
+
+```bash
+git rev-list --count [ANCHOR_SHA]..[END_SHA]
+```
+
+Add 1 for the anchor itself to get `COMMIT_COUNT`.
+
+Also capture the oneline log for reference:
+
+```bash
+git log [ANCHOR_SHA]..[END_SHA] --oneline
+```
+
+Print: `  commit_count: [COMMIT_COUNT]  ([ANCHOR_SHA]..[END_SHA])`
+
+### 8. Compute body sections
+
+Derive the three body sections (`Goals met`, `Deferred`, `Opened`) using this priority order:
+
+**If the verdict file is present and contains `criteria_outcomes`:**
+- `Goals met`: one bullet per entry where `status: pass`. Each bullet must end with a
+  concrete evidence pointer (commit SHA, file path, or verdict path from `evidence` field).
+- `Deferred`: one bullet per entry where `status: deferred`. Include `deferred_to` if set.
+- `Opened`: one bullet per finding in the verdict's `findings` that is informational rather
+  than blocking, plus any new questions surfaced during the phase.
+
+**Fallback (no `criteria_outcomes`):** read the phase plan's `## Success Criteria` section.
+For each criterion, check the completed loop handoff summaries (from the phase-N-ralph-loops
+file's `handoff_summary.done` fields) to infer `pass` or `deferred`. Use judgment: if a
+handoff explicitly states the criterion was met, mark it as met with a pointer to that loop's
+commit range.
+
+**Hard rules (from schema):**
+- Each bullet is exactly one line — no wrapping, no sub-bullets.
+- No prose paragraphs in any section.
+- If nothing was deferred, write `- (none)`.
+- If nothing was opened, write `- (none)`.
+
+### 9. Write cold artefact
+
+**Idempotency check:** before writing, test whether the artefact already exists:
+
+```bash
+ls plans/phase-completes/phase-[N]-complete.md 2>/dev/null
+```
+
+If the file exists, update it in-place (overwrite with the newly computed content). Do not
+append — a second run must produce exactly one file, not two. Print:
+`  (updating existing cold artefact in-place)`
+
+If the file does not exist, create the directory first:
+
+```bash
+mkdir -p plans/phase-completes
+```
+
+Write `plans/phase-completes/phase-[N]-complete.md` with this exact structure:
+
+```markdown
+---
+phase: [N]
+title: "[title from phase plan frontmatter or phase_title from verdict]"
+status: passed
+gate_verdict_ref: [VERDICT_PATH or sentinel string]
+gate_verdict_note: "[VERDICT_NOTE — only if sentinel used]"
+anchor_sha: [ANCHOR_SHA]
+end_sha: [END_SHA]
+commit_count: [COMMIT_COUNT]
+loop_count: [LOOP_COUNT]
+created: [ISO 8601 timestamp]
+---
+
+## Goals met
+[bullets from Step 8]
+
+## Deferred
+[bullets from Step 8, or - (none)]
+
+## Opened
+[bullets from Step 8, or - (none)]
+```
+
+Omit `gate_verdict_note` entirely when a real verdict path is present.
+
+### 10. Write hot manifest entry
+
+**Idempotency check:** read `plans/PLANS-INDEX.md`. Search for an existing entry for phase N:
+
+```bash
+grep -n "^- phase: [N]$" plans/PLANS-INDEX.md
+```
+
+If an entry is found, locate its block (from that line through the next `- phase:` or
+end-of-file) and overwrite it in-place with the updated entry. Do not append a duplicate.
+Print: `  (updating existing manifest entry in-place)`
+
+If no entry exists, append the new entry at the end of the phase list, maintaining ascending
+phase order. If `PLANS-INDEX.md` does not exist, create it.
+
+The entry must be exactly this structure (≤8 lines — count every line including the opening
+`- phase:` line):
+
+```yaml
+- phase: [N]
+  title: "[title]"
+  status: passed
+  commits: [ANCHOR_SHA]..[END_SHA]
+  detail: plans/phase-completes/phase-[N]-complete.md
+  highlights:
+    - [one-line highlight: primary goal met, with evidence]
+    - [one-line highlight: key decision or deferral]
+```
+
+Maximum 2 highlights. If only one highlight is meaningful, use one. Count the lines: 8 is the
+absolute ceiling.
+
+### 11. Validate both artefacts
+
+Run every item in the `docs/phase-complete.schema.md` Validation Checklist and every item in
+`docs/phase-manifest-entry.schema.md` Validation Checklist. Check each item explicitly.
+
+Key automated checks:
+
+```bash
+# Confirm anchor and end SHAs resolve
+git rev-parse --short [ANCHOR_SHA]
+git rev-parse --short [END_SHA]
+
+# Confirm commit_count is within ±1 of rev-list output
+git rev-list --count [ANCHOR_SHA]..[END_SHA]
+
+# Confirm cold artefact exists at expected path
+ls plans/phase-completes/phase-[N]-complete.md
+
+# Confirm manifest entry is ≤8 lines
+awk '/^- phase: [N]$/,/^- phase: [0-9]/' plans/PLANS-INDEX.md | head -20 | wc -l
+```
+
+If **any** checklist item fails, stop and print a diff of the failing item:
+
+```
+Error: Schema validation failed.
+  Checklist item: [exact item text from schema doc]
+  Expected: [expected value or condition]
+  Found:    [actual value or condition]
+Artefacts written but INVALID. Fix before advancing to next phase.
+```
+
+Do not silently write a non-conforming artefact.
+
+### 12. Print summary
+
+```
+✓ Phase [N] compacted.
+
+  Cold artefact:  plans/phase-completes/phase-[N]-complete.md
+  Manifest entry: plans/PLANS-INDEX.md (phase [N] block)
+  Anchor SHA:     [ANCHOR_SHA]
+  End SHA:        [END_SHA]
+  Commits:        [COMMIT_COUNT]
+  Loops:          [LOOP_COUNT]
+  Gate verdict:   [VERDICT_PATH]
+  Validation:     all checklist items pass
+
+Run /next-phase (or continue planning) to begin the next phase.
+```
+
+## Error Modes
+
+| Condition | Behaviour |
+|-----------|-----------|
+| Missing `<phase-id>` argument | Print usage error and stop immediately |
+| Phase plan not found at `plans/phase-[N].md` | Print error with expected path and stop |
+| `anchor_sha` absent from frontmatter AND no phase-N events in `history.jsonl` | Print error listing both fallback paths tried and stop |
+| `anchor_sha` or `end_sha` does not resolve via `git rev-parse` | Print the failing SHA and stop |
+| Schema validation failure (cold artefact or manifest entry) | Print per-item diff of each failing checklist item; do not silently advance |
+| Gate-fail input (`verdict: fail` in verdict file) | Write `plans/phase-completes/phase-[N]-complete-v[attempt]-failed.md` with `status: failed_v[attempt]`; manifest entry uses `status: failed_v[attempt]`; do not overwrite any existing pass-form artefact |
+
+## Notes
+
+**Idempotency guarantee:** running `/phase-compact [N]` twice produces the same cold artefact
+and exactly one manifest entry. The second run updates in-place; it does not duplicate. SHAs
+and `commit_count` are re-computed from git each time, so the artefact remains accurate if
+commits were amended between runs (though this is discouraged after gate pass).
+
+**No subagents:** this command runs on the main thread only. It does not spawn agents. Phase 8
+of the compaction programme promotes this logic into a `phase-compactor` agent with a scoped
+tool allowlist; until then, the main thread executes all steps directly.
+
+**No `/clear` here:** context clearing (Phase 9) is a separate concern. Run `/phase-compact`
+first to write artefacts, then apply `/clear` separately if desired.
+
+**Gate-fail artefacts:** failed-attempt artefacts (`phase-[N]-complete-v[M]-failed.md`) persist
+on disk when the phase is retried. If a later attempt passes, the pass-form artefact
+(`phase-[N]-complete.md`) is written alongside the failed versions. The manifest entry is
+updated to `status: passed` on the passing run.
+
+**`phase-goals-agent` verdict as primary input:** the command consumes the `phase-goals-agent`
+verdict file, not the `code-review-agent` verdict. If both agents ran, reference only the
+`phase-goals-agent` file in `gate_verdict_ref`.
