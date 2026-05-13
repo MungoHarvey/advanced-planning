@@ -1,0 +1,36 @@
+{
+  "phase": "phase-6",
+  "attempt": 1,
+  "timestamp": "2026-05-13T12:00:00Z",
+  "agent": "code-review-agent",
+  "verdict": "pass",
+  "confidence": 95,
+  "findings": [
+    {
+      "severity": "info",
+      "location": "docs/phase-complete.schema.md",
+      "description": "The 'Worked Example Skeleton' section renders two separate YAML frontmatter blocks in a single fenced code block without a separator between them. The first block (phase: 5 passed example) and the second block (phase: 4 pre-gate-review sentinel example) are labelled by an inline comment '# Alternative: pre-gate-review phase' but this is not valid YAML — two frontmatter blocks in a single fence could confuse automated parsers. The schema's intent is clear from context, and the two examples are only illustrative, not normative.",
+      "evidence": "docs/phase-complete.schema.md lines 120-157: two --- delimited YAML blocks within one markdown fenced block"
+    },
+    {
+      "severity": "info",
+      "location": "core/schemas/README.md",
+      "description": "The cross-reference links to the compaction schemas use paths relative to core/schemas/ (e.g. '../../docs/phase-complete.schema.md'). These are valid relative paths from the file's location but will not render correctly in GitHub's file browser when navigating to the README directly from core/schemas/. The links work from the repo root and are correct as file references; this is a minor display issue only.",
+      "evidence": "core/schemas/README.md lines 24-25: links use ../../docs/ prefix"
+    },
+    {
+      "severity": "info",
+      "location": "docs/phase-goals-verdict-audit.md",
+      "description": "The extension spec (criteria_outcomes, phase_title fields) is documented as a Phase 7 implementation task but the audit document does not note that core/state/gate-verdict.schema.json would need additionalProperties: false relaxed before the new fields can be added. This is a minor omission that does not affect Phase 6 deliverables — implementation planning belongs to Phase 7.",
+      "evidence": "docs/phase-goals-verdict-audit.md line 205: 'additionalProperties: false at the top level must be updated to permit these two new fields' — this is mentioned, so the issue is adequately flagged"
+    },
+    {
+      "severity": "info",
+      "location": "plans/phase-completes/phase-5-complete.md",
+      "description": "The loop_count field states 6. Phase 5 had loops 013-018 which is exactly 6 loops — this is correct. The commit_count field states 7, matching git rev-list --count 2214691..9e1aef4 (6 exclusive) + 1 for inclusive boundary = 7. Both values verified against git log.",
+      "evidence": "git log --oneline 2214691..9e1aef4 lists 6 commits; git rev-list --count returns 6; inclusive count is 7 as documented"
+    }
+  ],
+  "loops_to_revert": [],
+  "failure_notes": []
+}

@@ -1,0 +1,54 @@
+{
+  "phase": "phase-6",
+  "attempt": 1,
+  "timestamp": "2026-05-13T12:30:00Z",
+  "agent": "phase-goals-agent",
+  "verdict": "pass",
+  "confidence": 97,
+  "findings": [
+    {
+      "severity": "info",
+      "location": "docs/phase-complete.schema.md",
+      "description": "Criterion 1 satisfied. All 10 frontmatter fields (phase, title, status, gate_verdict_ref, gate_verdict_note, anchor_sha, end_sha, commit_count, loop_count, created) are defined with type, Required, Valid Values, and Example columns. Field rules section adds precise constraints beyond the table.",
+      "evidence": "docs/phase-complete.schema.md lines 16-26 (table) and lines 29-36 (Field Rules)"
+    },
+    {
+      "severity": "info",
+      "location": "docs/phase-manifest-entry.schema.md",
+      "description": "Criterion 2 satisfied. File exists, enforces ≤8-line ceiling as a hard rule (Hard Rules section, rule 1), provides a complete worked example counted at 8 lines, and includes a validation checklist with a line-count check item.",
+      "evidence": "docs/phase-manifest-entry.schema.md lines 36-43 (Hard Rules) and lines 64-76 (Worked Example with line count annotation)"
+    },
+    {
+      "severity": "info",
+      "location": "docs/phase-goals-verdict-audit.md",
+      "description": "Criterion 3 satisfied. Audit document states the current output is NOT sufficient (Gap Analysis section, two gaps identified), and names every additional field needed: criteria_outcomes (array of objects with criterion/status/evidence/deferred_to sub-fields) and phase_title (string). Full type, semantics, and default specified for each.",
+      "evidence": "docs/phase-goals-verdict-audit.md lines 108-113 (gap summary), lines 121-158 (criteria_outcomes spec), lines 160-176 (phase_title spec)"
+    },
+    {
+      "severity": "info",
+      "location": "plans/phase-completes/phase-5-complete.md",
+      "description": "Criterion 4 satisfied. File exists with all required frontmatter fields. gate_verdict_ref uses the correct sentinel value with gate_verdict_note present. anchor_sha 2214691 and end_sha 9e1aef4 are recorded. Body sections contain concrete evidence pointers (commit SHAs). Faithfully represents Phase 5 outcomes drawn from plan and git log.",
+      "evidence": "plans/phase-completes/phase-5-complete.md lines 1-12 (frontmatter), lines 14-25 (Goals met), lines 27-29 (Deferred), lines 31-32 (Opened)"
+    },
+    {
+      "severity": "info",
+      "location": "plans/phase-completes/phase-5-complete.md",
+      "description": "Criterion 5 satisfied. All three body sections (## Goals met, ## Deferred, ## Opened) contain only single-line bullet items. No prose paragraphs anywhere in the body.",
+      "evidence": "plans/phase-completes/phase-5-complete.md: Goals met has 10 single-line bullets, Deferred has 3 single-line bullets, Opened has 2 single-line bullets — no multi-line or prose entries"
+    },
+    {
+      "severity": "info",
+      "location": "docs/phase-complete.schema.md",
+      "description": "Criterion 6 satisfied. Anchor SHA Decision section names frontmatter field on the phase plan (written by phase-plan-creator) as the chosen mechanism, states who writes it and when, documents the history.jsonl inference fallback, and explicitly rejects git tags with two reasons.",
+      "evidence": "docs/phase-complete.schema.md lines 104-115 (Anchor SHA Decision section)"
+    },
+    {
+      "severity": "info",
+      "location": "docs/phase-complete.schema.md, docs/phase-manifest-entry.schema.md, docs/phase-goals-verdict-audit.md",
+      "description": "Criterion 7 satisfied. The three schema docs collectively provide: every frontmatter field with type/rules/examples, all body section constraints with one-line-bullet hard rules, the anchor SHA mechanism with fallback, a 13-item validation checklist, a complete worked-example skeleton, and an extension spec for the verdict format. A reviewer can produce a conformant phase-N-complete.md entirely from these three documents.",
+      "evidence": "Validation checklist at docs/phase-complete.schema.md lines 84-98 covers all 13 artefact requirements; worked example at lines 120-157 shows complete file structure"
+    }
+  ],
+  "loops_to_revert": [],
+  "failure_notes": []
+}
