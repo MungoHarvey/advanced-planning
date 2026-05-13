@@ -151,9 +151,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "docs/phase-complete.schema.md and docs/phase-manifest-entry.schema.md drafted with full field specs, validation checklists, and worked examples; anchor SHA mechanism documented with git-tag alternative rejected; core/schemas/README.md created referencing all six schemas."
   failed: ""
-  needed: ""
+  needed: "Loop 021: produce the retrospective worked example for Phase 5 using the locked schemas as the validation contract."
 
 todos:
   - id: "loop-020-1"
@@ -161,7 +161,7 @@ todos:
     skill: "writing-skills"
     agent: "ralph-loop-worker"
     outcome: "docs/phase-complete.schema.md exists with sections: Purpose, Frontmatter Fields (table: name/type/required/valid values/example), Body Sections (goals_met/deferred/opened with one-line bullet rule), Anchor SHA Decision, Validation Checklist, and a complete worked-example skeleton showing the full structure"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-020-2"
@@ -169,7 +169,7 @@ todos:
     skill: "writing-skills"
     agent: "ralph-loop-worker"
     outcome: "docs/phase-manifest-entry.schema.md exists with: Purpose, YAML field spec table (phase, title, status, commits, detail, highlights), Hard Rules section stating the ≤8-line ceiling explicitly, max 2 highlights bullets, one complete worked example block, and a Validation Checklist"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-020-3"
@@ -177,7 +177,7 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "docs/phase-complete.schema.md 'Anchor SHA Decision' section names the chosen mechanism (frontmatter on phase plan with history.jsonl inference fallback), states who writes it and when, and includes one alternative considered with the reason it was rejected"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-020-4"
@@ -185,7 +185,7 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "core/schemas/README.md (or equivalent index) lists the two new schemas under docs/ with one-line descriptions and links; if no index file exists, create core/schemas/README.md with entries for all existing core schemas plus the two new ones"
-    status: pending
+    status: completed
     complexity: low
     priority: medium
 
