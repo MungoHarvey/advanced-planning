@@ -1,8 +1,0 @@
-- phase: 5
-  title: "Gate Review Sub-Phase & Invocation Improvements"
-  status: passed
-  commits: 2214691..9e1aef4
-  detail: plans/phase-completes/phase-5-complete.md
-  highlights:
-    - Gate review system (run-gate, next-phase, run-closeout) and versioning utilities delivered
-    - 70/70 Python tests pass; all gate agents and commands installed

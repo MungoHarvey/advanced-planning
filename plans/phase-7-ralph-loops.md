@@ -462,9 +462,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "Deleted legacy plans/phase-completes/phase-5-manifest-entry.yaml (superseded by PLANS-INDEX.md); added 'Future Agent Promotion (Phase 8)' section to phase-compact.md with exact phase-compactor frontmatter and tool-scope table; added /phase-compact to CLAUDE.md Platform Adapters slash commands list; marked Phase 7 complete and loops 023-026 complete in PLANS-INDEX.md; set Phase 8 status to 'ready to plan'."
   failed: ""
-  needed: ""
+  needed: "Phase 7 complete. Run /run-gate (or /next-phase --auto) to review Phase 7 outputs; on pass, plan Phase 8 (phase-compactor agent promotion)."
 
 todos:
   - id: "loop-026-1"
@@ -472,7 +472,7 @@ todos:
     skill: "writing-skills"
     agent: "ralph-loop-worker"
     outcome: "Every gap listed in loop-025's handoff is either resolved (patch applied) or explicitly deferred with reason; relevant files (schemas or command spec) updated accordingly"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-026-2"
@@ -480,7 +480,7 @@ todos:
     skill: "writing-skills"
     agent: "ralph-loop-worker"
     outcome: "A short documentation section (in platforms/claude-code/commands/phase-compact.md or a new file at platforms/claude-code/agents/README.md) describes the required tool allowlist for the future phase-compactor agent: Read, Write scoped to plans/phase-completes/ and plans/PLANS-INDEX.md, Bash scoped to git log/show, Glob, Grep; mirrors the phase-goals-agent permission pattern"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-026-3"
@@ -488,7 +488,7 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "CLAUDE.md contains a one-paragraph reference to /phase-compact under the relevant section (likely Platform Adapters or the Commands list); the entry links to platforms/claude-code/commands/phase-compact.md"
-    status: pending
+    status: completed
     complexity: low
     priority: medium
   - id: "loop-026-4"
@@ -496,7 +496,7 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "plans/PLANS-INDEX.md: Phase 7 row status complete; loops 023-026 all status complete in Ralph Loops table; Compaction Programme block updated (Phase 7 complete, Phase 8 ready to plan)"
-    status: pending
+    status: completed
     complexity: low
     priority: medium
 

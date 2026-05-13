@@ -340,3 +340,37 @@ updated to `status: passed` on the passing run.
 **`phase-goals-agent` verdict as primary input:** the command consumes the `phase-goals-agent`
 verdict file, not the `code-review-agent` verdict. If both agents ran, reference only the
 `phase-goals-agent` file in `gate_verdict_ref`.
+
+## Future Agent Promotion (Phase 8)
+
+Phase 8 of the compaction programme promotes this slash command into a `phase-compactor` agent
+running on Sonnet. The agent will carry a scoped tool allowlist that mirrors the pattern
+established by `phase-goals-agent` (see `platforms/claude-code/agents/phase-goals-agent.md` and
+`docs/phase-goals-verdict-audit.md` for the precedent).
+
+**Required agent frontmatter for `phase-compactor`:**
+
+```yaml
+---
+name: phase-compactor
+description: "Compacts a completed phase into a cold artefact and hot manifest entry. Spawned automatically after a gate_pass event. Writes plans/phase-completes/phase-N-complete.md and updates plans/PLANS-INDEX.md."
+model: sonnet
+tools: Read, Glob, Grep, Bash(git log:*, git show:*, git diff:*, git rev-list:*, git rev-parse:*), Write(plans/phase-completes/*), Write(plans/PLANS-INDEX.md)
+triggers: "phase compact, compaction, gate pass, phase complete"
+---
+```
+
+**Tool scope rationale:**
+
+| Tool | Scope | Reason |
+|------|-------|--------|
+| `Read` | unrestricted | Must read phase plans, loop files, verdict files, history.jsonl, schema docs |
+| `Glob` | unrestricted | Locate phase plans, verdict files, and loop files by pattern |
+| `Grep` | unrestricted | Slice history.jsonl; search PLANS-INDEX.md for existing entries |
+| `Bash` | `git log:*`, `git show:*`, `git diff:*`, `git rev-list:*`, `git rev-parse:*` | Resolve anchor/end SHAs, compute commit counts, verify SHAs exist |
+| `Write` | `plans/phase-completes/*` | Write cold artefact only — no other write target |
+| `Write` | `plans/PLANS-INDEX.md` | Update hot manifest — scoped to this single file |
+
+**What the agent must NOT have:** `Edit`, `MultiEdit`, `Write` to any path outside
+`plans/phase-completes/` and `plans/PLANS-INDEX.md`. The agent reads widely but writes narrowly —
+the same discipline `phase-goals-agent` applies to `plans/gate-verdicts/`.

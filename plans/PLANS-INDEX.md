@@ -22,7 +22,7 @@ Tracking document for the **Advanced Planning System — Open-Source Restructure
 | 4 | Generic + Release | [`phase-4.md`](phase-4.md) | **complete** | 010–012 | Python API, docs, examples, GitHub release |
 | 5 | Gate Review Sub-Phase | [`phase-5.md`](phase-5.md) | **complete** | 013–018 | Gate agents, /run-gate, /next-phase, versioning utilities, plugin scaffold |
 | 6 | Compaction Schema Audit & Lock | [`phase-6.md`](phase-6.md) | **complete** | 019–022 | Verdict audit, cold/hot schemas, retrospective worked example for Phase 5, schemas locked |
-| 7 | `/phase-compact` Slash Command | [`phase-7.md`](phase-7.md) | **pending** | 023–026 | Verdict schema extension, agent Write fix, /phase-compact command, end-to-end run against Phase 6 |
+| 7 | `/phase-compact` Slash Command | [`phase-7.md`](phase-7.md) | **complete** | 023–026 | Verdict schema extension, agent Write fix, /phase-compact command, end-to-end run against Phase 6 |
 
 ---
 
@@ -33,8 +33,8 @@ Building the Phase-End Compaction System per design doc `~/.gstack/projects/Mung
 | Phase | Name | Status | Purpose |
 |-------|------|--------|---------|
 | 6 | Compaction Schema Audit & Lock | **complete** | Foundation: schemas + worked example (docs/phase-complete.schema.md and docs/phase-manifest-entry.schema.md locked 2026-05-13) |
-| 7 | `/phase-compact` Slash Command | **pending** | Manual end-to-end implementation; includes verdict schema extension and phase-goals-agent Write permission fix |
-| 8 | `phase-compactor` Agent Promotion | not yet planned | Convert slash command to agent (Sonnet) |
+| 7 | `/phase-compact` Slash Command | **complete** | Manual end-to-end implementation; includes verdict schema extension and phase-goals-agent Write permission fix |
+| 8 | `phase-compactor` Agent Promotion | **ready to plan** | Convert slash command to agent (Sonnet) |
 | 9 | Automatic Trigger via `gate_pass` | not yet planned | history.jsonl polling, /clear + reload |
 | 10 | `/load-phase-context` Retrieval | not yet planned | On-demand cold artefact loading |
 
@@ -90,10 +90,10 @@ Compact entries for phases that have passed gate review. Each entry links to the
 | 020 | 6 | Schema Drafts | `phase-6-ralph-loops.md` | **complete** | — | 1 |
 | 021 | 6 | Retrospective Worked Example | `phase-6-ralph-loops.md` | **complete** | — | 1 |
 | 022 | 6 | Schema Lock & Cross-Reference | `phase-6-ralph-loops.md` | **complete** | — | 1 |
-| 023 | 7 | Verdict Schema Extension + Agent Fix | `phase-7-ralph-loops.md` | **pending** | — | 1 |
-| 024 | 7 | `/phase-compact` Command Implementation | `phase-7-ralph-loops.md` | **pending** | — | 1 |
-| 025 | 7 | End-to-End Run Against Phase 6 | `phase-7-ralph-loops.md` | **pending** | — | 1 |
-| 026 | 7 | Agent Permission Template + Closeout | `phase-7-ralph-loops.md` | **pending** | — | 1 |
+| 023 | 7 | Verdict Schema Extension + Agent Fix | `phase-7-ralph-loops.md` | **complete** | — | 1 |
+| 024 | 7 | `/phase-compact` Command Implementation | `phase-7-ralph-loops.md` | **complete** | — | 1 |
+| 025 | 7 | End-to-End Run Against Phase 6 | `phase-7-ralph-loops.md` | **complete** | — | 1 |
+| 026 | 7 | Agent Permission Template + Closeout | `phase-7-ralph-loops.md` | **complete** | — | 1 |
 
 ---
 
