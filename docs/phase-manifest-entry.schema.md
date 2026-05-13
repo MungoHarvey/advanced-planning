@@ -1,7 +1,9 @@
 # Phase Manifest Entry Schema
 
+> **Status: LOCKED** (2026-05-13). Changes require an explicit decision logged in CLAUDE.md.
+
 **Location:** `PLANS-INDEX.md` (one entry per phase, appended to the hot manifest)
-**Status:** DRAFT (see loop-022 for lock)
+**Status:** LOCKED (2026-05-13)
 **Purpose:** Hot tier entry for a completed phase. Kept in `PLANS-INDEX.md` so the main thread loads one file and gets navigable per-phase summaries for all completed phases. Size is strictly bounded so the hot manifest stays compact across a long programme.
 
 ---
@@ -54,7 +56,7 @@ Run before appending the entry to `PLANS-INDEX.md`:
 - [ ] `status` is exactly `passed` or `failed_v<M>`
 - [ ] `commits` is in `<sha>..<sha>` format with 7-character SHAs
 - [ ] `detail` path exists on disk before the entry is written
-- [ ] Entry appears in ascending phase order in `PLANS-INDEX.md`
+- [ ] **If validating in-place within `PLANS-INDEX.md`:** entry appears in ascending phase order relative to neighbouring entries. **If validating a standalone `.yaml` snippet (e.g. during schema testing or pre-append review):** skip this item — ordering cannot be verified without the surrounding file.
 
 ---
 

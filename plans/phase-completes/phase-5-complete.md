@@ -2,7 +2,8 @@
 phase: 5
 title: "Gate Review Sub-Phase & Invocation Improvements"
 status: passed
-gate_verdict_ref: "plans/gate-verdicts/phase-5-attempt-1-phase-goals-agent.json (synthetic — phase predates gate review system being used in practice; no real verdict file exists)"
+gate_verdict_ref: "n/a — pre-gate-review phase"
+gate_verdict_note: "Phase 5 predates gate review system being used in practice; no real verdict file exists"
 anchor_sha: 2214691
 end_sha: 9e1aef4
 commit_count: 7

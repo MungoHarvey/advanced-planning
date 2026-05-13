@@ -458,9 +458,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "Both schemas patched (gate_verdict_ref sentinel provision + gate_verdict_note added; checklist item 10 made conditional for standalone vs in-place validation), locked with Status: LOCKED (2026-05-13), referenced in CLAUDE.md under Phase Compaction Schemas subsection; phase-5-complete.md re-validated and fixed (gate_verdict_ref corrected to exact sentinel format); PLANS-INDEX.md updated with Phase 6 complete and Phase 7 ready to plan."
   failed: ""
-  needed: ""
+  needed: "Phase 6 complete. Run /run-gate to review Phase 6 outputs against success criteria; on pass, /next-phase to plan Phase 7 (/phase-compact slash command)."
 
 todos:
   - id: "loop-022-1"
@@ -468,7 +468,7 @@ todos:
     skill: "writing-skills"
     agent: "ralph-loop-worker"
     outcome: "Every gap listed in loop-021's handoff is either resolved (schema edited and gap closed) or explicitly deferred with a documented reason; both schema documents reflect the final locked form"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-022-2"
@@ -476,7 +476,7 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "docs/phase-complete.schema.md and docs/phase-manifest-entry.schema.md each contain a 'Status: LOCKED' marker with the lock date; downstream phases will treat these as frozen contracts"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-022-3"
@@ -484,7 +484,7 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "CLAUDE.md contains a reference to docs/phase-complete.schema.md and docs/phase-manifest-entry.schema.md under the Architecture section (or a new Phase Compaction subsection), describing each schema in one sentence"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-022-4"
@@ -492,7 +492,7 @@ todos:
     skill: "verification-before-completion"
     agent: "ralph-loop-worker"
     outcome: "plans/phase-completes/phase-5-complete.md and its manifest entry are re-validated against the locked schemas; any newly surfaced inconsistency is fixed before marking complete; a verification note is included in handoff"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-022-5"
@@ -500,7 +500,7 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "plans/PLANS-INDEX.md is updated: Phase 6 row shows status complete, all four loops (019-022) show status complete, and the Compaction Programme block notes that Phase 7 (/phase-compact slash command) is now ready to plan"
-    status: pending
+    status: completed
     complexity: low
     priority: medium
 

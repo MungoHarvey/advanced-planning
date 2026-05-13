@@ -1,7 +1,9 @@
 # Phase Complete Schema
 
+> **Status: LOCKED** (2026-05-13). Changes require an explicit decision logged in CLAUDE.md.
+
 **File:** `plans/phase-completes/phase-N-complete.md`
-**Status:** DRAFT (see loop-022 for lock)
+**Status:** LOCKED (2026-05-13)
 **Purpose:** Cold artefact produced by `phase-compactor` at each gate pass. Serves as a structured index into git for a completed phase. Loaded on demand via `/load-phase-context N`. Never a substitute for git diffs — pointers only.
 
 ---
@@ -15,7 +17,8 @@ YAML frontmatter block at the top of the file (delimited by `---`).
 | `phase` | integer | Yes | Positive integer | `5` |
 | `title` | string | Yes | Phase title from the phase plan | `"Compaction Schema Audit & Lock"` |
 | `status` | string | Yes | `passed` \| `failed_v<M>` | `passed` |
-| `gate_verdict_ref` | string | Yes | Relative path to the gate-verdict JSON for this phase | `plans/gate-verdicts/phase-5-attempt-1-phase-goals-agent.json` |
+| `gate_verdict_ref` | string | Yes | Relative path to the gate-verdict JSON for this phase, OR the sentinel value `"n/a — pre-gate-review phase"` if no verdict file exists | `plans/gate-verdicts/phase-5-attempt-1-phase-goals-agent.json` |
+| `gate_verdict_note` | string | No | One-line explanation when `gate_verdict_ref` is the sentinel value | `"Phase predates gate review system"` |
 | `anchor_sha` | string | Yes | Short SHA of the first commit in this phase | `e199cca` |
 | `end_sha` | string | Yes | Short SHA of the last commit in this phase (gate-pass commit) | `34ea21f` |
 | `commit_count` | integer | Yes | Number of commits between anchor and end (inclusive) | `12` |
@@ -26,7 +29,8 @@ YAML frontmatter block at the top of the file (delimited by `---`).
 
 - `phase`: Integer, not a string. Do not quote in YAML.
 - `status`: Use `passed` for a gate pass. Use `failed_v1`, `failed_v2`, etc. for failed attempts. The superseded file retains its version suffix; the passing attempt's artefact uses `passed`.
-- `gate_verdict_ref`: Path relative to the repo root. Points to the `phase-goals-agent` verdict file. If multiple gate agents ran, reference the `phase-goals-agent` verdict only — it is the compactor's primary input.
+- `gate_verdict_ref`: Path relative to the repo root. Points to the `phase-goals-agent` verdict file. If multiple gate agents ran, reference the `phase-goals-agent` verdict only — it is the compactor's primary input. For phases that completed before the gate review system existed (or that were not run through gate review), use the sentinel value `"n/a — pre-gate-review phase"` and supply a `gate_verdict_note` explaining why no verdict file exists.
+- `gate_verdict_note`: Optional. Required when `gate_verdict_ref` is the sentinel value. One sentence only. Omit entirely when a real verdict path is present.
 - `anchor_sha` and `end_sha`: Short SHAs (7 characters). Must be verifiable via `git log --oneline`.
 - `commit_count`: Count from anchor to end inclusive. Computed via `git rev-list --count <anchor_sha>..<end_sha>` plus one for the anchor itself, or equivalent.
 - `created`: Written by the compactor at artefact creation time, not at gate review time.
@@ -79,10 +83,10 @@ See [Anchor SHA Decision](#anchor-sha-decision-1) section below.
 Run before marking the artefact complete:
 
 - [ ] File exists at `plans/phase-completes/phase-N-complete.md` where N matches the `phase` field
-- [ ] All nine frontmatter fields are present and non-empty
+- [ ] All required frontmatter fields are present and non-empty (`phase`, `title`, `status`, `gate_verdict_ref`, `anchor_sha`, `end_sha`, `commit_count`, `loop_count`, `created`); `gate_verdict_note` is optional and only required when `gate_verdict_ref` is the sentinel value
 - [ ] `phase` is an unquoted integer
 - [ ] `status` is exactly `passed` or `failed_v<M>` with no trailing whitespace
-- [ ] `gate_verdict_ref` path exists on disk
+- [ ] `gate_verdict_ref` is either a path that exists on disk OR the exact sentinel value `"n/a — pre-gate-review phase"`; if sentinel, `gate_verdict_note` is present and non-empty
 - [ ] `anchor_sha` and `end_sha` resolve via `git rev-parse --short <sha>` without error
 - [ ] `commit_count` matches `git rev-list --count <anchor_sha>..<end_sha>` output (allowing ±1 for boundary inclusion)
 - [ ] `loop_count` matches the number of loops marked `completed` in the phase's ralph-loops file
@@ -124,6 +128,20 @@ end_sha: e4f5a6b
 commit_count: 14
 loop_count: 6
 created: 2026-05-13T09:00:00Z
+---
+
+# Alternative: pre-gate-review phase (gate_verdict_ref as sentinel)
+---
+phase: 4
+title: "Some Earlier Phase"
+status: passed
+gate_verdict_ref: "n/a — pre-gate-review phase"
+gate_verdict_note: "Phase completed before gate review system was introduced"
+anchor_sha: a1b2c3d
+end_sha: e4f5a6b
+commit_count: 8
+loop_count: 4
+created: 2026-05-01T09:00:00Z
 ---
 
 ## Goals met

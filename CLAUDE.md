@@ -64,6 +64,15 @@ At each phase boundary, `/run-gate` spawns gate agents (default: `code-review-ag
 - **Versioning utilities**: `platforms/python/versioning.py` provides `create_retry_version`, `inject_failure_context`, `get_active_version`, and `freeze_loop_file` — the Python API backing `/next-phase`'s retry logic.
 - **Ralph-loop plugin compatibility**: This framework's state files live in `.claude/state/` (e.g. `loop-ready.json`, `loop-complete.json`). The ralph-loop plugin uses `.claude/ralph-loop.local.md` — no naming conflicts. Both `/next-loop --auto` and the plugin's `/ralph-loop` command can be active simultaneously.
 
+### Phase Compaction Schemas
+
+Two locked schema documents govern the compaction artefacts produced by `/phase-compact` at each gate pass:
+
+- `docs/phase-complete.schema.md` — defines the cold artefact (`plans/phase-completes/phase-N-complete.md`): a structured git-index document with frontmatter fields, one-line-bullet body sections, and a validation checklist; **Status: LOCKED** (2026-05-13).
+- `docs/phase-manifest-entry.schema.md` — defines the hot manifest entry appended to `PLANS-INDEX.md`: a YAML block with a hard ≤8-line ceiling and maximum 2 highlights; **Status: LOCKED** (2026-05-13).
+
+Changes to either schema require an explicit decision logged in this file.
+
 ## Platform Adapters
 
 | Adapter | Location | Entry Point |
