@@ -40,6 +40,30 @@ Building the Phase-End Compaction System per design doc `~/.gstack/projects/Mung
 
 ---
 
+## Phase Completions
+
+Compact entries for phases that have passed gate review. Each entry links to the cold artefact.
+
+- phase: 5
+  title: "Gate Review Sub-Phase"
+  status: passed
+  commits: 2214691..9e1aef4
+  detail: plans/phase-completes/phase-5-complete.md
+  highlights:
+    - Gate review system delivered (agents, /run-gate, /next-phase, versioning utilities)
+    - Plugin scaffold and invocation improvements completed across 6 loops (013-018)
+
+- phase: 6
+  title: "Compaction Schema Audit & Lock"
+  status: passed
+  commits: 84a0e86..724e7d6
+  detail: plans/phase-completes/phase-6-complete.md
+  highlights:
+    - Locked cold and hot compaction schemas (docs/phase-complete.schema.md, docs/phase-manifest-entry.schema.md)
+    - Phase-5 retrospective worked example produced and validated; verdict extension deferred to Phase 7
+
+---
+
 ## Ralph Loops
 
 | Loop | Phase | Name | File | Status | Active File | Attempt |

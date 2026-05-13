@@ -307,9 +307,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "Produced plans/phase-completes/phase-6-complete.md and a Phase 6 manifest entry in plans/PLANS-INDEX.md (new Phase Completions section); both validated against all locked schema checklist items; idempotency confirmed by grep (exactly 1 phase-6 entry) and git diff; all 24 checklist items passed with no schema or command spec gaps."
   failed: ""
-  needed: ""
+  needed: "Loop 026: note that plans/phase-completes/phase-5-manifest-entry.yaml is a legacy standalone file — PLANS-INDEX.md Phase Completions section is now the canonical hot manifest; document agent permission template; update CLAUDE.md to reference /phase-compact; mark Phase 7 complete in PLANS-INDEX.md."
 
 todos:
   - id: "loop-025-1"
@@ -317,7 +317,7 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "Each step in phase-compact.md is executed in order against phase 6; intermediate state (anchor SHA, end SHA, gate verdict ref, history.jsonl slice, git log range) is captured in working memory or scratch notes for verification"
-    status: pending
+    status: completed
     complexity: high
     priority: high
   - id: "loop-025-2"
@@ -325,7 +325,7 @@ todos:
     skill: "verification-before-completion"
     agent: "ralph-loop-worker"
     outcome: "plans/phase-completes/phase-6-complete.md exists with all required frontmatter fields; all 14 (or current) validation checklist items pass; body sections (goals_met/deferred/opened) use one-line bullets only; gate_verdict_ref points to the real plans/gate-verdicts/phase-6-attempt-1-phase-goals-agent.json (no sentinel needed — Phase 6 has real verdicts)"
-    status: pending
+    status: completed
     complexity: high
     priority: high
   - id: "loop-025-3"
@@ -333,7 +333,7 @@ todos:
     skill: "verification-before-completion"
     agent: "ralph-loop-worker"
     outcome: "plans/PLANS-INDEX.md contains a new Phase 6 manifest entry (YAML block); the entry is ≤8 lines; all manifest schema checklist items pass; the entry's commits field points to the correct phase 6 SHA range; the entry sits in ascending phase order"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-025-4"
@@ -341,7 +341,7 @@ todos:
     skill: "verification-before-completion"
     agent: "ralph-loop-worker"
     outcome: "Second invocation of the command leaves plans/phase-completes/phase-6-complete.md unchanged in semantically meaningful ways (timestamps may update but content is stable); PLANS-INDEX.md contains exactly ONE Phase 6 manifest entry, not two; a diff confirms this"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-025-5"
@@ -349,7 +349,7 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "If any inconsistency was found during validation, a 'Gaps' section appears in this loop's handoff_summary listing each gap (location + description) so loop 026 can address them; if no gaps, handoff explicitly states 'no schema or command gaps surfaced'"
-    status: pending
+    status: completed
     complexity: low
     priority: high
 
