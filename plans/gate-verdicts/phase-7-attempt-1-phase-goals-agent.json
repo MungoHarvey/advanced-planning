@@ -1,0 +1,49 @@
+{
+  "phase": "phase-7",
+  "attempt": 1,
+  "timestamp": "2026-05-13T15:00:00Z",
+  "agent": "phase-goals-agent",
+  "verdict": "pass",
+  "confidence": 95,
+  "phase_title": "/phase-compact Slash Command — End-to-End",
+  "findings": [],
+  "loops_to_revert": [],
+  "failure_notes": [],
+  "criteria_outcomes": [
+    {
+      "criterion": "core/state/gate-verdict.schema.json validates as JSON Schema draft-07 and includes criteria_outcomes and phase_title as optional fields with the spec from docs/phase-goals-verdict-audit.md",
+      "status": "met",
+      "evidence": "core/state/gate-verdict.schema.json: $schema=draft-07 (line 2); criteria_outcomes array at lines 80-94 (optional, items require criterion/status/evidence, optional deferred_to, additionalProperties:false); phase_title string at lines 95-98 (optional); additionalProperties:false preserved at top level"
+    },
+    {
+      "criterion": "phase-goals-agent definition has Write in its tool allowlist scoped to plans/gate-verdicts/",
+      "status": "met",
+      "evidence": "platforms/claude-code/agents/phase-goals-agent.md frontmatter line 5: 'tools: Read, Glob, Grep, Write(plans/gate-verdicts/*)'"
+    },
+    {
+      "criterion": "phase-goals-agent definition's prompt instructs it to populate criteria_outcomes (one entry per phase success criterion) and phase_title (copied from phase plan)",
+      "status": "met",
+      "evidence": "platforms/claude-code/agents/phase-goals-agent.md: Step 3 lines 43-88 define criteria_outcomes sub-field table and JSON example; lines 131-143 'Required extended fields' section mandates phase_title (copy verbatim from plan title) and criteria_outcomes (one entry per criterion)"
+    },
+    {
+      "criterion": "/phase-compact 6 produces plans/phase-completes/phase-6-complete.md that passes every item in docs/phase-complete.schema.md Validation Checklist",
+      "status": "met",
+      "evidence": "plans/phase-completes/phase-6-complete.md exists; all 9 required frontmatter fields present (phase:6, title, status:passed, gate_verdict_ref:plans/gate-verdicts/phase-6-attempt-1-phase-goals-agent.json, anchor_sha:84a0e86, end_sha:724e7d6, commit_count:6, loop_count:4, created:2026-05-13T13:00:00Z); Goals met (7 one-line bullets), Deferred (none), Opened (2 one-line bullets); loop-025 handoff confirms all checklist items passed"
+    },
+    {
+      "criterion": "/phase-compact 6 appends or updates a hot manifest entry in PLANS-INDEX.md that passes every item in docs/phase-manifest-entry.schema.md Validation Checklist (<=8 lines confirmed)",
+      "status": "met",
+      "evidence": "plans/PLANS-INDEX.md lines 56-63: exactly 8 lines; all 6 required fields present (phase:6, title, status:passed, commits:84a0e86..724e7d6, detail:plans/phase-completes/phase-6-complete.md, highlights:2 items); grep count returns exactly 1 occurrence of 'phase: 6'"
+    },
+    {
+      "criterion": "Running /phase-compact 6 is idempotent — running it twice does not duplicate the manifest entry or corrupt the cold artefact",
+      "status": "met",
+      "evidence": "loop-025 handoff_summary.done: 'idempotency confirmed by grep (exactly 1 phase-6 entry) and git diff; all 24 checklist items passed'; grep on plans/PLANS-INDEX.md for 'phase: 6' returns count of 1"
+    },
+    {
+      "criterion": "The command's behaviour is documented in its own markdown file (inputs, outputs, error modes, exit conditions)",
+      "status": "met",
+      "evidence": "platforms/claude-code/commands/phase-compact.md exists; frontmatter + description para; 12-step Steps section covering arg parsing (Step 1), anchor SHA resolution with fallback (Steps 2-3), all read inputs (Steps 4-7), both write outputs with idempotency (Steps 9-10), schema validation (Step 11), exit summary (Step 12); Error Modes table with 6 rows; Notes section covering idempotency guarantee and gate-fail artefact naming"
+    }
+  ]
+}
