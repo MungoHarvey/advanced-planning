@@ -296,9 +296,9 @@ max_iterations: 3
 on_max_iterations: checkpoint
 
 handoff_summary:
-  done: ""
+  done: "plans/phase-completes/phase-5-complete.md and plans/phase-completes/phase-5-manifest-entry.yaml produced from primary sources (phase-5.md, phase-5-ralph-loops.md handoff_summary fields, git log); both validated against schema checklists; 2 schema gaps surfaced: (1) gate_verdict_ref requires a real on-disk path but no verdict file exists for pre-gate-review phases — schema needs a synthetic/absent provision; (2) manifest checklist item 10 assumes PLANS-INDEX.md context and cannot be verified against a standalone .yaml file."
   failed: ""
-  needed: ""
+  needed: "Loop 022: patch docs/phase-complete.schema.md to handle pre-gate-review gate_verdict_ref (add sentinel value or gate_verdict_note field); patch docs/phase-manifest-entry.schema.md checklist item 10 to clarify standalone vs post-append context; then lock schemas (Status: LOCKED), update CLAUDE.md, update PLANS-INDEX.md."
 
 todos:
   - id: "loop-021-1"
@@ -306,7 +306,7 @@ todos:
     skill: "resume-review"
     agent: "ralph-loop-worker"
     outcome: "An internal working note (committed alongside the artefact or as a scratch section) enumerates Phase 5's stated success criteria, the actual outcomes per loop (013-018), the commit range for the phase, and any deferred or opened items — drawn from primary sources only, no speculation"
-    status: pending
+    status: completed
     complexity: high
     priority: high
   - id: "loop-021-2"
@@ -314,7 +314,7 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "Phase 5 anchor_sha and end_sha are both identified with the exact short SHAs documented; rationale states why each was selected (first phase-5 commit and gate-pass / phase complete commit)"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-021-3"
@@ -322,7 +322,7 @@ todos:
     skill: "writing-skills"
     agent: "ralph-loop-worker"
     outcome: "plans/phase-completes/phase-5-complete.md exists; passes the validation checklist from docs/phase-complete.schema.md; contains complete frontmatter (phase, title, status, gate_verdict_ref, anchor_sha, end_sha, commit_count, loop_count, created); each body section (goals_met/deferred/opened) contains only one-line bullets, no prose paragraphs"
-    status: pending
+    status: completed
     complexity: high
     priority: high
   - id: "loop-021-4"
@@ -330,7 +330,7 @@ todos:
     skill: "writing-skills"
     agent: "ralph-loop-worker"
     outcome: "plans/phase-completes/phase-5-manifest-entry.yaml (or appended within the .md as a fenced block) exists; passes docs/phase-manifest-entry.schema.md validation; total entry length ≤8 lines including all fields and at most 2 highlights"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-021-5"
@@ -338,7 +338,7 @@ todos:
     skill: "verification-before-completion"
     agent: "ralph-loop-worker"
     outcome: "A verification note (in handoff_summary.done or appended to the artefact) confirms each item in docs/phase-complete.schema.md's checklist and docs/phase-manifest-entry.schema.md's checklist passes; any failures are listed as schema gaps for loop 022 to address"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
 
