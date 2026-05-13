@@ -76,6 +76,25 @@
       "items": {
         "type": "string"
       }
+    },
+    "criteria_outcomes": {
+      "type": "array",
+      "description": "Outcome of each success criterion. Used by phase-compactor to populate goals_met and deferred sections without re-reading the phase plan.",
+      "items": {
+        "type": "object",
+        "required": ["criterion", "status", "evidence"],
+        "properties": {
+          "criterion": { "type": "string" },
+          "status": { "type": "string", "enum": ["met", "deferred", "failed"] },
+          "evidence": { "type": "string" },
+          "deferred_to": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "phase_title": {
+      "type": "string",
+      "description": "Display title of the phase from the phase plan. Convenience field for the compactor."
     }
   },
   "additionalProperties": false

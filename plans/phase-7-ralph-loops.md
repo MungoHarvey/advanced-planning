@@ -14,9 +14,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "Extended core/state/gate-verdict.schema.json with optional criteria_outcomes (array with criterion/status/evidence/deferred_to) and phase_title (string); added Write(plans/gate-verdicts/*) to phase-goals-agent tool allowlist; updated agent prompt to populate both fields during Step 3 and at verdict write time; all core/state schemas parse and Phase 6 verdict validates against the extended schema."
   failed: ""
-  needed: ""
+  needed: "Proceed to loop 024: implement the /phase-compact slash command at platforms/claude-code/commands/phase-compact.md."
 
 todos:
   - id: "loop-023-1"
@@ -24,7 +24,7 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "core/state/gate-verdict.schema.json validates as JSON Schema draft-07; contains optional criteria_outcomes (array with items.properties: criterion, status, evidence, deferred_to) and phase_title (string); additionalProperties remains false; existing required fields unchanged; existing verdict files (phase-6 attempt 1) still parse against the schema"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-023-2"
@@ -32,7 +32,7 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "phase-goals-agent definition file (under platforms/claude-code/agents/ or .claude/agents/) has Write in its tool allowlist with a path scope restricting to plans/gate-verdicts/; the change is committed and the agent definition's frontmatter remains valid"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-023-3"
@@ -40,7 +40,7 @@ todos:
     skill: "writing-skills"
     agent: "ralph-loop-worker"
     outcome: "phase-goals-agent definition's body/prompt includes explicit instructions to populate criteria_outcomes (with status values pass/fail/deferred and evidence pointers) and phase_title; instructions reference the extended schema by path"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-023-4"
@@ -48,7 +48,7 @@ todos:
     skill: "verification-before-completion"
     agent: "ralph-loop-worker"
     outcome: "python -c 'import json, pathlib; [json.loads(f.read_text()) for f in pathlib.Path(\"core/state\").glob(\"*.json\")]' exits 0 with no exceptions; existing verdict file plans/gate-verdicts/phase-6-attempt-1-phase-goals-agent.json still parses as a valid instance of the extended schema"
-    status: pending
+    status: completed
     complexity: low
     priority: high
 
