@@ -14,9 +14,9 @@ max_iterations: 3
 on_max_iterations: checkpoint
 
 handoff_summary:
-  done: ""
+  done: "docs/phase-goals-verdict-audit.md produced with Current Format, Concrete Example (synthetic — no real verdicts exist yet), Gap Analysis table, and Extension Spec defining two new optional fields (criteria_outcomes, phase_title) for core/state/gate-verdict.schema.json."
   failed: ""
-  needed: ""
+  needed: "Loop 020: draft cold artefact schema (docs/phase-complete.schema.md) and hot manifest entry schema (docs/phase-manifest-entry.schema.md) using the design doc and the verdict audit as inputs."
 
 todos:
   - id: "loop-019-1"
@@ -24,7 +24,7 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "docs/phase-goals-verdict-audit.md exists with a 'Current Format' section that quotes the agent's verdict schema verbatim (fields, types, write path under plans/gate-verdicts/) and references the exact agent definition file"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-019-2"
@@ -32,7 +32,7 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "docs/phase-goals-verdict-audit.md contains a 'Concrete Example' section with at least one real verdict file dump (or notes if none exist yet) and a brief field-by-field annotation"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-019-3"
@@ -40,7 +40,7 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "docs/phase-goals-verdict-audit.md contains a 'Gap Analysis' table listing each field the compactor needs (per design doc), whether it exists today, and what extension is required if missing"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-019-4"
@@ -48,7 +48,7 @@ todos:
     skill: "writing-skills"
     agent: "ralph-loop-worker"
     outcome: "docs/phase-goals-verdict-audit.md ends with an 'Extension Spec' section that either lists each new field (name, type, semantics, default) OR states 'No extension required — current format is sufficient' with one-paragraph justification"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
 
