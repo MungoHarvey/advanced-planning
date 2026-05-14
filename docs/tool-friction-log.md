@@ -223,6 +223,71 @@ entries from here.
   candidate for the future automation surface phase's "prerequisites guard"
   pattern.
 
+### [Canonical todo schema] — Orchestrator added non-canonical `complexity:` field
+
+- **Observed**: ralph-orchestrator populated Loop 027 todos with a `complexity:`
+  field between `status:` and `priority:`. CLAUDE.md specifies the canonical
+  field order as `id/content/skill/agent/outcome/status/priority` — no
+  `complexity` field. However, CLAUDE.md *also* references "`complexity: low`
+  todos" in the model-tier routing section, treating complexity as a known
+  field.
+- **Friction**: the schema is internally inconsistent. Either `complexity` is
+  canonical (in which case the field-order list is incomplete) or it isn't
+  (in which case the model-tier routing reference is incoherent). The
+  orchestrator picked the inclusive interpretation, but a future contributor
+  could justifiably remove it on canonical-order grounds.
+- **Suggested fix**: update `core/schemas/ralph-loop.schema.md` and
+  CLAUDE.md to either include `complexity:` in the canonical order
+  (positioned per existing usage) or explicitly document it as an optional
+  metadata field. Choose one and align both references.
+
+### [Skill discovery] — Phase plan "skill domains" treated as skill names
+
+- **Observed**: Phase 8 plan lists `hook-and-permissions`, `code-editing`,
+  `frontmatter-schema` as "broad skill categories". The orchestrator's
+  `plan-skill-identification` step searched for installed skills with those
+  names, found none, and assigned `skill: NA` to all 8 todos in Loop 027.
+- **Friction**: there's no formal distinction in the framework between (a) a
+  taxonomy of *skill domains* used during phase planning to describe broad
+  capabilities and (b) the *installed skill names* used during execution.
+  Both surface as bare strings; the planner can't tell them apart.
+- **Suggested fix**: either (1) require phase plans to use only installed
+  skill names (constrains the planner, may miss capabilities not yet
+  installed), or (2) introduce a clear separator in phase plan templates
+  between "skill domains" (descriptive) and "specific skills to use"
+  (resolvable). The current ambiguity makes the planner's output less useful
+  than it could be.
+
+### [agent: field self-reference] — Orchestrator assigned ralph-loop-worker as agent for individual todos
+
+- **Observed**: 5 of 8 Loop 027 todos have `agent: ralph-loop-worker`. The
+  worker is the agent executing the loop itself; assigning it as an `agent:`
+  for individual todos is self-referential. Combined with C2 from the audit
+  (worker cannot dispatch), the assignment is doubly decorative.
+- **Friction**: `plan-subagent-identification` has no clear rule about what
+  to do when no specialized agent fits a todo. Picking the worker itself
+  reads as a default-fallback, but it adds noise without semantic value.
+- **Suggested fix**: the `plan-subagent-identification` skill should
+  default to `agent: NA` when no specialized agent fits. Reserve named
+  agents for actual delegation candidates. Aligns with the always-dispatch
+  Phase 9 redesign — only set `agent:` when dispatch is intended.
+
+### [Orchestrator protocol] — `.claude/agents/` referenced but agents live at `platforms/claude-code/agents/`
+
+- **Observed**: orchestrator flagged that the protocol referenced
+  `.claude/agents/` but actual agents live at `platforms/claude-code/agents/`.
+  Mirror of the `.claude/plans/` vs `plans/` problem at the agent-resolution
+  surface.
+- **Friction**: the path confusion is systemic. The `.claude/` prefix appears
+  in many command and skill docs but the actual layout in this repo is
+  top-level `platforms/claude-code/` for everything Claude Code-related.
+- **Suggested fix**: a single Loop 030 sub-task (during the rename sweep)
+  could grep for all `.claude/agents/`, `.claude/plans/`, `.claude/skills/`
+  references in forward-looking docs and triage which should stay (because
+  they refer to installed-project layout where `.claude/` is canonical) and
+  which should be corrected (because they refer to this repo's source
+  layout).
+
 ### [Workflow chaining] — Stub generation and todo population are separate steps with no automation
 
 - **Observed**: the ralph-loop-planner skill says to generate stubs with

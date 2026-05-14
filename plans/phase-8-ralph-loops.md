@@ -23,7 +23,71 @@ handoff_summary:
   failed: ""
   needed: ""
 
-todos: []
+todos:
+  - id: "loop-027-1"
+    content: "Read platforms/claude-code/settings.json and platforms/claude-code/hooks/hooks.json to understand the current planning-mode PreToolUse allowlist pattern"
+    skill: "NA"
+    agent: "NA"
+    outcome: "Current allowlist paths and glob patterns documented inline; gaps confirmed against success criteria (plans/, .claude/plans/, .claude/state/)"
+    status: pending
+    complexity: low
+    priority: high
+  - id: "loop-027-2"
+    content: "Patch platforms/claude-code/settings.json planning-mode hook to allow writes to plans/, .claude/plans/, and .claude/state/ while blocking all other paths when the sentinel is present"
+    skill: "NA"
+    agent: "ralph-loop-worker"
+    outcome: "settings.json hook allowlist contains precisely-anchored patterns for plans/, .claude/plans/, .claude/state/; no overly-broad globs present"
+    status: pending
+    complexity: medium
+    priority: high
+  - id: "loop-027-3"
+    content: "Apply the same allowlist fix to platforms/claude-code/hooks/hooks.json so the mirror config matches settings.json"
+    skill: "NA"
+    agent: "ralph-loop-worker"
+    outcome: "hooks.json allowlist is identical to the patched settings.json allowlist; diff between the two hook configs shows no discrepancy in path rules"
+    status: pending
+    complexity: low
+    priority: high
+  - id: "loop-027-4"
+    content: "Edit platforms/claude-code/agents/phase-goals-agent.md frontmatter to declare tools: Read, Glob, Grep, Write with no parenthetical scope"
+    skill: "NA"
+    agent: "ralph-loop-worker"
+    outcome: "phase-goals-agent.md frontmatter tools field reads exactly 'Read, Glob, Grep, Write' with no parenthetical annotation; canonical YAML field order preserved"
+    status: pending
+    complexity: low
+    priority: high
+  - id: "loop-027-5"
+    content: "Create .claude/settings.json at repo root (checked-in, not .local.json) with permissive allow rules scoped to plans/**, .claude/state/**, .claude/logs/**"
+    skill: "NA"
+    agent: "ralph-loop-worker"
+    outcome: ".claude/settings.json exists, parses as valid JSON, and contains allow rules scoped only to plans/**, .claude/state/**, .claude/logs/** — no repo-wide globs"
+    status: pending
+    complexity: medium
+    priority: high
+  - id: "loop-027-6"
+    content: "Update CLAUDE.md line 56 area to reference the corrected planning-mode allowlist (plans/, .claude/plans/, .claude/state/)"
+    skill: "NA"
+    agent: "ralph-loop-worker"
+    outcome: "CLAUDE.md Planning Mode Hooks section accurately describes the corrected allowlist; no stale path references remain"
+    status: pending
+    complexity: low
+    priority: medium
+  - id: "loop-027-7"
+    content: "Record manual smoke test: with planning-mode sentinel present, confirm write to plans/test.md is allowed and write to core/skills/foo.md is blocked; document result in commit message or plans/phase-8-notes.md"
+    skill: "NA"
+    agent: "NA"
+    outcome: "Smoke test result recorded (pass/fail with observed behaviour); both sentinel-present paths exercised"
+    status: pending
+    complexity: low
+    priority: medium
+  - id: "loop-027-8"
+    content: "Run python -m pytest platforms/python/tests/ -v and validate all core/state/*.json files parse as valid JSON"
+    skill: "NA"
+    agent: "NA"
+    outcome: "pytest exits 0 with no failures; JSON validation command exits 0 with no parse errors"
+    status: pending
+    complexity: low
+    priority: medium
 
 prompt: |
   ## Context from prior loop
