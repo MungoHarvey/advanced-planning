@@ -21,46 +21,9 @@ Tracking document for the **Advanced Planning System — Open-Source Restructure
 | 3 | Cowork Adapter | [`phase-3.md`](phase-3.md) | **complete** | 008–009 | Routing skill, agent prompts, snapshot checkpoints |
 | 4 | Generic + Release | [`phase-4.md`](phase-4.md) | **complete** | 010–012 | Python API, docs, examples, GitHub release |
 | 5 | Gate Review Sub-Phase | [`phase-5.md`](phase-5.md) | **complete** | 013–018 | Gate agents, /run-gate, /next-phase, versioning utilities, plugin scaffold |
-| 6 | Compaction Schema Audit & Lock | [`phase-6.md`](phase-6.md) | **complete** | 019–022 | Verdict audit, cold/hot schemas, retrospective worked example for Phase 5, schemas locked |
-| 7 | `/phase-compact` Slash Command | [`phase-7.md`](phase-7.md) | **complete** | 023–026 | Verdict schema extension, agent Write fix, /phase-compact command, end-to-end run against Phase 6 |
+| 8 | Framework Consistency Remediation | [`phase-8.md`](phase-8.md) | **draft** | 027–031 | Consolidates audit findings: hook+permissions hygiene, sentinel ownership, progress-report dedup, `new-loop`→`decompose-phase` rename, command disambiguation + two-stage skill activation |
 
----
-
-## Compaction Programme (Phases 6–10)
-
-Building the Phase-End Compaction System per design doc `~/.gstack/projects/MungoHarvey-advanced-planning/mharvey2-main-design-20260513-103520.md`.
-
-| Phase | Name | Status | Purpose |
-|-------|------|--------|---------|
-| 6 | Compaction Schema Audit & Lock | **complete** | Foundation: schemas + worked example (docs/phase-complete.schema.md and docs/phase-manifest-entry.schema.md locked 2026-05-13) |
-| 7 | `/phase-compact` Slash Command | **complete** | Manual end-to-end implementation; includes verdict schema extension and phase-goals-agent Write permission fix |
-| 8 | `phase-compactor` Agent Promotion | **ready to plan** | Convert slash command to agent (Sonnet) |
-| 9 | Automatic Trigger via `gate_pass` | not yet planned | history.jsonl polling, /clear + reload |
-| 10 | `/load-phase-context` Retrieval | not yet planned | On-demand cold artefact loading |
-
----
-
-## Phase Completions
-
-Compact entries for phases that have passed gate review. Each entry links to the cold artefact.
-
-- phase: 5
-  title: "Gate Review Sub-Phase"
-  status: passed
-  commits: 2214691..9e1aef4
-  detail: plans/phase-completes/phase-5-complete.md
-  highlights:
-    - Gate review system delivered (agents, /run-gate, /next-phase, versioning utilities)
-    - Plugin scaffold and invocation improvements completed across 6 loops (013-018)
-
-- phase: 6
-  title: "Compaction Schema Audit & Lock"
-  status: passed
-  commits: 84a0e86..724e7d6
-  detail: plans/phase-completes/phase-6-complete.md
-  highlights:
-    - Locked cold and hot compaction schemas (docs/phase-complete.schema.md, docs/phase-manifest-entry.schema.md)
-    - Phase-5 retrospective worked example produced and validated; verdict extension deferred to Phase 7
+> **Index gap**: Phases 6 and 7 are complete (compacted artefacts in `plans/phase-completes/`) but missing from this table. To be filled in separately — likely a defect in `/phase-compact`'s manifest-append step or an oversight at the last gate pass. Not in Phase 8 scope.
 
 ---
 
@@ -86,14 +49,13 @@ Compact entries for phases that have passed gate review. Each entry links to the
 | 016 | 5 | Gate Commands | `phase-5-ralph-loops.md` | **complete** | — | 1 |
 | 017 | 5 | Python Versioning Utilities | `phase-5-ralph-loops.md` | **complete** | — | 1 |
 | 018 | 5 | Integration Verification | `phase-5-ralph-loops.md` | **complete** | — | 1 |
-| 019 | 6 | Verdict Format Audit | `phase-6-ralph-loops.md` | **complete** | — | 1 |
-| 020 | 6 | Schema Drafts | `phase-6-ralph-loops.md` | **complete** | — | 1 |
-| 021 | 6 | Retrospective Worked Example | `phase-6-ralph-loops.md` | **complete** | — | 1 |
-| 022 | 6 | Schema Lock & Cross-Reference | `phase-6-ralph-loops.md` | **complete** | — | 1 |
-| 023 | 7 | Verdict Schema Extension + Agent Fix | `phase-7-ralph-loops.md` | **complete** | — | 1 |
-| 024 | 7 | `/phase-compact` Command Implementation | `phase-7-ralph-loops.md` | **complete** | — | 1 |
-| 025 | 7 | End-to-End Run Against Phase 6 | `phase-7-ralph-loops.md` | **complete** | — | 1 |
-| 026 | 7 | Agent Permission Template + Closeout | `phase-7-ralph-loops.md` | **complete** | — | 1 |
+| 027 | 8 | Hook + Permissions Hygiene | `phase-8-ralph-loops.md` | pending | — | 1 |
+| 028 | 8 | Sentinel Ownership Consolidation | `phase-8-ralph-loops.md` | pending | — | 1 |
+| 029 | 8 | progress-report Deduplication | `phase-8-ralph-loops.md` | pending | — | 1 |
+| 030 | 8 | Rename new-loop to decompose-phase | `phase-8-ralph-loops.md` | pending | — | 1 |
+| 031 | 8 | Disambiguation + Skill-Activation Policy | `phase-8-ralph-loops.md` | pending | — | 1 |
+
+> Loops 019–026 belong to Phases 6 and 7 (compacted) and are not yet enumerated here — see the index gap note above.
 
 ---
 
@@ -130,4 +92,3 @@ the original (no retry) and increments on each gate failure.
 - Loops 005–007 (Phase 2) completed in one session.
 - Loops 008–009 (Phase 3) completed in one session.
 - Loops 013–018 (Phase 5) implement the Gate Review Sub-Phase.
-- Loops 019–022 (Phase 6) deliver the Compaction Schema Audit & Lock; both schemas locked 2026-05-13.
