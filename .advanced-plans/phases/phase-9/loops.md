@@ -129,9 +129,9 @@ max_iterations: 3
 on_max_iterations: rollback
 
 handoff_summary:
-  done: ""
-  failed: ""
-  needed: ""
+  done: "Migrated all phase plans (1-5, 8-9), ralph-loop files (1-5, 8-9), gate verdicts (phases 6-7), completion artefacts (phases 5-6), design specs (3 files), PLANS-INDEX.md, master-plan.md, state bus files, and execution.log to .advanced-plans/ via git mv; removed empty plans/, .claude/state/, .claude/logs/; git log --follow confirmed pre-migration history (commit 5ec7168) preserved."
+  failed: "phases 6 and 7 had no phase-N.md files (compacted/removed prior to migration) — skipped as expected; phase-8-notes.md and phase-9.md moved alongside todo 6 as unspecified-but-required residuals."
+  needed: "Run Loop 034 to rewrite slash commands to target .advanced-plans/ paths."
 
 todos:
   - id: "loop-033-1"
@@ -195,14 +195,14 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "`git log --follow` on the sample file shows at least the original Phase 1 commit; if not, halt the loop and roll back via on_max_iterations: rollback."
-    status: in_progress
+    status: completed
     priority: high
   - id: "loop-033-10"
     content: "Remove now-empty source directories: `rmdir plans/gate-verdicts plans/phase-completes plans/ .claude/state/ .claude/logs/`. If any directory is non-empty, list its contents in the handoff and STOP — do not force-delete."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "Old directories deleted; `ls plans/` and `ls .claude/state/` and `ls .claude/logs/` all return 'no such file or directory'. Any non-empty case is flagged in handoff.failed."
-    status: pending
+    status: completed
     priority: high
 
 prompt: |

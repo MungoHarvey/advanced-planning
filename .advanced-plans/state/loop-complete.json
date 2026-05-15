@@ -1,13 +1,13 @@
 {
-  "loop_name": "ralph-loop-032",
-  "loop_file": "plans/phase-9-ralph-loops.md",
+  "loop_name": "ralph-loop-033",
+  "loop_file": ".advanced-plans/phases/phase-9/loops.md",
   "status": "completed",
-  "todos_done": 7,
+  "todos_done": 10,
   "todos_failed": 0,
-  "completed_at": "2026-05-15T12:25:00Z",
+  "completed_at": "2026-05-15T00:00:00Z",
   "handoff": {
-    "done": "Created .advanced-plans/ skeleton (phases/, specs/, state/, logs/), authored README.md and PLANNING.md with full 10-field frontmatter, added !.claude/settings.json gitignore exception (file now tracked), and patched hook allowlists in both settings.json and hooks.json to dual-allow old (plans/*, .claude/state/*) and new (.advanced-plans/*) paths.",
-    "failed": "",
-    "needed": "Run Loop 033 to perform git mv file migration from plans/, .claude/state/, .claude/logs/ into .advanced-plans/."
+    "done": "Migrated all phase plans (1-5, 8-9), ralph-loop files (1-5, 8-9), gate verdicts (phases 6-7), completion artefacts (phases 5-6), design specs (3 files), PLANS-INDEX.md, master-plan.md, state bus files, and execution.log to .advanced-plans/ via git mv; removed empty plans/, .claude/state/, .claude/logs/; git log --follow confirmed pre-migration history (commit 5ec7168) preserved.",
+    "failed": "phases 6 and 7 had no phase-N.md files (compacted/removed prior to migration) — skipped as expected; phase-8-notes.md and phase-9.md moved alongside todo 6 as unspecified-but-required residuals.",
+    "needed": "Run Loop 034 to rewrite slash commands to target .advanced-plans/ paths."
   }
 }
