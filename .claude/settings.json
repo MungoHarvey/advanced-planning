@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Write(plans/**)",
+      "Edit(plans/**)",
+      "MultiEdit(plans/**)",
+      "Write(.claude/state/**)",
+      "Edit(.claude/state/**)",
+      "Write(.claude/logs/**)",
+      "Edit(.claude/logs/**)"
+    ]
+  }
+}

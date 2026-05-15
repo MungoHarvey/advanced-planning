@@ -1,7 +1,9 @@
 # Advanced Planning System — .gitignore
 
 # ── Platform-internal directories ─────────────────────────────────────────────
-.claude/
+# Ignore all of .claude/ except settings.json (tracked via gitignore exception)
+.claude/*
+!.claude/settings.json
 
 # ── Snapshot checkpoints (potentially large; restore from git instead) ─────────
 state/snapshots/

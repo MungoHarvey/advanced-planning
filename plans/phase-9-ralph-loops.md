@@ -15,9 +15,9 @@ max_iterations: 3
 on_max_iterations: checkpoint
 
 handoff_summary:
-  done: ""
+  done: "Created .advanced-plans/ skeleton (phases/, specs/, state/, logs/), authored README.md and PLANNING.md with full 10-field frontmatter, added !.claude/settings.json gitignore exception (file now tracked), and patched hook allowlists in both settings.json and hooks.json to dual-allow old (plans/*, .claude/state/*) and new (.advanced-plans/*) paths."
   failed: ""
-  needed: ""
+  needed: "Run Loop 033 to perform git mv file migration from plans/, .claude/state/, .claude/logs/ into .advanced-plans/."
 
 todos:
   - id: "loop-032-1"
@@ -25,49 +25,49 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "Working tree shows no unstaged/staged changes in the three source directories; if it does, loop halts with explicit user-action message and no further todos run."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-032-2"
     content: "Verify no in-flight loop: confirm `.claude/state/loop-ready.json` either does not exist or has status != 'ready'. Abort if a live loop is detected."
     skill: "NA"
     agent: "NA"
     outcome: "loop-ready.json absent or its status field is not 'ready'; precondition documented in commit log."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-032-3"
     content: "Create .advanced-plans/ directory tree: top-level dir + phases/, specs/, state/, logs/ subdirectories. No files yet — just the empty skeleton."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: ".advanced-plans/ exists at repo root with phases/, specs/, state/, logs/ subdirs; verified by `ls -la .advanced-plans/`."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-032-4"
     content: "Add `!.claude/settings.json` exception to .gitignore so the file from Loop 027 becomes trackable. Verify with `git check-ignore -v .claude/settings.json` (should NOT match an ignore rule)."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: ".gitignore contains `!.claude/settings.json` line; `git ls-files .claude/settings.json` returns the path after a single `git add`."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-032-5"
     content: "Patch hook allowlists in platforms/claude-code/settings.json and platforms/claude-code/hooks/hooks.json to allow BOTH old paths (plans/*, .claude/state/*) AND new paths (.advanced-plans/*) so migration steps in later loops aren't blocked."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "Both hook config files contain glob patterns matching both old and new path families; settings.json and hooks.json remain byte-identical for the planning-mode block."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-032-6"
     content: "Author initial .advanced-plans/README.md: directory map (the layout tree), conventions (frontmatter required on plan.md / loops.md / PLANNING.md), workflow cheat sheet (which slash command does what), and explicit pointer to PLANNING.md as the live dashboard."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: ".advanced-plans/README.md exists, includes a directory tree diagram, lists all framework slash commands with one-line purposes, and links to PLANNING.md as the live state file."
-    status: pending
+    status: completed
     priority: medium
   - id: "loop-032-7"
     content: "Author initial .advanced-plans/PLANNING.md with YAML frontmatter populated from current programme state: programme name, status: in_progress, current_phase: 9, current_loop: ralph-loop-032 (this one), gate_status: not_due, next_action: '/next-loop', active_branches: [main], phases.complete: [1,2,3,4,5,6,7,8], phases.pending: [9], state_files pointing to .advanced-plans/state/* (where they'll live after Loop 033)."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: ".advanced-plans/PLANNING.md exists; frontmatter parses as valid YAML; all 10 fields from the design spec are populated; last_updated: 2026-05-15."
-    status: pending
+    status: completed
     priority: high
 
 prompt: |

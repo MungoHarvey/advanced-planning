@@ -66,11 +66,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ -f .claude/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/*|*.claude/state/*) ;; *) echo 'BLOCK: Write disabled during planning mode. Allowed: plans/, .claude/plans/, and .claude/state/ only.' >&2; exit 2 ;; esac; fi"
+            "command": "if [ -f .claude/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/*|*.claude/state/*|*.advanced-plans/*) ;; *) echo 'BLOCK: Write disabled during planning mode. Allowed: plans/, .claude/plans/, .claude/state/, and .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
           },
           {
             "type": "command",
-            "command": "if [ -f .claude/state/gate-review-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/gate-verdicts/*|*.claude/state/*) ;; *) echo 'BLOCK: Write disabled during gate review mode. Allowed: plans/gate-verdicts/ and .claude/state/ only.' >&2; exit 2 ;; esac; fi"
+            "command": "if [ -f .claude/state/gate-review-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/gate-verdicts/*|*.claude/state/*|*.advanced-plans/*) ;; *) echo 'BLOCK: Write disabled during gate review mode. Allowed: plans/gate-verdicts/, .claude/state/, and .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
           }
         ]
       },
@@ -79,11 +79,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ -f .claude/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/*|*.claude/state/*) ;; *) echo 'BLOCK: Edit disabled during planning mode. Allowed: plans/, .claude/plans/, and .claude/state/ only.' >&2; exit 2 ;; esac; fi"
+            "command": "if [ -f .claude/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/*|*.claude/state/*|*.advanced-plans/*) ;; *) echo 'BLOCK: Edit disabled during planning mode. Allowed: plans/, .claude/plans/, .claude/state/, and .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
           },
           {
             "type": "command",
-            "command": "if [ -f .claude/state/gate-review-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/gate-verdicts/*|*.claude/state/*) ;; *) echo 'BLOCK: Edit disabled during gate review mode. Allowed: plans/gate-verdicts/ and .claude/state/ only.' >&2; exit 2 ;; esac; fi"
+            "command": "if [ -f .claude/state/gate-review-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/gate-verdicts/*|*.claude/state/*|*.advanced-plans/*) ;; *) echo 'BLOCK: Edit disabled during gate review mode. Allowed: plans/gate-verdicts/, .claude/state/, and .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
           }
         ]
       },
@@ -92,11 +92,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ -f .claude/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/*|*.claude/state/*) ;; *) echo 'BLOCK: MultiEdit disabled during planning mode. Allowed: plans/, .claude/plans/, and .claude/state/ only.' >&2; exit 2 ;; esac; fi"
+            "command": "if [ -f .claude/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/*|*.claude/state/*|*.advanced-plans/*) ;; *) echo 'BLOCK: MultiEdit disabled during planning mode. Allowed: plans/, .claude/plans/, .claude/state/, and .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
           },
           {
             "type": "command",
-            "command": "if [ -f .claude/state/gate-review-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/gate-verdicts/*|*.claude/state/*) ;; *) echo 'BLOCK: MultiEdit disabled during gate review mode. Allowed: plans/gate-verdicts/ and .claude/state/ only.' >&2; exit 2 ;; esac; fi"
+            "command": "if [ -f .claude/state/gate-review-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/gate-verdicts/*|*.claude/state/*|*.advanced-plans/*) ;; *) echo 'BLOCK: MultiEdit disabled during gate review mode. Allowed: plans/gate-verdicts/, .claude/state/, and .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
           }
         ]
       }
