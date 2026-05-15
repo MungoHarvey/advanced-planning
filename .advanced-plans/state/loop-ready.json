@@ -1,13 +1,13 @@
 {
-  "loop_name": "ralph-loop-034",
+  "loop_name": "ralph-loop-035",
   "loop_file": ".advanced-plans/phases/phase-9/loops.md",
-  "task_name": "Command Rewrites + Phase 8 Absorption",
+  "task_name": "Hooks + Permissions + Python + Install",
   "todos_count": 9,
-  "prepared_at": "2026-05-15T00:00:00Z",
+  "prepared_at": "2026-05-15T08:00:00Z",
   "status": "ready",
   "handoff_injected": {
-    "done": "Migrated all phase plans (1-5, 8-9), ralph-loop files (1-5, 8-9), gate verdicts (phases 6-7), completion artefacts (phases 5-6), design specs (3 files), PLANS-INDEX.md, master-plan.md, state bus files, and execution.log to .advanced-plans/ via git mv; removed empty plans/, .claude/state/, .claude/logs/; git log --follow confirmed pre-migration history (commit 5ec7168) preserved.",
-    "failed": "phases 6 and 7 had no phase-N.md files (compacted/removed prior to migration) — skipped as expected; phase-8-notes.md and phase-9.md moved alongside todo 6 as unspecified-but-required residuals.",
-    "needed": "Run Loop 034 to rewrite slash commands to target .advanced-plans/ paths."
+    "done": "Rewrote all 12 slash commands to target .advanced-plans/ paths; renamed /new-loop to /decompose-phase (git mv, fixed .md.md bug, fixed save-path to .advanced-plans/phases/phase-N/loops.md); established canonical sentinel ownership (.advanced-plans/state/planning-mode owned by plan-and-phase.md, .advanced-plans/state/gate-review-mode owned by run-gate.md and next-phase.md, both enforced by hooks.json and settings.json); deduped /loop-status (live snapshot: pending/in-progress todos) vs /progress-report (historical synthesis: completed work across loops/phases); command-surface table for Loop 036 CLAUDE.md: /plan-and-phase=explore+plan pipeline, /new-phase=headless plan pipeline, /decompose-phase=decompose one phase plan into loops, /next-loop=execute one loop, /next-phase=gate+advance, /run-gate=standalone gate review, /phase-compact=compaction artefacts, /loop-status=live todo state, /progress-report=historical synthesis, /check-execution=health diagnostic, /run-closeout=final narrative, /model-check=model routing verify.",
+    "failed": "",
+    "needed": "Run Loop 035 to narrow hook allowlists to .advanced-plans/ only, update Python path constants, and update install scripts."
   }
 }
