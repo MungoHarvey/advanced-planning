@@ -139,63 +139,63 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "Each `.advanced-plans/phases/phase-N/plan.md` exists; old `plans/phase-N.md` does not; `git log --follow` on plan.md shows the original phase-N.md commits."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-033-2"
     content: "Migrate ralph-loop files: for each phase N with `plans/phase-N-ralph-loops.md`, run `git mv` to `.advanced-plans/phases/phase-N/loops.md`."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "Each phase-N's loops.md is co-located with plan.md under phases/phase-N/; old files gone; history preserved."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-033-3"
     content: "Migrate gate verdicts: enumerate plans/gate-verdicts/phase-N-*.json files, group by phase, and `git mv` each into `.advanced-plans/phases/phase-N/gate-verdicts/`. Create subdir as needed."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "All gate verdict JSON files now live under their respective phases/phase-N/gate-verdicts/ subfolders; plans/gate-verdicts/ is empty."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-033-4"
     content: "Migrate phase completion artefacts: `git mv plans/phase-completes/phase-N-complete.md` → `.advanced-plans/phases/phase-N/complete.md` for each existing file."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "Each existing phase complete.md sits beside that phase's plan.md and loops.md; plans/phase-completes/ is empty."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-033-5"
     content: "Migrate design specs: `git mv plans/2026-*.md` (any date-prefixed design doc, including this restructure's own spec) → `.advanced-plans/specs/`."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "All design specs reside in `.advanced-plans/specs/`; the file `.advanced-plans/specs/2026-05-14-advanced-plans-restructure-design.md` exists."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-033-6"
     content: "Migrate top-level navigation files: `git mv plans/PLANS-INDEX.md` and `plans/master-plan.md` → `.advanced-plans/`."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "`.advanced-plans/PLANS-INDEX.md` and `.advanced-plans/master-plan.md` exist; old top-level files in plans/ are gone."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-033-7"
     content: "Migrate state bus: `git mv .claude/state/loop-ready.json`, `loop-complete.json`, `history.jsonl` → `.advanced-plans/state/`."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "`.advanced-plans/state/` contains the three state files; `.claude/state/` is empty (or has only an `.archive/` subdir if previously created)."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-033-8"
     content: "Migrate logs: `git mv .claude/logs/execution.log` (and any other log files) → `.advanced-plans/logs/`."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "All log files moved; `.claude/logs/` is empty."
-    status: pending
+    status: completed
     priority: medium
   - id: "loop-033-9"
     content: "Verify history preservation: run `git log --follow .advanced-plans/phases/phase-1/plan.md` and confirm the output includes commits predating today's session (i.e. the original Phase 1 creation in `plans/phase-1.md`)."
     skill: "NA"
     agent: "NA"
     outcome: "`git log --follow` on the sample file shows at least the original Phase 1 commit; if not, halt the loop and roll back via on_max_iterations: rollback."
-    status: pending
+    status: in_progress
     priority: high
   - id: "loop-033-10"
     content: "Remove now-empty source directories: `rmdir plans/gate-verdicts plans/phase-completes plans/ .claude/state/ .claude/logs/`. If any directory is non-empty, list its contents in the handoff and STOP — do not force-delete."

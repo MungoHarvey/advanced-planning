@@ -1,0 +1,13 @@
+{
+  "loop_name": "ralph-loop-033",
+  "loop_file": "plans/phase-9-ralph-loops.md",
+  "task_name": "File Migration",
+  "todos_count": 10,
+  "prepared_at": "2026-05-15T12:30:00Z",
+  "status": "ready",
+  "handoff_injected": {
+    "done": "Created .advanced-plans/ skeleton (phases/, specs/, state/, logs/), authored README.md and PLANNING.md with full 10-field frontmatter, added !.claude/settings.json gitignore exception (file now tracked), and patched hook allowlists in both settings.json and hooks.json to dual-allow old (plans/*, .claude/state/*) and new (.advanced-plans/*) paths.",
+    "failed": "",
+    "needed": "Run Loop 033 to perform git mv file migration from plans/, .claude/state/, .claude/logs/ into .advanced-plans/."
+  }
+}
