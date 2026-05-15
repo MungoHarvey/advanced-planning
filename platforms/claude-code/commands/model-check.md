@@ -29,20 +29,20 @@ echo "Current model: ${CLAUDE_MODEL:-unknown}"
 Read each skill and agent frontmatter to extract the `model:` field:
 
 ```
-Read .claude/skills/phase-plan-creator/SKILL.md        → model field
-Read .claude/skills/ralph-loop-planner/SKILL.md        → model field
-Read .claude/skills/plan-todos/SKILL.md                → model field
-Read .claude/skills/plan-skill-identification/SKILL.md → model field
-Read .claude/skills/plan-subagent-identification/SKILL.md → model field
-Read .claude/agents/ralph-orchestrator.md              → model field
-Read .claude/agents/ralph-loop-worker.md               → model field
-Read .claude/agents/analysis-worker.md                 → model field
+Read .claude/skills/phase-plan-creator/SKILL.md        -> model field
+Read .claude/skills/ralph-loop-planner/SKILL.md        -> model field
+Read .claude/skills/plan-todos/SKILL.md                -> model field
+Read .claude/skills/plan-skill-identification/SKILL.md -> model field
+Read .claude/skills/plan-subagent-identification/SKILL.md -> model field
+Read .claude/agents/ralph-orchestrator.md              -> model field
+Read .claude/agents/ralph-loop-worker.md               -> model field
+Read .claude/agents/analysis-worker.md                 -> model field
 ```
 
 ### 3. Show recent audit log (if present)
 
 ```bash
-tail -20 .claude/logs/execution.log 2>/dev/null || echo "(no execution log yet)"
+tail -20 .advanced-plans/logs/execution.log 2>/dev/null || echo "(no execution log yet)"
 ```
 
 ### 4. Print summary table

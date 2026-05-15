@@ -14,7 +14,7 @@ Systematic diagnostic across six areas. Run each check and report findings.
 Confirms whether execution log entries contain real model names or `unknown` placeholders.
 
 ```bash
-grep -E "model:|WORKER" .claude/logs/execution.log 2>/dev/null | head -20 || echo "(no execution log found)"
+grep -E "model:|WORKER" .advanced-plans/logs/execution.log 2>/dev/null | head -20 || echo "(no execution log found)"
 ```
 
 **Healthy**: model names like `claude-sonnet-4-6`, agent names like `ralph-loop-worker`
@@ -28,13 +28,13 @@ Did Haiku workers actually run, or did the orchestrator do everything?
 
 ```bash
 echo "Worker spawns:"
-grep "WORKER START" .claude/logs/execution.log 2>/dev/null | wc -l
+grep "WORKER START" .advanced-plans/logs/execution.log 2>/dev/null | wc -l
 
 echo "Worker names:"
-grep "WORKER START" .claude/logs/execution.log 2>/dev/null
+grep "WORKER START" .advanced-plans/logs/execution.log 2>/dev/null
 
 echo "Todos with agent assignments:"
-grep "agent:" .claude/plans/*.md 2>/dev/null | grep -v ": NA" | grep -v "^--"
+grep "agent:" .advanced-plans/phases/phase-*/loops.md 2>/dev/null | grep -v ": NA" | grep -v "^--"
 ```
 
 **Healthy**: Worker spawn count matches number of todos with non-NA agent assignments
@@ -48,15 +48,15 @@ Did todos move through states, or are they stuck?
 
 ```bash
 echo "Current todo statuses:"
-grep -E "^\s+status:" .claude/plans/*.md 2>/dev/null | sort | uniq -c
+grep -E "^\s+status:" .advanced-plans/phases/phase-*/loops.md 2>/dev/null | sort | uniq -c
 
 echo ""
 echo "Todos still pending:"
-grep -B3 "status: pending" .claude/plans/*.md 2>/dev/null | grep "content:"
+grep -B3 "status: pending" .advanced-plans/phases/phase-*/loops.md 2>/dev/null | grep "content:"
 
 echo ""
 echo "Todos completed:"
-grep -B3 "status: completed" .claude/plans/*.md 2>/dev/null | grep "content:"
+grep -B3 "status: completed" .advanced-plans/phases/phase-*/loops.md 2>/dev/null | grep "content:"
 ```
 
 **Healthy**: Mix of completed and pending matching execution progress
@@ -69,7 +69,7 @@ grep -B3 "status: completed" .claude/plans/*.md 2>/dev/null | grep "content:"
 Was the loop wrap-up step executed?
 
 ```bash
-grep -A5 "handoff_summary:" .claude/plans/*.md 2>/dev/null
+grep -A5 "handoff_summary:" .advanced-plans/phases/phase-*/loops.md 2>/dev/null
 ```
 
 **Healthy**: `done:` fields contain real sentences describing completed work
@@ -97,11 +97,11 @@ Were actual output files produced, or only plan file status updates?
 
 ```bash
 echo "Files written during session:"
-grep "WRITE:\|EDIT:" .claude/logs/execution.log 2>/dev/null | grep -v "\.claude/plans\|\.claude/logs\|\.claude/state" | head -30
+grep "WRITE:\|EDIT:" .advanced-plans/logs/execution.log 2>/dev/null | grep -v "\.advanced-plans/phases\|\.advanced-plans/logs\|\.advanced-plans/state" | head -30
 
 echo ""
 echo "Plan file edits (expected — status updates and handoff writes):"
-grep "WRITE:\|EDIT:" .claude/logs/execution.log 2>/dev/null | grep "plans/" | wc -l
+grep "WRITE:\|EDIT:" .advanced-plans/logs/execution.log 2>/dev/null | grep "\.advanced-plans/phases" | wc -l
 ```
 
 **Healthy**: Output files appear alongside plan edits

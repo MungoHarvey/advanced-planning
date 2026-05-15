@@ -21,25 +21,28 @@ Otherwise: `AUTO_EXECUTE = false` (default).
 
 ### Step 1: Enter Planning Mode
 
+The planning-mode sentinel lives at `.advanced-plans/state/planning-mode`. Creating it
+activates the PreToolUse hooks in `settings.json` that restrict writes during exploration.
+
 ```bash
-mkdir -p .claude/state .claude/plans && echo "$(date -Iseconds)" > .claude/state/planning-mode
+mkdir -p .advanced-plans/state && echo "$(date -Iseconds)" > .advanced-plans/state/planning-mode
 ```
 
-Print: `🔍 Planning mode active — writes restricted to .claude/plans/ and .claude/state/`
+Print: `Planning mode active — writes restricted to .advanced-plans/ only`
 
 ### Step 2: EXPLORE — Codebase Exploration
 
 Use `$ARGUMENTS` as the exploration focus. If no arguments provided, ask the user what they
 want to accomplish before continuing.
 
-Read-only exploration — do NOT write any files except to `.claude/plans/` or `.claude/state/`:
+Read-only exploration — do NOT write any files except to `.advanced-plans/`:
 
 1. Read architecture files: `CLAUDE.md`, `README.md`, top-level directory structure
 2. Glob for source files relevant to the stated goal
 3. Grep for patterns, interfaces, and existing implementations related to the goal
 4. Read files that are directly relevant to understanding the work ahead
 
-Save findings to `.claude/plans/exploration-notes.md` with these sections:
+Save findings to `.advanced-plans/exploration-notes.md` with these sections:
 
 ```markdown
 ## Exploration Focus
@@ -71,10 +74,10 @@ Wait for the user's response before proceeding.
 ### Step 4: Exit Planning Mode
 
 ```bash
-rm -f .claude/state/planning-mode
+rm -f .advanced-plans/state/planning-mode
 ```
 
-Print: `✓ Planning mode exited — writes re-enabled`
+Print: `Planning mode exited — writes re-enabled`
 
 ### Step 5: PHASE DECOMPOSITION
 
@@ -83,10 +86,10 @@ Resolve the `phase-plan-creator` skill:
 2. Fall back to `~/.claude/skills/phase-plan-creator/SKILL.md`
 3. Fall back to the core skills path referenced in CLAUDE.md
 
-Load the skill. Use the exploration notes from `.claude/plans/exploration-notes.md`
+Load the skill. Use the exploration notes from `.advanced-plans/exploration-notes.md`
 plus `$ARGUMENTS` as input. Follow the skill's process to produce a phase plan.
 
-Save to `.claude/plans/phase-[N].md` (increment N based on existing phase files).
+Save to `.advanced-plans/phases/phase-[N]/plan.md` (increment N based on existing phase dirs).
 
 ### Step 5b: PLANNOTATOR REVIEW (conditional)
 
@@ -95,7 +98,7 @@ Check if Plannotator is available:
 
 **If Plannotator is detected:**
 
-Invoke `/plannotator-annotate .claude/plans/phase-[N].md` to open the phase plan in the
+Invoke `/plannotator-annotate .advanced-plans/phases/phase-[N]/plan.md` to open the phase plan in the
 browser for visual review. The user can:
 - Review the high-level plan structure
 - Annotate phases and success criteria
@@ -113,32 +116,30 @@ feedback injected as additional context for the phase-plan-creator skill. Repeat
 
 Run each remaining planning skill in sequence, exactly as `/new-phase` does:
 
-1. Load `ralph-loop-planner` — decompose phase into loops, save loop stubs
+1. Load `ralph-loop-planner` — decompose phase into loops, save to `.advanced-plans/phases/phase-[N]/loops.md`
 2. Load `plan-todos` — populate todos for every loop
 3. Load `plan-skill-identification` — assign skills to todos
 4. Load `plan-subagent-identification` — assign agents to todos
 
 Resolve each skill from `.claude/skills/` first, then `~/.claude/skills/`.
 
-### Step 7: Update CLAUDE.md Planning State
+### Step 7: Update PLANNING.md
 
-Read the `## Planning State` section of `CLAUDE.md` (or append one if absent).
-
-Update:
-- `phase:` — set to the new phase number
-- `loop:` — set to the first loop
-- `status:` — set to `ready`
+Read `.advanced-plans/PLANNING.md` and update:
+- `current_phase:` — set to the new phase number
+- `current_loop:` — set to the first loop
+- `status:` — set to `in_progress`
 - `last_updated:` — today's date
 
 ### Step 8: Print Completion Summary and Auto-Execute
 
 If `AUTO_EXECUTE` is false:
 ```
-✓ Phase [N] — [phase name] ready for execution
+Phase [N] — [phase name] ready for execution
   Loops:      [loop count] loops planned
   Todos:      [total todos] todos across all loops
-  Plan file:  .claude/plans/phase-[N].md
-  Loop file:  .claude/plans/phase-[N]-ralph-loops.md
+  Plan file:  .advanced-plans/phases/phase-[N]/plan.md
+  Loop file:  .advanced-plans/phases/phase-[N]/loops.md
 
 Run /next-loop to begin execution.
 Run /next-loop --auto to chain all loops until the phase completes.
@@ -146,7 +147,7 @@ Run /next-loop --auto to chain all loops until the phase completes.
 
 If `AUTO_EXECUTE` is true:
 ```
-✓ Phase [N] — [phase name] — planning complete. Beginning autonomous execution...
+Phase [N] — [phase name] — planning complete. Beginning autonomous execution...
   Loops:      [loop count] loops planned
   Todos:      [total todos] todos across all loops
 ```
@@ -155,9 +156,11 @@ Then immediately chain into `/next-loop --auto` (no confirmation gate — user c
 
 ## Notes
 
-- The sentinel file `.claude/state/planning-mode` triggers the PreToolUse hooks in `settings.json`
-  that block writes to paths outside `.claude/plans/` and `.claude/state/`
-- If the user chooses **stop** at Step 3, the exploration notes are preserved in `.claude/plans/`
+- The sentinel file `.advanced-plans/state/planning-mode` is the canonical owner of planning-mode
+  state. The PreToolUse hooks in `settings.json` check for its existence to restrict writes.
+- The sentinel file `.advanced-plans/state/gate-review-mode` is the canonical owner of
+  gate-review-mode state. Hooks check for its existence to restrict writes during gate review.
+- If the user chooses **stop** at Step 3, the exploration notes are preserved in `.advanced-plans/`
   and can be fed to `/new-phase` manually
 - The pipeline in Steps 5–6 is identical to `/new-phase` — the only difference is that
   exploration notes inform the phase plan rather than the user describing the goal cold

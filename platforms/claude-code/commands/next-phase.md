@@ -18,15 +18,16 @@ execute all loops → gate review → repeat until the programme completes or a 
 
 ### 1. Read current phase
 
-Read `CLAUDE.md` and extract the `## Planning State` section. Identify:
+Read `.advanced-plans/PLANNING.md` and extract `current_phase`. Also read `CLAUDE.md` for
+any `## Planning State` section if PLANNING.md is absent. Identify:
 - Current phase number `N`
 - Current loop file path
 - Current phase status
 
 If the current phase already has `status: complete`:
-print `✓ Phase [N] is already complete. Run /new-phase to plan Phase [N+1].` and stop.
+print `Phase [N] is already complete. Run /decompose-phase to plan Phase [N+1].` and stop.
 
-Print: `→ Current phase: Phase [N]`
+Print: `-> Current phase: Phase [N]`
 
 ### 2. Parse flags
 
@@ -50,11 +51,11 @@ Run the full gate review inline (same logic as `/run-gate`):
 **3a. Verify all loops complete**
 
 ```bash
-grep -c "status: pending\|status: in_progress" .claude/plans/*.md 2>/dev/null || echo "0"
+grep -rn "status: pending\|status: in_progress" .advanced-plans/phases/phase-[N]/loops.md 2>/dev/null || echo "0"
 ```
 
 If any incomplete todos found:
-print `✗ Gate review blocked: [N] todos are not yet completed. Finish all loops first.`
+print `Gate review blocked: [N] todos are not yet completed. Finish all loops first.`
 and stop.
 
 **3b. Determine agents and attempt number**
@@ -64,7 +65,7 @@ Default gate agents: `code-review-agent`, `phase-goals-agent`
 Count existing verdict files to find attempt number:
 
 ```bash
-ls plans/gate-verdicts/phase-[N]-attempt-*.json 2>/dev/null | wc -l
+ls .advanced-plans/phases/phase-[N]/gate-verdicts/phase-[N]-attempt-*.json 2>/dev/null | wc -l
 ```
 
 Set `attempt = (existing_count / agent_count) + 1`, minimum 1.
@@ -72,8 +73,8 @@ Set `attempt = (existing_count / agent_count) + 1`, minimum 1.
 **3c. Create gate-verdicts directory and sentinel**
 
 ```bash
-mkdir -p plans/gate-verdicts
-echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .claude/state/gate-review-mode
+mkdir -p .advanced-plans/phases/phase-[N]/gate-verdicts
+echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .advanced-plans/state/gate-review-mode
 ```
 
 **3d. Spawn each gate agent sequentially**
@@ -85,10 +86,10 @@ You are [agent-name] performing a gate review.
 
 Phase: [N]
 Attempt: [attempt]
-Phase plan: plans/phase-[N]-*.md
-Loop files: .claude/plans/ (all loop files for this phase)
+Phase plan: .advanced-plans/phases/phase-[N]/plan.md
+Loop files: .advanced-plans/phases/phase-[N]/loops.md
 
-Your verdict output path: plans/gate-verdicts/phase-[N]-attempt-[attempt]-[agent-name].json
+Your verdict output path: .advanced-plans/phases/phase-[N]/gate-verdicts/phase-[N]-attempt-[attempt]-[agent-name].json
 
 Evaluate whether the phase success criteria have been met. Write your verdict to the
 output path following gate-verdict.schema.json. Then return.
@@ -99,7 +100,7 @@ Wait for each agent before spawning the next.
 **3e. Remove sentinel**
 
 ```bash
-rm .claude/state/gate-review-mode
+rm .advanced-plans/state/gate-review-mode
 ```
 
 **3f. Aggregate verdicts**
@@ -113,13 +114,13 @@ Read all verdict files for this phase+attempt. Check each `verdict` field:
 If `GATE_RESULT = pass`:
 
 ```bash
-echo '{"event":"gate_pass","phase":"phase-[N]","attempt":[attempt],"timestamp":"[ISO timestamp]","agents":["code-review-agent","phase-goals-agent"],"verdict_files":["plans/gate-verdicts/phase-[N]-attempt-[attempt]-code-review-agent.json","plans/gate-verdicts/phase-[N]-attempt-[attempt]-phase-goals-agent.json"]}' >> .claude/state/history.jsonl
+echo '{"event":"gate_pass","phase":"phase-[N]","attempt":[attempt],"timestamp":"[ISO timestamp]","agents":["code-review-agent","phase-goals-agent"],"verdict_files":[".advanced-plans/phases/phase-[N]/gate-verdicts/phase-[N]-attempt-[attempt]-code-review-agent.json",".advanced-plans/phases/phase-[N]/gate-verdicts/phase-[N]-attempt-[attempt]-phase-goals-agent.json"]}' >> .advanced-plans/state/history.jsonl
 ```
 
 If `GATE_RESULT = fail`:
 
 ```bash
-echo '{"event":"gate_fail","phase":"phase-[N]","attempt":[attempt],"timestamp":"[ISO timestamp]","agent":"[failing-agent]","verdict_file":"[failing-verdict-path]","loops_to_revert":[loops JSON array]}' >> .claude/state/history.jsonl
+echo '{"event":"gate_fail","phase":"phase-[N]","attempt":[attempt],"timestamp":"[ISO timestamp]","agent":"[failing-agent]","verdict_file":"[failing-verdict-path]","loops_to_revert":[loops JSON array]}' >> .advanced-plans/state/history.jsonl
 ```
 
 ### 5. Handle --force flag on gate failure
@@ -128,7 +129,7 @@ If `GATE_RESULT = fail` and `--force` was provided:
 
 Print:
 ```
-⚠ WARNING: Gate review FAILED but --force was used. Advancing anyway.
+WARNING: Gate review FAILED but --force was used. Advancing anyway.
   Failing agent: [agent-name]
   Verdict file:  [path]
   The failure context has NOT been preserved in versioned retry files.
@@ -139,9 +140,9 @@ Set `GATE_RESULT = pass` and continue to Step 6.
 
 ### 6. Gate PASS — advance to next phase
 
-Update `CLAUDE.md` `## Planning State`:
+Update `.advanced-plans/PLANNING.md`:
 - Set current phase `status: complete`
-- Set `phase: [N+1]` as the next active phase (with `status: not_started`)
+- Set `current_phase: [N+1]` as the next active phase
 
 ```bash
 git add -A && git commit -m "complete: phase-[N] gate passed — advancing to phase-[N+1]"
@@ -149,11 +150,11 @@ git add -A && git commit -m "complete: phase-[N] gate passed — advancing to ph
 
 Print:
 ```
-✓ Phase [N] gate PASSED.
-  Status updated in CLAUDE.md.
+Phase [N] gate PASSED.
+  Status updated in .advanced-plans/PLANNING.md.
 ```
 
-If `AUTO_PHASE_MODE = false`: print `Run /new-phase to plan Phase [N+1].` and stop.
+If `AUTO_PHASE_MODE = false`: print `Run /decompose-phase to plan Phase [N+1].` and stop.
 
 If `AUTO_PHASE_MODE = true`: proceed to Step 8 (auto-continuation).
 
@@ -166,7 +167,7 @@ and gate review into a continuous autonomous pipeline.
 
 #### 8a. Check for next phase
 
-Read `plans/PLANS-INDEX.md` and `plans/master-plan.md` (if they exist) to determine if more
+Read `.advanced-plans/PLANS-INDEX.md` and `.advanced-plans/master-plan.md` (if they exist) to determine if more
 phases are planned:
 
 - If a master plan exists with a defined Phase [N+1] description: use that description as input
@@ -174,7 +175,7 @@ phases are planned:
 - If no more phases are defined anywhere:
   print `Programme complete. All planned phases passed gate review.` and stop
 - If uncertain (no master plan, no pre-defined phases):
-  print `Phase [N] complete. No next phase defined in master plan. Run /new-phase to plan manually.` and stop
+  print `Phase [N] complete. No next phase defined in master plan. Run /decompose-phase to plan manually.` and stop
 
 #### 8b. Plan the next phase (inline planning pipeline)
 
@@ -183,10 +184,10 @@ Run the full planning pipeline for Phase [N+1] (same steps as `/new-phase`):
 1. Auto-increment phase number: `N+1`
 2. Load `.claude/skills/phase-plan-creator/SKILL.md` and follow its Process section
    - Use the description from Step 8a as input
-   - Save to `plans/phase-[N+1].md`
+   - Save to `.advanced-plans/phases/phase-[N+1]/plan.md`
 3. Load `.claude/skills/ralph-loop-planner/SKILL.md` and follow its Process section
    - Read the phase plan just created
-   - Save to `plans/phase-[N+1]-ralph-loops.md`
+   - Save to `.advanced-plans/phases/phase-[N+1]/loops.md`
 4. Load `.claude/skills/plan-todos/SKILL.md` and follow its Process section
    - Populate `todos[]` for every loop
 5. Load `.claude/skills/plan-skill-identification/SKILL.md` and follow its Process section
@@ -195,7 +196,7 @@ Run the full planning pipeline for Phase [N+1] (same steps as `/new-phase`):
 6. Load `.claude/skills/plan-subagent-identification/SKILL.md` and follow its Process section
    - Glob `.claude/agents/*.md` to discover available agents
    - Assign `agent:` fields in-place
-7. Update `CLAUDE.md` `## Planning State` with the new phase and first loop
+7. Update `.advanced-plans/PLANNING.md` with the new phase and first loop
 
 ```bash
 git add -A && git commit -m "plan: phase-[N+1] — [phase name], [loop count] loops, [todo count] todos"
@@ -203,7 +204,7 @@ git add -A && git commit -m "plan: phase-[N+1] — [phase name], [loop count] lo
 
 Print:
 ```
-✓ Phase [N+1] planned: [phase name]
+Phase [N+1] planned: [phase name]
   Loops: [count]
   Todos: [count]
   Beginning execution...
@@ -223,24 +224,24 @@ Run the loop execution cycle for Phase [N+1] (same logic as `/next-loop --auto`)
 2. Spawn `ralph-orchestrator` (Sonnet):
    - Identifies next pending loop
    - Populates todos if needed
-   - Writes `.claude/state/loop-ready.json`
+   - Writes `.advanced-plans/state/loop-ready.json`
    - Returns
 
-3. Read `.claude/state/loop-ready.json`
+3. Read `.advanced-plans/state/loop-ready.json`
    - If `status: all_complete`: all loops done, proceed to Step 8d
    - Otherwise: print loop summary
 
 4. Spawn `ralph-loop-worker` (Sonnet):
    - Reads `loop-ready.json` for assignment
    - Executes all todos with targeted skill injection
-   - Writes `.claude/state/loop-complete.json`
+   - Writes `.advanced-plans/state/loop-complete.json`
    - Returns
 
-5. Read `.claude/state/loop-complete.json`
+5. Read `.advanced-plans/state/loop-complete.json`
 
-6. Update `CLAUDE.md` `## Planning State`:
+6. Update `.advanced-plans/PLANNING.md`:
    - Advance loop pointer
-   - Increment `todos_done`
+   - Update `last_updated`
 
 7. Git commit:
    ```bash
@@ -259,7 +260,7 @@ to evaluate this phase before advancing further.
 
 Print:
 ```
-✓ Phase [N+1] loops complete. Running gate review...
+Phase [N+1] loops complete. Running gate review...
 ```
 
 ### 7. Gate FAIL — create versioned retry files
@@ -280,19 +281,19 @@ Read the failing agent's verdict file. Extract:
 Copy the current active loop file to a versioned path:
 
 ```bash
-cp plans/phase-[N]-ralph-loops.md plans/phase-[N]-ralph-loops-v[next_attempt].md
+cp .advanced-plans/phases/phase-[N]/loops.md .advanced-plans/phases/phase-[N]/loops-v[next_attempt].md
 ```
 
 **7d. Inject gate_failure_context block**
 
-Edit the new versioned file (`plans/phase-[N]-ralph-loops-v[next_attempt].md`). In the
+Edit the new versioned file (`.advanced-plans/phases/phase-[N]/loops-v[next_attempt].md`). In the
 YAML frontmatter of each loop listed in `loops_to_revert`, add a `gate_failure_context`
 block:
 
 ```yaml
 gate_failure_context:
   attempt: [attempt]
-  verdict_file: "plans/gate-verdicts/phase-[N]-attempt-[attempt]-[agent-name].json"
+  verdict_file: ".advanced-plans/phases/phase-[N]/gate-verdicts/phase-[N]-attempt-[attempt]-[agent-name].json"
   summary: "[failure_notes from verdict]"
   loops_reverted:
     - loop: "[loop-name]"
@@ -309,13 +310,13 @@ In the versioned file, for each loop listed in `loops_to_revert`, change all
 
 **7f. Freeze the original loop file**
 
-In the original loop file (`plans/phase-[N]-ralph-loops.md`), change any
+In the original loop file (`.advanced-plans/phases/phase-[N]/loops.md`), change any
 `status: pending` or `status: in_progress` todos to `status: frozen` to prevent
 the original from being modified during retry.
 
 **7g. Update PLANS-INDEX.md**
 
-Read `plans/PLANS-INDEX.md`. Update the Phase [N] entry:
+Read `.advanced-plans/PLANS-INDEX.md`. Update the Phase [N] entry:
 - Add versioned file as the new active file
 - Set attempt number to `next_attempt`
 - Note: original file is now frozen
@@ -325,7 +326,7 @@ If `PLANS-INDEX.md` does not exist, create it with a Phase [N] entry.
 **7h. Append phase_retry event to history.jsonl**
 
 ```bash
-echo '{"event":"phase_retry","phase":"phase-[N]","attempt":[next_attempt],"timestamp":"[ISO timestamp]","new_loop_file":"plans/phase-[N]-ralph-loops-v[next_attempt].md","original_loop_file":"plans/phase-[N]-ralph-loops.md"}' >> .claude/state/history.jsonl
+echo '{"event":"phase_retry","phase":"phase-[N]","attempt":[next_attempt],"timestamp":"[ISO timestamp]","new_loop_file":".advanced-plans/phases/phase-[N]/loops-v[next_attempt].md","original_loop_file":".advanced-plans/phases/phase-[N]/loops.md"}' >> .advanced-plans/state/history.jsonl
 ```
 
 **7i. Git commit**
@@ -337,15 +338,15 @@ git add -A && git commit -m "retry: phase-[N] attempt [next_attempt] — gate fa
 **7j. Print failure summary**
 
 ```
-✗ Phase [N] gate FAILED (attempt [attempt]).
+Phase [N] gate FAILED (attempt [attempt]).
   Failed agent:  [agent-name]
   Verdict file:  [path]
   Issues found:  [count]
 
 Versioned retry files created:
-  New loop file: plans/phase-[N]-ralph-loops-v[next_attempt].md
+  New loop file: .advanced-plans/phases/phase-[N]/loops-v[next_attempt].md
   Failure context injected into: [list of affected loops]
-  Original file frozen: plans/phase-[N]-ralph-loops.md
+  Original file frozen: .advanced-plans/phases/phase-[N]/loops.md
 
 Run /next-loop to begin Phase [N] retry (attempt [next_attempt]).
 ```
@@ -366,6 +367,6 @@ Run /next-loop to begin Phase [N] retry (attempt [next_attempt]).
 | Gate FAIL | Create versioned retry, STOP (manual review required) |
 | Loop FAIL during execution | STOP with loop failure details |
 | All planned phases complete | STOP with "Programme complete" message |
-| No master plan / no next phase description | STOP, prompt user to run `/new-phase` manually |
+| No master plan / no next phase description | STOP, prompt user to run `/decompose-phase` manually |
 | `--skip-gate` combined with `--auto` | Gates skipped, phases advance without review |
 | `--force` combined with `--auto` | Gate failures logged but do not stop progression |

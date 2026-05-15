@@ -268,9 +268,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "Rewrote all 12 slash commands to target .advanced-plans/ paths; renamed /new-loop to /decompose-phase (git mv, fixed .md.md bug, fixed save-path to .advanced-plans/phases/phase-N/loops.md); established canonical sentinel ownership (.advanced-plans/state/planning-mode owned by plan-and-phase.md, .advanced-plans/state/gate-review-mode owned by run-gate.md and next-phase.md, both enforced by hooks.json and settings.json); deduped /loop-status (live snapshot: pending/in-progress todos) vs /progress-report (historical synthesis: completed work across loops/phases); command-surface table for Loop 036 CLAUDE.md: /plan-and-phase=explore+plan pipeline, /new-phase=headless plan pipeline, /decompose-phase=decompose one phase plan into loops, /next-loop=execute one loop, /next-phase=gate+advance, /run-gate=standalone gate review, /phase-compact=compaction artefacts, /loop-status=live todo state, /progress-report=historical synthesis, /check-execution=health diagnostic, /run-closeout=final narrative, /model-check=model routing verify."
   failed: ""
-  needed: ""
+  needed: "Run Loop 035 to narrow hook allowlists to .advanced-plans/ only, update Python path constants, and update install scripts."
 
 todos:
   - id: "loop-034-1"
@@ -278,63 +278,63 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "next-loop.md contains no occurrence of `plans/`, `.claude/plans/`, or `.claude/state/`; all references read from `.advanced-plans/...`."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-034-2"
     content: "Rename /new-loop → /decompose-phase: `git mv platforms/claude-code/commands/new-loop.md platforms/claude-code/commands/decompose-phase.md`, update command name in frontmatter, fix `.md.md` template bug, fix save-location convention (write to `.advanced-plans/phases/phase-N/loops.md`)."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "decompose-phase.md exists; new-loop.md does not; command frontmatter name field is `decompose-phase`; no `.md.md` substring anywhere in the file; output path references `.advanced-plans/phases/phase-N/loops.md`."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-034-3"
     content: "Rewrite /next-phase command to target new paths: gate-verdict reads from `.advanced-plans/phases/phase-N/gate-verdicts/`, phase plan reads from `.advanced-plans/phases/phase-N/plan.md`."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "next-phase.md contains no old-path references; all gate-verdict and phase-plan lookups use `.advanced-plans/`."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-034-4"
     content: "Rewrite /run-gate command to write verdicts to `.advanced-plans/phases/phase-N/gate-verdicts/` instead of `plans/gate-verdicts/`. Update gate-review-mode sentinel allowlist references."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "run-gate.md writes to `.advanced-plans/phases/phase-N/gate-verdicts/`; no plans/gate-verdicts/ references."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-034-5"
     content: "Rewrite /phase-compact command to read source from `.advanced-plans/phases/phase-N/` and write the complete.md output to `.advanced-plans/phases/phase-N/complete.md`. Update PLANS-INDEX manifest-append step to target `.advanced-plans/PLANS-INDEX.md`."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "phase-compact.md targets new paths only; the manifest-append step's bug (Phases 6/7 gap, per friction log) is patched."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-034-6"
     content: "Rewrite /progress-report command: target new paths AND deduplicate overlapping logic with /loop-status (Phase 8 Loop 029 absorbed). Decide a clear division: /loop-status = current state snapshot, /progress-report = historical synthesis."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "progress-report.md and loop-status.md have non-overlapping descriptions; both target new paths; CLAUDE.md will be updated in Loop 036 to reflect the new boundary."
-    status: pending
+    status: completed
     priority: medium
   - id: "loop-034-7"
     content: "Rewrite /loop-status, /check-execution, /run-closeout, /model-check commands to target new paths. Each should be a path-substitution pass with no logic changes (except /loop-status which gets clearer scope per todo-6)."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "All four command files contain no occurrence of `plans/`, `.claude/plans/`, `.claude/state/`, or `.claude/logs/`."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-034-8"
     content: "Consolidate sentinel ownership (Phase 8 Loop 028 absorbed): identify every reference to the planning-mode and gate-review-mode sentinels across commands, hooks, and docs; establish a single source of truth (likely a small section in CLAUDE.md or a dedicated file under .advanced-plans/) and update all references to point there."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "Each sentinel has one canonical owning location; other references link or quote it rather than redefining. Grep for sentinel pattern strings shows references in ≤3 files (the owner + at most 2 places that quote with attribution)."
-    status: pending
+    status: completed
     priority: medium
   - id: "loop-034-9"
     content: "Disambiguate overlapping command surfaces (Phase 8 Loop 031 absorbed): produce a one-page command-surface map in CLAUDE.md showing which command does what and how they relate. Eliminate any two commands that are subsets of each other."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "CLAUDE.md contains a command-surface table; no two listed commands have overlapping core purposes; PLANS-INDEX.md workflow section aligns with the new table."
-    status: pending
+    status: completed
     priority: medium
 
 prompt: |

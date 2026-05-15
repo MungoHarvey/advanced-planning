@@ -14,28 +14,27 @@ orchestrator prepares → worker executes → main thread advances state.
 ### 1. Check for an active plan
 
 ```bash
-ls .claude/plans/*.md 2>/dev/null | head -5 || echo "NONE"
+ls .advanced-plans/phases/phase-*/loops.md 2>/dev/null | head -5 || echo "NONE"
 ```
 
-If no plan files found: print `No phase plan found. Run /new-phase first.` and stop.
+If no loop files found: print `No phase loops found. Run /decompose-phase first.` and stop.
 
 ### 2. Parse --auto flag
 
 If `$ARGUMENTS` contains `--auto`:
 - Set `AUTO_MODE = true`
-- Print: `⚡ Autonomous mode: will chain loops until phase complete or failure.`
+- Print: `Autonomous mode: will chain loops until phase complete or failure.`
 
 Otherwise: `AUTO_MODE = false` (default single-loop behaviour).
 
 ### 2b. Check if all loops are complete
 
-Read the loop files in `.claude/plans/`. If all todos across all loops are `completed` or `cancelled`:
-print `✓ All loops complete. Phase finished.` and stop.
+Read the loop files in `.advanced-plans/phases/`. If all todos across all loops are `completed` or `cancelled`:
+print `All loops complete. Phase finished.` and stop.
 
-### 3. Git checkpoint and directory setup
+### 3. Git checkpoint
 
 ```bash
-mkdir -p .claude/logs .claude/state
 git add -A && git commit -m "checkpoint: before next-loop cycle" 2>/dev/null || true
 ```
 
@@ -46,17 +45,17 @@ Spawn the `ralph-orchestrator` subagent (Sonnet model).
 The orchestrator will:
 - Identify the next pending loop
 - Populate todos/skills/agents if the loop stubs are not yet fully specified
-- Write `.claude/state/loop-ready.json`
+- Write `.advanced-plans/state/loop-ready.json`
 
 Wait for the orchestrator to complete before proceeding.
 
 ### 5. Read and validate loop-ready.json
 
 ```bash
-cat .claude/state/loop-ready.json
+cat .advanced-plans/state/loop-ready.json
 ```
 
-If the file contains `"status": "all_complete"`: print `✓ All loops complete.` and stop.
+If the file contains `"status": "all_complete"`: print `All loops complete.` and stop.
 
 **Validate structure** before proceeding:
 - `loop_name` must be non-empty
@@ -65,11 +64,11 @@ If the file contains `"status": "all_complete"`: print `✓ All loops complete.`
 - `status` must be `"ready"`
 - `handoff_injected` must contain all three fields: `done`, `failed`, `needed`
 
-If any validation fails: print the specific error (e.g. `✗ Validation failed: loop_file does not exist at [path]`) and stop.
+If any validation fails: print the specific error (e.g. `Validation failed: loop_file does not exist at [path]`) and stop.
 
 Print:
 ```
-→ Preparing: [loop_name] — [task_name]
+-> Preparing: [loop_name] — [task_name]
   Todos:         [todos_count]
   Prior context: [handoff_injected.done, or "first loop" if empty]
 ```
@@ -109,27 +108,27 @@ Spawn the `ralph-loop-worker` subagent (Sonnet model) with the worker prompt add
 from Step 5c included in the spawn prompt.
 
 The worker will:
-- Read `.claude/state/loop-ready.json` for its assignment
+- Read `.advanced-plans/state/loop-ready.json` for its assignment
 - Read each skill file at the paths provided before executing the corresponding todo
 - Execute all todos inline using the targeted skill injection protocol
-- Write `.claude/state/loop-complete.json`
+- Write `.advanced-plans/state/loop-complete.json`
 
 Wait for the worker to complete before proceeding.
 
 ### 7. Read loop-complete.json
 
 ```bash
-cat .claude/state/loop-complete.json
+cat .advanced-plans/state/loop-complete.json
 ```
 
-### 8. Update CLAUDE.md Planning State
+### 8. Update PLANNING.md
 
-Read the `## Planning State` section and update:
-- `loop:` — advance to next pending loop
-- `todos_done:` — increment by `todos_done` from loop-complete.json
+Read `.advanced-plans/PLANNING.md` and update:
+- `current_loop:` — advance to next pending loop
+- `last_updated:` — today's date
 
 If all loops are now complete:
-- Set `status: complete` on the current phase
+- Set `status: complete` on the current phase in PLANNING.md
 
 ### 9. Git commit
 
@@ -140,7 +139,7 @@ git add -A && git commit -m "complete: [loop_name] - [loop_complete.handoff.done
 ### 10. Print cycle summary
 
 ```
-✓ [loop_name] complete
+[loop_name] complete
   Done:   [loop_complete.handoff.done]
   Failed: [loop_complete.handoff.failed or "none"]
   Todos:  [todos_done]/[todos_count] completed
@@ -150,7 +149,7 @@ Run /next-loop to continue with the next loop.
 
 If `todos_failed > 0`:
 ```
-⚠ [N] todos did not complete. Review .claude/plans/[loop_file] before continuing.
+[N] todos did not complete. Review .advanced-plans/phases/[phase]/loops.md before continuing.
 ```
 
 ### 11. Auto-chain decision
@@ -161,14 +160,14 @@ If `AUTO_MODE` is true:
 
 - **status is "failed"** → stop. Print:
   ```
-  ✗ Auto-chain stopped: [loop_name] failed.
-    Review .claude/plans/[loop_file] and .claude/state/loop-complete.json.
+  Auto-chain stopped: [loop_name] failed.
+    Review .advanced-plans/phases/[phase]/loops.md and .advanced-plans/state/loop-complete.json.
     Fix the issue, then run /next-loop to resume.
   ```
 
 - **All loops complete** → stop. Print:
   ```
-  ✓ Phase complete. All loops finished.
+  Phase complete. All loops finished.
     Run /progress-report to see a summary of what was accomplished.
   ```
 

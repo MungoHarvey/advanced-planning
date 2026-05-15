@@ -50,9 +50,9 @@ Read .claude/skills/phase-plan-creator/references/phase-plan-template.md
 Follow the phase-plan-creator instructions.
 - Use `$ARGUMENTS` as the project/task description
 - If no arguments: ask for description, constraints, and success definition before proceeding
-- Auto-increment phase number N from existing files in `.claude/plans/`
-- Save to `.claude/plans/phase-[N].md`
-- Print: `✓ Phase plan saved to .claude/plans/phase-[N].md`
+- Auto-increment phase number N from existing phase directories in `.advanced-plans/phases/`
+- Save to `.advanced-plans/phases/phase-[N]/plan.md`
+- Print: `Phase plan saved to .advanced-plans/phases/phase-[N]/plan.md`
 
 ### 3. Load loop planning skill
 
@@ -67,8 +67,8 @@ Read .claude/skills/ralph-loop-planner/references/todo-schema.md
 Follow the ralph-loop-planner instructions.
 - Read the phase plan just created
 - Generate 3–6 loops with YAML stubs (empty `todos[]`, empty `handoff_summary`)
-- Save to `.claude/plans/phase-[N]-ralph-loops.md`
-- Print: `✓ [N] loops generated`
+- Save to `.advanced-plans/phases/phase-[N]/loops.md`
+- Print: `[N] loops generated`
 
 ### 5. Load todo derivation skill
 
@@ -79,9 +79,9 @@ Read .claude/skills/plan-todos/SKILL.md
 ### 6. Populate todos for every loop
 
 Follow the plan-todos instructions.
-- For each loop in the ralph-loops file: derive atomic tasks, write `todos[]` in-place
+- For each loop in the loops file: derive atomic tasks, write `todos[]` in-place
 - All todos start with `skill: NA`, `agent: NA`, `status: pending`
-- Print: `✓ Todos populated across [N] loops`
+- Print: `Todos populated across [N] loops`
 
 ### 7. Load skill identification skill
 
@@ -94,7 +94,7 @@ Read .claude/skills/plan-skill-identification/SKILL.md
 Follow the plan-skill-identification instructions.
 - `Glob(".claude/skills/*/SKILL.md")` to discover available skills
 - Update `skill:` field in-place for every todo across all loops
-- Print: `✓ Skills assigned`
+- Print: `Skills assigned`
 
 ### 9. Load subagent identification skill
 
@@ -107,24 +107,21 @@ Read .claude/skills/plan-subagent-identification/SKILL.md
 Follow the plan-subagent-identification instructions.
 - `Glob(".claude/agents/*.md")` to discover available agents
 - Update `agent:` field in-place for every todo across all loops
-- Print: `✓ Agents assigned`
+- Print: `Agents assigned`
 
-### 11. Update CLAUDE.md Planning State
+### 11. Update PLANNING.md
 
-Read the `## Planning State` section and update:
-- `phase:` — set to N
-- `name:` — set to phase name
-- `plan_file:` — set to `.claude/plans/phase-[N].md`
-- `status: in_progress`
-- `loop:` — set to first loop name
-- `loop_file:` — set to `.claude/plans/phase-[N]-ralph-loops.md`
-- `todos_done: 0`
+Read `.advanced-plans/PLANNING.md` and update:
+- `current_phase:` — set to N
+- `status:` — set to `in_progress`
+- `current_loop:` — set to first loop name
+- `last_updated:` — today's date
 
 ### 12. Print completion summary and auto-execute
 
 If `AUTO_EXECUTE` is false:
 ```
-✓ Planning complete
+Planning complete
 
 Phase [N]: [name]
 Loops:     [N] loops ready
@@ -135,7 +132,7 @@ Run /next-loop to begin execution.
 
 If `AUTO_EXECUTE` is true:
 ```
-✓ Planning complete. Beginning autonomous execution...
+Planning complete. Beginning autonomous execution...
 
 Phase [N]: [name]
 Loops:     [N] loops ready

@@ -4,7 +4,7 @@ status: in_progress
 last_updated: 2026-05-15
 
 current_phase: 9
-current_loop: ralph-loop-034
+current_loop: ralph-loop-035
 gate_status: not_due
 next_action: "/next-loop"
 
@@ -24,11 +24,11 @@ state_files:
   history: .advanced-plans/state/history.jsonl
 
 notes: |
-  Phase 9 — .advanced-plans/ Restructure (Loop 033 just completed).
-  Loop 033 performed the full git mv migration: all phase plans, ralph-loop files,
-  gate verdicts, completion artefacts, design specs, nav files, state bus files, and
-  logs moved to .advanced-plans/. Old plans/, .claude/state/, .claude/logs/ directories
-  removed. History verified via git log --follow. Loop 034 rewrites slash commands.
+  Phase 9 — .advanced-plans/ Restructure (Loop 034 just completed).
+  Loop 034 rewrote all slash commands to target .advanced-plans/ paths, renamed
+  /new-loop -> /decompose-phase (with .md.md and save-path bug fixes), established
+  canonical sentinel ownership (.advanced-plans/state/), and deduped /progress-report
+  vs /loop-status. Loop 035 narrows hook allowlists and updates Python/install.
 ---
 
 # PLANNING.md — Live Programme Dashboard
@@ -45,8 +45,8 @@ current phase, loop, gate state, and recommended next action.
 
 Run `/next-loop` to execute the next pending loop in Phase 9.
 
-Current loop just completed: `ralph-loop-033` (File Migration)
-Next loop: `ralph-loop-034` (Command Rewrites + Phase 8 Absorption)
+Current loop just completed: `ralph-loop-034` (Command Rewrites + Phase 8 Absorption)
+Next loop: `ralph-loop-035` (Hooks + Permissions + Python + Install)
 
 ---
 
@@ -58,7 +58,7 @@ Phase 9 — `.advanced-plans/` Restructure decomposes into 5 loops:
 |---|---|---|
 | ralph-loop-032 | Skeleton + Preconditions | completed |
 | ralph-loop-033 | File Migration | completed |
-| ralph-loop-034 | Command Rewrites + Phase 8 Absorption | pending |
+| ralph-loop-034 | Command Rewrites + Phase 8 Absorption | completed |
 | ralph-loop-035 | Hooks + Permissions + Python + Install | pending |
 | ralph-loop-036 | Docs + Tests + Backfill + Audit | pending |
 

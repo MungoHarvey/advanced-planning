@@ -1,14 +1,17 @@
 ---
-description: Generate a structured progress report from plan files, handoff summaries, and git history.
+description: Generate a retrospective synthesis of programme progress from handoff summaries and git history. Covers what was accomplished across completed loops and phases. For the current live state (what is pending right now), use /loop-status instead.
 allowed-tools: Read, Glob, Grep, Bash
 argument-hint: "[--phase N]"
 ---
 
 # /progress-report
 
-Retrospective synthesis of programme progress. Reads existing artefacts — plan files,
-loop handoff summaries, todo statuses, and git history — and produces a structured
-markdown report. Does not modify any files.
+Retrospective synthesis of programme progress. Reads existing artefacts — phase plans,
+loop handoff summaries, phase completion artefacts, and git history — and produces a
+structured markdown report. Does not modify any files.
+
+**Scope:** historical synthesis of completed work. For a live snapshot of what is currently
+pending or in-progress, use `/loop-status`.
 
 ## Steps
 
@@ -25,32 +28,33 @@ Load the skill if found. If not found, proceed using the steps below directly.
 If `$ARGUMENTS` contains `--phase N`, scope all data gathering to phase N only.
 Otherwise report on the full programme.
 
-### 3. Follow the skill's Process steps
+### 3. Gather historical data
 
-The skill defines data sources and process steps. Follow them in order:
-
-1. Glob `.claude/plans/phase-*.md` for phase plans
-2. Glob `.claude/plans/phase-*-ralph-loops.md` and `.claude/plans/ralph-loop-*.md` for loop files
-3. Read `.claude/plans/PLANS-INDEX.md` if it exists
-4. Read `CLAUDE.md` for current phase/loop pointer and planning state
-5. Run `git log --oneline --grep="complete:" --grep="checkpoint:" -20` for the commit trail
-6. Read `.claude/state/loop-complete.json` for the most recent loop result
-7. Read `.claude/logs/execution.log` (last 50 lines) if the file exists
+1. Glob `.advanced-plans/phases/*/plan.md` for phase plans
+2. Glob `.advanced-plans/phases/*/loops.md` for loop files (read handoff summaries)
+3. Glob `.advanced-plans/phases/*/complete.md` for phase completion artefacts
+4. Read `.advanced-plans/PLANS-INDEX.md` if it exists
+5. Read `.advanced-plans/PLANNING.md` for current programme state
+6. Run `git log --oneline --grep="complete:" --grep="checkpoint:" -30` for the commit trail
+7. Read `.advanced-plans/state/loop-complete.json` for the most recent loop result
+8. Read `.advanced-plans/logs/execution.log` (last 50 lines) if the file exists
 
 ### 4. Compile and print report
 
-Produce the structured report defined in the skill's Output Format section.
+Produce a structured report with:
+- Programme overview (current phase, overall status)
+- Per-phase summary: phase title, loop count, key accomplishments from handoff summaries
+- Recent git commit trail (last 10 relevant commits)
+- Most recent loop result
+- Any deferred items or open questions from phase completion artefacts
+
 Print to the conversation — do not save to file unless the user asks.
 
 ### 5. Optional: save report
 
 If the user asks to save the report:
 
-```bash
-# Save to plans directory with today's date
-```
-
-Write to `.claude/plans/progress-report-$(date +%Y-%m-%d).md`
+Write to `.advanced-plans/progress-report-$(date +%Y-%m-%d).md`
 
 ## Notes
 
@@ -58,3 +62,4 @@ Write to `.claude/plans/progress-report-$(date +%Y-%m-%d).md`
 - The git trail provides timestamps that plan files themselves do not carry
 - Run after `/next-loop --auto` to see a summary of what the autonomous run accomplished
 - Use `--phase N` to scope the report when working across a multi-phase programme
+- For live loop/todo state, use `/loop-status` — it reads current pending/in-progress statuses

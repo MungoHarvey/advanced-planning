@@ -1,5 +1,5 @@
 ---
-description: Compact a completed phase into a cold artefact and hot manifest entry. Run after gate review passes to produce plans/phase-completes/phase-N-complete.md and update plans/PLANS-INDEX.md. Idempotent — safe to re-run.
+description: Compact a completed phase into a cold artefact and hot manifest entry. Run after gate review passes to produce .advanced-plans/phases/phase-N/complete.md and update .advanced-plans/PLANS-INDEX.md. Idempotent — safe to re-run.
 allowed-tools: Read, Write, Glob, Bash, Edit
 argument-hint: "<phase-id>"
 ---
@@ -8,8 +8,8 @@ argument-hint: "<phase-id>"
 
 Produce the phase compaction artefacts for a completed phase. This command runs on the main
 thread immediately after a gate pass. It reads the phase plan, gate verdict, history, and git
-log, then writes a cold artefact (`plans/phase-completes/phase-N-complete.md`) and updates the
-hot manifest (`plans/PLANS-INDEX.md`). Both outputs are validated against their locked schemas
+log, then writes a cold artefact (`.advanced-plans/phases/phase-N/complete.md`) and updates the
+hot manifest (`.advanced-plans/PLANS-INDEX.md`). Both outputs are validated against their locked schemas
 before any file is written. The command is idempotent: if artefacts already exist for this
 phase, it updates them in-place rather than duplicating.
 
@@ -27,19 +27,19 @@ Usage: /phase-compact <phase-id>   (e.g. /phase-compact 6  or  /phase-compact ph
 ```
 Stop.
 
-Print: `→ Compacting phase [N]`
+Print: `-> Compacting phase [N]`
 
 ### 2. Locate phase plan
 
 Locate the phase plan file:
 
 ```bash
-ls plans/phase-[N].md 2>/dev/null || ls plans/phase-[N]-*.md 2>/dev/null | head -1
+ls .advanced-plans/phases/phase-[N]/plan.md 2>/dev/null
 ```
 
 If no file is found:
 ```
-Error: Phase plan not found. Expected plans/phase-[N].md (or plans/phase-[N]-*.md).
+Error: Phase plan not found. Expected .advanced-plans/phases/phase-[N]/plan.md.
 Cannot compact a phase with no plan on disk.
 ```
 Stop.
@@ -55,7 +55,7 @@ set `ANCHOR_SHA` to that value and continue to Step 4.
 
 ```bash
 # Find earliest event for phase N
-grep '"phase":"phase-[N]"' .claude/state/history.jsonl | head -1
+grep '"phase":"phase-[N]"' .advanced-plans/state/history.jsonl | head -1
 ```
 
 Extract the `timestamp` field from the first matching event. Then:
@@ -69,8 +69,8 @@ Set `ANCHOR_SHA` to the result.
 If neither path resolves a SHA:
 ```
 Error: Cannot determine anchor SHA for phase [N].
-  Checked: plans/phase-[N].md frontmatter (anchor_sha field absent)
-  Checked: .claude/state/history.jsonl (no events for phase [N] found)
+  Checked: .advanced-plans/phases/phase-[N]/plan.md frontmatter (anchor_sha field absent)
+  Checked: .advanced-plans/state/history.jsonl (no events for phase [N] found)
 Cannot write a conforming artefact without a verifiable anchor SHA.
 ```
 Stop.
@@ -97,7 +97,7 @@ gate-pass history event timestamp:
 
 ```bash
 # Timestamp of gate_pass event for phase N
-grep '"event":"gate_pass","phase":"phase-[N]"' .claude/state/history.jsonl | tail -1
+grep '"event":"gate_pass","phase":"phase-[N]"' .advanced-plans/state/history.jsonl | tail -1
 # then:
 git log --before="<gate_pass_timestamp>" -1 --format=%h
 ```
@@ -111,7 +111,7 @@ Print: `  end_sha: [END_SHA]`
 Determine the latest attempt number for phase N:
 
 ```bash
-ls plans/gate-verdicts/phase-[N]-attempt-*-phase-goals-agent.json 2>/dev/null | sort | tail -1
+ls .advanced-plans/phases/phase-[N]/gate-verdicts/phase-[N]-attempt-*-phase-goals-agent.json 2>/dev/null | sort | tail -1
 ```
 
 If a file is found, set `VERDICT_PATH` to that path. Read the file and extract:
@@ -131,7 +131,7 @@ Print: `  gate_verdict_ref: [VERDICT_PATH]`
 ### 6. Slice `history.jsonl` for phase N
 
 ```bash
-grep '"phase":"phase-[N]"' .claude/state/history.jsonl
+grep '"phase":"phase-[N]"' .advanced-plans/state/history.jsonl
 ```
 
 Collect all events. Note the count of `loop_complete` events — this is the `loop_count` for
@@ -167,7 +167,7 @@ Derive the three body sections (`Goals met`, `Deferred`, `Opened`) using this pr
   than blocking, plus any new questions surfaced during the phase.
 
 **Fallback (no `criteria_outcomes`):** read the phase plan's `## Success Criteria` section.
-For each criterion, check the completed loop handoff summaries (from the phase-N-ralph-loops
+For each criterion, check the completed loop handoff summaries (from the phase's `loops.md`
 file's `handoff_summary.done` fields) to infer `pass` or `deferred`. Use judgment: if a
 handoff explicitly states the criterion was met, mark it as met with a pointer to that loop's
 commit range.
@@ -183,20 +183,16 @@ commit range.
 **Idempotency check:** before writing, test whether the artefact already exists:
 
 ```bash
-ls plans/phase-completes/phase-[N]-complete.md 2>/dev/null
+ls .advanced-plans/phases/phase-[N]/complete.md 2>/dev/null
 ```
 
 If the file exists, update it in-place (overwrite with the newly computed content). Do not
 append — a second run must produce exactly one file, not two. Print:
 `  (updating existing cold artefact in-place)`
 
-If the file does not exist, create the directory first:
+If the file does not exist, the directory `.advanced-plans/phases/phase-[N]/` already exists.
 
-```bash
-mkdir -p plans/phase-completes
-```
-
-Write `plans/phase-completes/phase-[N]-complete.md` with this exact structure:
+Write `.advanced-plans/phases/phase-[N]/complete.md` with this exact structure:
 
 ```markdown
 ---
@@ -226,10 +222,10 @@ Omit `gate_verdict_note` entirely when a real verdict path is present.
 
 ### 10. Write hot manifest entry
 
-**Idempotency check:** read `plans/PLANS-INDEX.md`. Search for an existing entry for phase N:
+**Idempotency check:** read `.advanced-plans/PLANS-INDEX.md`. Search for an existing entry for phase N:
 
 ```bash
-grep -n "^- phase: [N]$" plans/PLANS-INDEX.md
+grep -n "^- phase: [N]$" .advanced-plans/PLANS-INDEX.md
 ```
 
 If an entry is found, locate its block (from that line through the next `- phase:` or
@@ -239,7 +235,7 @@ Print: `  (updating existing manifest entry in-place)`
 If no entry exists, append the new entry at the end of the phase list, maintaining ascending
 phase order. If `PLANS-INDEX.md` does not exist, create it.
 
-The entry must be exactly this structure (≤8 lines — count every line including the opening
+The entry must be exactly this structure (<=8 lines — count every line including the opening
 `- phase:` line):
 
 ```yaml
@@ -247,7 +243,7 @@ The entry must be exactly this structure (≤8 lines — count every line includ
   title: "[title]"
   status: passed
   commits: [ANCHOR_SHA]..[END_SHA]
-  detail: plans/phase-completes/phase-[N]-complete.md
+  detail: .advanced-plans/phases/phase-[N]/complete.md
   highlights:
     - [one-line highlight: primary goal met, with evidence]
     - [one-line highlight: key decision or deferral]
@@ -268,14 +264,14 @@ Key automated checks:
 git rev-parse --short [ANCHOR_SHA]
 git rev-parse --short [END_SHA]
 
-# Confirm commit_count is within ±1 of rev-list output
+# Confirm commit_count is within +-1 of rev-list output
 git rev-list --count [ANCHOR_SHA]..[END_SHA]
 
 # Confirm cold artefact exists at expected path
-ls plans/phase-completes/phase-[N]-complete.md
+ls .advanced-plans/phases/phase-[N]/complete.md
 
-# Confirm manifest entry is ≤8 lines
-awk '/^- phase: [N]$/,/^- phase: [0-9]/' plans/PLANS-INDEX.md | head -20 | wc -l
+# Confirm manifest entry is <=8 lines
+awk '/^- phase: [N]$/,/^- phase: [0-9]/' .advanced-plans/PLANS-INDEX.md | head -20 | wc -l
 ```
 
 If **any** checklist item fails, stop and print a diff of the failing item:
@@ -293,10 +289,10 @@ Do not silently write a non-conforming artefact.
 ### 12. Print summary
 
 ```
-✓ Phase [N] compacted.
+Phase [N] compacted.
 
-  Cold artefact:  plans/phase-completes/phase-[N]-complete.md
-  Manifest entry: plans/PLANS-INDEX.md (phase [N] block)
+  Cold artefact:  .advanced-plans/phases/phase-[N]/complete.md
+  Manifest entry: .advanced-plans/PLANS-INDEX.md (phase [N] block)
   Anchor SHA:     [ANCHOR_SHA]
   End SHA:        [END_SHA]
   Commits:        [COMMIT_COUNT]
@@ -312,11 +308,11 @@ Run /next-phase (or continue planning) to begin the next phase.
 | Condition | Behaviour |
 |-----------|-----------|
 | Missing `<phase-id>` argument | Print usage error and stop immediately |
-| Phase plan not found at `plans/phase-[N].md` | Print error with expected path and stop |
+| Phase plan not found at `.advanced-plans/phases/phase-[N]/plan.md` | Print error with expected path and stop |
 | `anchor_sha` absent from frontmatter AND no phase-N events in `history.jsonl` | Print error listing both fallback paths tried and stop |
 | `anchor_sha` or `end_sha` does not resolve via `git rev-parse` | Print the failing SHA and stop |
 | Schema validation failure (cold artefact or manifest entry) | Print per-item diff of each failing checklist item; do not silently advance |
-| Gate-fail input (`verdict: fail` in verdict file) | Write `plans/phase-completes/phase-[N]-complete-v[attempt]-failed.md` with `status: failed_v[attempt]`; manifest entry uses `status: failed_v[attempt]`; do not overwrite any existing pass-form artefact |
+| Gate-fail input (`verdict: fail` in verdict file) | Write `.advanced-plans/phases/phase-[N]/complete-v[attempt]-failed.md` with `status: failed_v[attempt]`; manifest entry uses `status: failed_v[attempt]`; do not overwrite any existing pass-form artefact |
 
 ## Notes
 
@@ -325,52 +321,20 @@ and exactly one manifest entry. The second run updates in-place; it does not dup
 and `commit_count` are re-computed from git each time, so the artefact remains accurate if
 commits were amended between runs (though this is discouraged after gate pass).
 
-**No subagents:** this command runs on the main thread only. It does not spawn agents. Phase 8
-of the compaction programme promotes this logic into a `phase-compactor` agent with a scoped
-tool allowlist; until then, the main thread executes all steps directly.
+**No subagents:** this command runs on the main thread only. It does not spawn agents.
 
-**No `/clear` here:** context clearing (Phase 9) is a separate concern. Run `/phase-compact`
+**No `/clear` here:** context clearing is a separate concern. Run `/phase-compact`
 first to write artefacts, then apply `/clear` separately if desired.
 
-**Gate-fail artefacts:** failed-attempt artefacts (`phase-[N]-complete-v[M]-failed.md`) persist
+**Gate-fail artefacts:** failed-attempt artefacts (`complete-v[M]-failed.md`) persist
 on disk when the phase is retried. If a later attempt passes, the pass-form artefact
-(`phase-[N]-complete.md`) is written alongside the failed versions. The manifest entry is
+(`complete.md`) is written alongside the failed versions. The manifest entry is
 updated to `status: passed` on the passing run.
 
 **`phase-goals-agent` verdict as primary input:** the command consumes the `phase-goals-agent`
 verdict file, not the `code-review-agent` verdict. If both agents ran, reference only the
 `phase-goals-agent` file in `gate_verdict_ref`.
 
-## Future Agent Promotion (Phase 8)
-
-Phase 8 of the compaction programme promotes this slash command into a `phase-compactor` agent
-running on Sonnet. The agent will carry a scoped tool allowlist that mirrors the pattern
-established by `phase-goals-agent` (see `platforms/claude-code/agents/phase-goals-agent.md` and
-`docs/phase-goals-verdict-audit.md` for the precedent).
-
-**Required agent frontmatter for `phase-compactor`:**
-
-```yaml
----
-name: phase-compactor
-description: "Compacts a completed phase into a cold artefact and hot manifest entry. Spawned automatically after a gate_pass event. Writes plans/phase-completes/phase-N-complete.md and updates plans/PLANS-INDEX.md."
-model: sonnet
-tools: Read, Glob, Grep, Bash(git log:*, git show:*, git diff:*, git rev-list:*, git rev-parse:*), Write(plans/phase-completes/*), Write(plans/PLANS-INDEX.md)
-triggers: "phase compact, compaction, gate pass, phase complete"
----
-```
-
-**Tool scope rationale:**
-
-| Tool | Scope | Reason |
-|------|-------|--------|
-| `Read` | unrestricted | Must read phase plans, loop files, verdict files, history.jsonl, schema docs |
-| `Glob` | unrestricted | Locate phase plans, verdict files, and loop files by pattern |
-| `Grep` | unrestricted | Slice history.jsonl; search PLANS-INDEX.md for existing entries |
-| `Bash` | `git log:*`, `git show:*`, `git diff:*`, `git rev-list:*`, `git rev-parse:*` | Resolve anchor/end SHAs, compute commit counts, verify SHAs exist |
-| `Write` | `plans/phase-completes/*` | Write cold artefact only — no other write target |
-| `Write` | `plans/PLANS-INDEX.md` | Update hot manifest — scoped to this single file |
-
-**What the agent must NOT have:** `Edit`, `MultiEdit`, `Write` to any path outside
-`plans/phase-completes/` and `plans/PLANS-INDEX.md`. The agent reads widely but writes narrowly —
-the same discipline `phase-goals-agent` applies to `plans/gate-verdicts/`.
+**Phases 6 and 7 gap:** if compacting historical phases that predate the gate-review system,
+the verdict path will be the sentinel string. The fallback `VERDICT_NOTE` field documents this.
+Use the handoff-summary fallback (Step 8) for body sections.

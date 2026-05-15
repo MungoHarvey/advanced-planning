@@ -4,7 +4,7 @@ allowed-tools: Read, Glob, Write, Edit
 argument-hint: "[phase number or plan file path]"
 ---
 
-# /new-loop
+# /decompose-phase
 
 Decompose a phase plan into ralph loop iterations using the ralph-loop-planner skill.
 
@@ -22,9 +22,9 @@ for any duplicate skill/agent names.
 ### 1. Find the phase plan
 
 - If `$ARGUMENTS` is provided:
-  - Try `.claude/plans/phase-$ARGUMENTS.md` (e.g. `phase-2.md` for `/new-loop 2`)
+  - Try `.advanced-plans/phases/phase-$ARGUMENTS/plan.md` (e.g. `phase-2/plan.md` for `/decompose-phase 2`)
   - Try as a direct file path
-- If no arguments: `Glob(".claude/plans/phase-*.md")` and use the most recently modified
+- If no arguments: `Glob(".advanced-plans/phases/*/plan.md")` and use the most recently modified
 
 ### 2. Read the phase plan file
 
@@ -40,7 +40,6 @@ Read .claude/skills/ralph-loop-planner/references/todo-schema.md
 
 Ask the user:
 - How many loops (approximate)? Default: 3–5
-- Single file or individual files per loop? Default: single file for <10 loops
 - Any specific skills to map against? (optional)
 
 ### 5. Follow the ralph-loop-planner process
@@ -51,13 +50,14 @@ Generate loops following the skill instructions. Each loop stub has:
 
 ### 6. Save output
 
-- Single file: `.claude/plans/phase-[N]-ralph-loops.md`
-- Individual files: `.claude/plans/ralph-loop-NNN.md` (update `plans/PLANS-INDEX.md`)
+Save to `.advanced-plans/phases/phase-[N]/loops.md` (co-located with the phase plan).
+
+Update `.advanced-plans/PLANS-INDEX.md` to record the new loops file.
 
 ### 7. Prompt next step
 
 ```
-✓ [N] ralph loops saved to .claude/plans/[filename]
+[N] ralph loops saved to .advanced-plans/phases/phase-[N]/loops.md
 
 Run /loop-status to review the plan structure.
 Run /next-loop to begin execution (todos will be auto-populated on first run).
@@ -66,16 +66,16 @@ Run /next-loop to begin execution (todos will be auto-populated on first run).
 ## Usage
 
 ```
-/new-loop 2
+/decompose-phase 2
 ```
 Decompose phase 2 plan into loops.
 
 ```
-/new-loop .claude/plans/phase-refactoring.md
+/decompose-phase .advanced-plans/phases/phase-refactoring/plan.md
 ```
 Decompose a named plan file.
 
 ```
-/new-loop
+/decompose-phase
 ```
 Uses the most recently modified phase plan.
