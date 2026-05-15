@@ -21,9 +21,10 @@ Tracking document for the **Advanced Planning System — Open-Source Restructure
 | 3 | Cowork Adapter | [`phase-3.md`](phase-3.md) | **complete** | 008–009 | Routing skill, agent prompts, snapshot checkpoints |
 | 4 | Generic + Release | [`phase-4.md`](phase-4.md) | **complete** | 010–012 | Python API, docs, examples, GitHub release |
 | 5 | Gate Review Sub-Phase | [`phase-5.md`](phase-5.md) | **complete** | 013–018 | Gate agents, /run-gate, /next-phase, versioning utilities, plugin scaffold |
-| 8 | Framework Consistency Remediation | [`phase-8.md`](phase-8.md) | **draft** | 027–031 | Consolidates audit findings: hook+permissions hygiene, sentinel ownership, progress-report dedup, `new-loop`→`decompose-phase` rename, command disambiguation + two-stage skill activation |
+| 8 | Framework Consistency Remediation | [`phase-8.md`](phase-8.md) | **closing** | 027 | Loop 027 complete (hook + permissions hygiene). Loops 028–031 absorbed into Phase 9. |
+| 9 | `.advanced-plans/` Restructure | [`phase-9.md`](phase-9.md) | **draft** | 032–036 | Migrate data home to `.advanced-plans/` for cross-platform portability; introduce `PLANNING.md` dashboard with YAML frontmatter; absorbs Phase 8 Loops 028–031. Design: [`2026-05-14-advanced-plans-restructure-design.md`](2026-05-14-advanced-plans-restructure-design.md) |
 
-> **Index gap**: Phases 6 and 7 are complete (compacted artefacts in `plans/phase-completes/`) but missing from this table. To be filled in separately — likely a defect in `/phase-compact`'s manifest-append step or an oversight at the last gate pass. Not in Phase 8 scope.
+> **Index gap**: Phases 6 and 7 are complete (compacted artefacts in `plans/phase-completes/`) but missing from this table. Scheduled to be backfilled by Phase 9 Wave 5.
 
 ---
 
@@ -49,11 +50,16 @@ Tracking document for the **Advanced Planning System — Open-Source Restructure
 | 016 | 5 | Gate Commands | `phase-5-ralph-loops.md` | **complete** | — | 1 |
 | 017 | 5 | Python Versioning Utilities | `phase-5-ralph-loops.md` | **complete** | — | 1 |
 | 018 | 5 | Integration Verification | `phase-5-ralph-loops.md` | **complete** | — | 1 |
-| 027 | 8 | Hook + Permissions Hygiene | `phase-8-ralph-loops.md` | pending | — | 1 |
-| 028 | 8 | Sentinel Ownership Consolidation | `phase-8-ralph-loops.md` | pending | — | 1 |
-| 029 | 8 | progress-report Deduplication | `phase-8-ralph-loops.md` | pending | — | 1 |
-| 030 | 8 | Rename new-loop to decompose-phase | `phase-8-ralph-loops.md` | pending | — | 1 |
-| 031 | 8 | Disambiguation + Skill-Activation Policy | `phase-8-ralph-loops.md` | pending | — | 1 |
+| 027 | 8 | Hook + Permissions Hygiene | `phase-8-ralph-loops.md` | **complete** | — | 1 |
+| 028 | 8 | Sentinel Ownership Consolidation | `phase-8-ralph-loops.md` | absorbed → Phase 9 | — | — |
+| 029 | 8 | progress-report Deduplication | `phase-8-ralph-loops.md` | absorbed → Phase 9 | — | — |
+| 030 | 8 | Rename new-loop to decompose-phase | `phase-8-ralph-loops.md` | absorbed → Phase 9 | — | — |
+| 031 | 8 | Disambiguation + Skill-Activation Policy | `phase-8-ralph-loops.md` | absorbed → Phase 9 | — | — |
+| 032 | 9 | Skeleton + Preconditions | `phase-9-ralph-loops.md` | pending | — | 1 |
+| 033 | 9 | File Migration | `phase-9-ralph-loops.md` | pending | — | 1 |
+| 034 | 9 | Command Rewrites + Phase 8 Absorption | `phase-9-ralph-loops.md` | pending | — | 1 |
+| 035 | 9 | Hooks + Permissions + Python + Install | `phase-9-ralph-loops.md` | pending | — | 1 |
+| 036 | 9 | Docs + Tests + Backfill + Audit | `phase-9-ralph-loops.md` | pending | — | 1 |
 
 > Loops 019–026 belong to Phases 6 and 7 (compacted) and are not yet enumerated here — see the index gap note above.
 

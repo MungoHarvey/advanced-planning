@@ -314,3 +314,29 @@ entries from here.
 - **Friction**: why it's friction; impact.
 - **Suggested fix**: concrete improvement if known, or "needs scoping".
 ```
+
+---
+
+## 2026-05-15 — Phase 9 planning session
+
+### [Skill chaining] — phase-plan-creator does not auto-invoke ralph-loop-planner
+
+- **Observed**: brainstorming → phase-plan-creator chains automatically (the
+  brainstorming skill's terminal step explicitly invokes phase-plan-creator
+  with the design doc path). But phase-plan-creator → ralph-loop-planner does
+  NOT chain — phase-plan-creator's "Next Steps" section lists ralph-loop-planner
+  as a manual recommendation rather than invoking it. The user has to type
+  `/ralph-loop-planner` (or similar) themselves to continue the planning chain.
+- **Friction**: this is a slow bottleneck in the planning pipeline. The natural
+  workflow is design → phase plan → ralph loops as one continuous decomposition.
+  Stopping at the phase plan forces the user to remember the next step, switch
+  context, and re-invoke. The hand-off is artificial — the phase plan is
+  explicitly *designed* to feed ralph-loop-planner.
+- **Suggested fix**: amend `~/.claude/skills/phase-plan-creator/SKILL.md` so the
+  "Next Steps" section ends with an instruction equivalent to brainstorming's
+  terminal step: "After writing the phase plan and updating PLANS-INDEX.md,
+  invoke ralph-loop-planner immediately with the phase plan path as input.
+  Do not ask the user to invoke it manually." This mirrors the
+  brainstorming → phase-plan-creator chaining that already works well.
+  Document this chain explicitly in CLAUDE.md's Architecture section so it's
+  clear that the three-skill pipeline is intended to run end-to-end.
