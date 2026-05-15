@@ -53,7 +53,7 @@ Three files in the `state/` directory coordinate the two-agent cycle:
 
 ### Planning Mode Hooks
 
-During `/plan-and-phase` exploration, a `planning-mode` sentinel file is created. `PreToolUse` hooks in `settings.json` block `Write`/`Edit`/`MultiEdit` to any path outside `.claude/plans/` and `.claude/state/` while this sentinel exists. This prevents accidental code changes during the exploration phase.
+During `/plan-and-phase` exploration, a `planning-mode` sentinel file is created. `PreToolUse` hooks in `settings.json` block `Write`/`Edit`/`MultiEdit` to any path outside `plans/`, `.claude/plans/`, and `.claude/state/` while this sentinel exists. This prevents accidental code changes during the exploration phase.
 
 ### Gate Review Protocol
 

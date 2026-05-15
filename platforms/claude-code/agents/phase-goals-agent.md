@@ -2,7 +2,7 @@
 name: phase-goals-agent
 description: "Verifies that a phase's outputs satisfy all stated success criteria in the phase plan. Reads each criterion, locates the corresponding artefact, and confirms it meets the specification. Spawned by /run-gate at phase boundaries."
 model: sonnet
-tools: Read, Glob, Grep, Write(plans/gate-verdicts/*)
+tools: Read, Glob, Grep, Write
 triggers: "phase goals, success criteria, verify phase, goals check"
 ---
 
