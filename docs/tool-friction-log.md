@@ -405,3 +405,82 @@ entries from here.
   `code-review-agent` which wrote its own verdict successfully. Until fixed,
   `/run-gate` should explicitly expect phase-goals-agent to return verdict
   text and persist it main-thread-side (document this in run-gate.md).
+
+### [Path schema] — flat vs per-phase gate-verdicts location was never canonical
+
+- **Observed**: the framework shipped with two contradictory conventions for
+  where gate verdict JSON lives. `run-gate.md` and `next-phase.md` step text
+  used per-phase `.advanced-plans/phases/phase-N/gate-verdicts/`, while the
+  agent definitions (`phase-goals-agent.md`, `programme-reporter.md`,
+  `code-review-agent.md`), the CLAUDE.md Runtime Directory tree, and the
+  historical Phase 6/7 artefacts variously used flat
+  `.advanced-plans/gate-verdicts/`. Both gate agents flagged this as a
+  (non-blocking) warning during Phase 9 attempt 1.
+- **Friction**: there was no single source of truth for an artefact the state
+  bus depends on. An agent writing per-phase while a command reads flat (or
+  vice-versa) silently loses verdicts — the gate appears to produce no output.
+  This is the same class of bug as the double-prefix corruption: a path
+  convention asserted in prose in N places with no enforcement.
+- **Resolution + suggested guard**: canonicalised to flat
+  `.advanced-plans/gate-verdicts/` (matches CLAUDE.md, agent defs, and the
+  Phase 9 verdicts already written). Phase 6/7 per-phase verdicts left as
+  immutable history. Going forward, path conventions consumed by the state bus
+  (verdicts, loop-ready/complete, history.jsonl) should be defined once in a
+  single schema doc and referenced — not re-stated per command file. A CI/audit
+  check should assert no command or agent file references a non-canonical
+  gate-verdicts path.
+
+### [Command rot] — slash-command step text carries stale hardcoded paths
+
+- **Observed**: even after the Phase 9 restructure, `/run-gate` and
+  `/next-phase` command bodies still contain pre-restructure hardcoded paths in
+  their numbered step instructions (`.claude/plans/*.md`, `.claude/state/`,
+  `plans/gate-verdicts/`, `mkdir -p plans/gate-verdicts`, `/new-loop`). The
+  commands "worked" this session only because the operator (main thread)
+  recognised the paths were stale and followed the new `.advanced-plans/`
+  layout instead of the literal instructions.
+- **Friction**: a command file whose prose instructs the agent to read/write
+  paths that no longer exist is a latent trap — a less context-aware agent (or
+  a fresh session) would follow the literal steps, create `.claude/state/`
+  sentinels the hooks don't watch, and write verdicts where nothing reads them.
+  The restructure migrated *data* and the command *frontmatter/examples* but
+  left imperative step text behind. Migration completeness was judged by a
+  grep audit that (per the earlier entry) only looked backward and excluded
+  the installed command surface from its blocking scope.
+- **Suggested fix**: the post-migration audit must treat slash-command step
+  text as in-scope (not just frontmatter and code), and assert zero
+  pre-restructure path tokens in `platforms/claude-code/commands/**`. Longer
+  term, command files should reference path constants/a layout doc rather than
+  inlining literal paths in every step, so a layout change is one edit not
+  twelve.
+
+### [Workflow gap] — auto flow stops at phase end instead of auto-running the gate
+
+- **Observed**: `/next-loop --auto` chains loops until the phase plan is
+  exhausted, then **stops** and prints "Phase complete — run /run-gate". The
+  gate review is a separate manual step. This session demonstrated the cost:
+  Phase 9's 5 loops auto-chained, then the operator had to manually trigger
+  `/run-gate`, which caught a critical defect that the in-loop audit missed. A
+  phase is not actually "done" until its gate passes — but the auto flow treats
+  loop-exhaustion as the terminal state.
+- **Friction**: "phase complete" is reported before the only check that
+  validates phase completeness has run. The user has to remember to gate, and
+  the loop→gate boundary is an artificial hand-off in what should be one
+  continuous "run this phase to a verified conclusion" operation. Same class as
+  the brainstorming→phase-plan-creator→ralph-loop-planner chaining gap logged
+  earlier: the pipeline is designed to run end-to-end but stops at every seam.
+- **Desired behaviour (to implement)**: when the last loop of a phase completes
+  in `--auto` mode, `/next-loop --auto` should automatically invoke the gate
+  review (spawn the default gate agents sequentially, aggregate the verdict)
+  rather than stopping. On gate **pass** → report phase verified-complete (and,
+  under `/next-phase --auto`, advance to the next phase). On gate **fail** →
+  stop the chain, surface the failing verdict, and require human intervention
+  (do not auto-retry). Single-loop `/next-loop` (no `--auto`) keeps the current
+  manual-gate behaviour. Net effect: a phase can be initiated and run to a
+  gated, verified conclusion in one autonomous flow.
+- **Implementation note**: lives in the `/next-loop` auto-chain decision step
+  ("All loops complete" branch) — instead of `stop + print "run /run-gate"`,
+  invoke the gate-review sequence inline, then branch on the aggregated
+  verdict. Must reuse the existing gate machinery (gate-review-mode sentinel,
+  per-agent immutable verdicts, history.jsonl event) — not a parallel
+  implementation.
