@@ -405,63 +405,63 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "settings.json contains no `plans/*` or `.claude/plans/*` or `.claude/state/*` patterns in hook blocks; only `.advanced-plans/**`-anchored patterns remain."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-035-2"
     content: "Apply the identical narrowing to platforms/claude-code/hooks/hooks.json. Verify diff between settings.json and hooks.json shows no discrepancy in hook blocks (use `python -c` or `diff` on extracted blocks)."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "hooks.json hook blocks are byte-identical to settings.json hook blocks; verified by a script-or-manual diff."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-035-3"
     content: "Update permission allow rules in repo-root .claude/settings.json: replace the existing `plans/**`, `.claude/state/**`, `.claude/logs/**` triplet with a single `.advanced-plans/**` rule covering Read, Write, Edit, MultiEdit. Preserve any unrelated allow rules."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: ".claude/settings.json permissions.allow array contains `.advanced-plans/**` entries for Read/Write/Edit/MultiEdit; no old-path entries remain."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-035-4"
     content: "Apply the same permission-rule update to platforms/claude-code/settings.json (the adapter that gets installed into target projects) so installs auto-allow `.advanced-plans/**`."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "platforms/claude-code/settings.json permissions.allow mirrors the repo-root file's `.advanced-plans/**` rules."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-035-5"
     content: "Update path constants in platforms/python/plan_io.py: any reference to `plans/`, `phase-completes/`, `gate-verdicts/`, etc., re-pointed to the new `.advanced-plans/` structure. Preserve zero-dependency invariant (no new external imports)."
     skill: "NA"
     agent: "analysis-worker"
     outcome: "plan_io.py path constants resolve to `.advanced-plans/phases/phase-N/plan.md`, `.advanced-plans/specs/`, etc.; `python -m pytest platforms/python/tests/test_plan_io.py -v` passes."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-035-6"
     content: "Update path constants in platforms/python/state_manager.py: state-bus paths re-pointed to `.advanced-plans/state/`. Preserve zero-dependency invariant."
     skill: "NA"
     agent: "analysis-worker"
     outcome: "state_manager.py reads/writes to `.advanced-plans/state/`; `python -m pytest platforms/python/tests/test_state_manager.py -v` passes."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-035-7"
     content: "Update setup/claude-code/install.sh: create `.advanced-plans/` skeleton in target projects (with starter README + PLANNING template); add idempotent migration logic that detects old layouts (existence of `plans/` or `.claude/state/`) and migrates them in place; stop creating `.claude/state/` and `.claude/logs/`."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "install.sh creates `.advanced-plans/` tree; detects + migrates `plans/` and `.claude/state/` if present; no longer creates `.claude/state/` or `.claude/logs/`; passes a shellcheck or syntax pass."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-035-8"
     content: "Apply equivalent logic to setup/claude-code/install.ps1: PowerShell-idiomatic version of the same migration logic, using forward-slash paths internally."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "install.ps1 has feature parity with install.sh; runs without parse errors on Windows PowerShell."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-035-9"
     content: "Run the AST import checker on platforms/python/ to confirm zero external imports were introduced. Run `python -m pytest platforms/python/tests/ -v` and confirm all tests pass with updated path constants."
     skill: "NA"
     agent: "NA"
     outcome: "AST checker passes; full pytest suite passes; pytest count ≥ pre-loop count (no tests skipped or removed)."
-    status: pending
+    status: completed
     priority: high
 
 prompt: |

@@ -16,8 +16,9 @@ Typical usage::
     from pathlib import Path
     from platforms.python.state_manager import write_loop_ready, read_loop_complete
 
-    state = Path("state")
-    write_loop_ready(state, loop_name="ralph-loop-001", loop_file="plans/phase-1-ralph-loops.md",
+    state = Path(".advanced-plans/state")
+    write_loop_ready(state, loop_name="ralph-loop-001",
+                     loop_file=".advanced-plans/phases/phase-1/loops.md",
                      task_name="Schema Definitions", todos_count=4)
     result = read_loop_complete(state)
     print(result["status"])  # "completed"
@@ -65,7 +66,8 @@ def write_loop_ready(
     loop_name:
         Loop identifier, e.g. ``"ralph-loop-001"``.
     loop_file:
-        Workspace-relative path to the loop plan file.
+        Workspace-relative path to the loop plan file, e.g.
+        ``.advanced-plans/phases/phase-1/loops.md``.
     task_name:
         Human-readable name for this loop.
     todos_count:

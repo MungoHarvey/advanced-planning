@@ -9,16 +9,20 @@ Loop plans are Markdown files with YAML frontmatter blocks containing
 The YAML frontmatter is delimited by triple-backtick yaml fences (not ---),
 matching the format used throughout the planning system's plan files.
 
+With the ``.advanced-plans/`` layout, each phase's loops live at
+``.advanced-plans/phases/phase-N/loops.md``. Pass the phases root to
+``find_next_loop`` so it scans all phase subdirectories.
+
 Typical usage::
 
     from pathlib import Path
     from platforms.python.plan_io import find_next_loop, get_pending_todos, update_todo_status
 
-    plans_dir = Path("plans")
-    loop_info = find_next_loop(plans_dir)
+    phases_dir = Path(".advanced-plans/phases")
+    loop_info = find_next_loop(phases_dir)
     if loop_info:
-        todos = get_pending_todos(loop_info["file"], loop_info["loop_name"])
-        update_todo_status(loop_info["file"], loop_info["loop_name"], "loop-001-1", "completed")
+        todos = get_pending_todos(loop_info["loop_file"], loop_info["loop_name"])
+        update_todo_status(loop_info["loop_file"], loop_info["loop_name"], "loop-001-1", "completed")
 """
 
 import re
@@ -241,13 +245,22 @@ def update_todo_status(
 def find_next_loop(plans_dir: Path | str) -> Optional[dict[str, Any]]:
     """Scan plan files and return metadata for the first loop with pending todos.
 
-    Searches all ``*.md`` files in ``plans_dir`` in alphabetical order.
-    Within each file, inspects loops in document order.
+    Supports two layouts:
+
+    - **``.advanced-plans/`` layout** (preferred): pass the ``phases/`` root and
+      this function scans ``**/loops.md`` in phase-directory order (sorted by
+      directory name, which sorts phases numerically since they are named
+      ``phase-N/``).
+    - **Flat layout** (legacy): pass a directory that contains ``*.md`` plan
+      files directly; files are scanned in alphabetical order.
+
+    Within each file, loops are inspected in document order.
 
     Parameters
     ----------
     plans_dir:
-        Directory containing plan Markdown files.
+        Directory to scan. For the ``.advanced-plans/`` layout pass
+        ``.advanced-plans/phases``; for the flat legacy layout pass ``plans/``.
 
     Returns
     -------
@@ -256,7 +269,16 @@ def find_next_loop(plans_dir: Path | str) -> Optional[dict[str, Any]]:
         ``todos_count``, and ``frontmatter`` — or None if no pending loops exist.
     """
     plans_path = Path(plans_dir)
-    for plan_file in sorted(plans_path.glob("*.md")):
+
+    # Prefer the new layout: look for loops.md files in subdirectories first.
+    loops_files = sorted(plans_path.glob("*/loops.md"))
+    if loops_files:
+        candidate_files = loops_files
+    else:
+        # Fall back to flat layout: all *.md in the directory.
+        candidate_files = sorted(plans_path.glob("*.md"))
+
+    for plan_file in candidate_files:
         content = plan_file.read_text(encoding="utf-8")
         for m in _LOOP_BLOCK_RE.finditer(content):
             yaml_block = m.group("yaml_block")

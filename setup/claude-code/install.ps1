@@ -159,8 +159,35 @@ Say ""
 # Create target directories
 Do-MkDir (Join-Path $ClaudeDir "commands")
 Do-MkDir (Join-Path $ClaudeDir "agents")
-Do-MkDir (Join-Path $ClaudeDir "state")
 Do-MkDir (Join-Path $ClaudeDir "schemas")
+
+# Create the .advanced-plans/ data home in the target project
+$ApDir = Join-Path $Project ".advanced-plans"
+Do-MkDir (Join-Path $ApDir "phases")
+Do-MkDir (Join-Path $ApDir "specs")
+Do-MkDir (Join-Path $ApDir "state")
+Do-MkDir (Join-Path $ApDir "logs")
+
+# Idempotent migration: move legacy layouts into .advanced-plans/ if present
+if (-not $DryRun) {
+    $legacyPlans = Join-Path $Project "plans"
+    if ((Test-Path $legacyPlans) -and -not (Test-Path (Join-Path $ApDir "PLANS-INDEX.md"))) {
+        Say "Migrating legacy plans/ -> .advanced-plans/ ..."
+        Copy-Item -Path (Join-Path $legacyPlans "*") -Destination $ApDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    $legacyState = Join-Path $ClaudeDir "state"
+    if (Test-Path $legacyState) {
+        Say "Migrating legacy .claude/state/ -> .advanced-plans/state/ ..."
+        Copy-Item -Path (Join-Path $legacyState "*") -Destination (Join-Path $ApDir "state") -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    $legacyLogs = Join-Path $ClaudeDir "logs"
+    if (Test-Path $legacyLogs) {
+        Say "Migrating legacy .claude/logs/ -> .advanced-plans/logs/ ..."
+        Copy-Item -Path (Join-Path $legacyLogs "*") -Destination (Join-Path $ApDir "logs") -Recurse -Force -ErrorAction SilentlyContinue
+    }
+} else {
+    Write-Host "  [dry-run] migrate plans/ and .claude/state|logs/ -> .advanced-plans/ if present"
+}
 
 # ---------------------------------------------------------------------------
 # Slash commands
@@ -225,13 +252,21 @@ $settingsPath = Join-Path $ClaudeDir "settings.json"
 Say "Writing settings.json..."
 if (-not $DryRun) {
     $settings = @{
+        permissions = @{
+            allow = @(
+                "Read(.advanced-plans/**)",
+                "Write(.advanced-plans/**)",
+                "Edit(.advanced-plans/**)",
+                "MultiEdit(.advanced-plans/**)"
+            )
+        }
         planning = @{
-            state_dir   = ".claude/state"
+            state_dir   = ".advanced-plans/state"
             skills_dir  = ".claude/skills"
             agents_dir  = ".claude/agents"
-            plans_dir   = "plans"
+            plans_dir   = ".advanced-plans"
         }
-    } | ConvertTo-Json -Depth 3
+    } | ConvertTo-Json -Depth 4
     # Use UTF-8 without BOM — Set-Content -Encoding UTF8 adds a BOM in Windows PowerShell 5.x
     $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
     [System.IO.File]::WriteAllText($settingsPath, $settings, $utf8NoBom)
@@ -248,8 +283,8 @@ Say ""
 Say "Next steps:"
 Say "  1. cd into your project folder"
 Say "  2. claude"
-Say "  3. /new-phase    # create your first phase plan"
-Say "  4. /new-loop     # decompose phase into loops"
+Say "  3. /new-phase        # create your first phase plan"
+Say "  4. /decompose-phase  # decompose phase into loops"
 Say "  5. /next-loop    # run the first loop"
 Say ""
 Say 'See setup/claude-code/README.md for full documentation.'

@@ -187,7 +187,73 @@ say ""
 # Create target directories
 do_mkdir "$CLAUDE_DIR/commands"
 do_mkdir "$CLAUDE_DIR/agents"
-do_mkdir "$CLAUDE_DIR/state"
+
+# Create the .advanced-plans/ data home in the target project
+AP_DIR="$PROJECT_DIR/.advanced-plans"
+do_mkdir "$AP_DIR/phases"
+do_mkdir "$AP_DIR/specs"
+do_mkdir "$AP_DIR/state"
+do_mkdir "$AP_DIR/logs"
+
+# Idempotent migration: move legacy layouts into .advanced-plans/ if present
+if [ "$DRY_RUN" = false ]; then
+    if [ -d "$PROJECT_DIR/plans" ] && [ ! -f "$AP_DIR/PLANS-INDEX.md" ]; then
+        say "Migrating legacy plans/ → .advanced-plans/ ..."
+        cp -R "$PROJECT_DIR/plans/." "$AP_DIR/" 2>/dev/null || true
+    fi
+    if [ -d "$CLAUDE_DIR/state" ]; then
+        say "Migrating legacy .claude/state/ → .advanced-plans/state/ ..."
+        cp -R "$CLAUDE_DIR/state/." "$AP_DIR/state/" 2>/dev/null || true
+    fi
+    if [ -d "$CLAUDE_DIR/logs" ]; then
+        say "Migrating legacy .claude/logs/ → .advanced-plans/logs/ ..."
+        cp -R "$CLAUDE_DIR/logs/." "$AP_DIR/logs/" 2>/dev/null || true
+    fi
+else
+    echo "  [dry-run] migrate plans/ and .claude/state|logs/ → .advanced-plans/ if present"
+fi
+
+if [ ! -f "$AP_DIR/PLANNING.md" ] && [ "$DRY_RUN" = false ]; then
+    cat > "$AP_DIR/PLANNING.md" <<'EOF'
+---
+programme: ""
+status: not_started
+last_updated: ""
+current_phase: ""
+current_loop: ""
+gate_status: ""
+next_action: "Run /new-phase to create the first phase plan"
+active_branches: []
+phases:
+  complete: []
+  pending: []
+  failed: []
+state_files:
+  ready: .advanced-plans/state/loop-ready.json
+  complete: .advanced-plans/state/loop-complete.json
+  history: .advanced-plans/state/history.jsonl
+notes: ""
+---
+
+# Planning
+
+This directory holds all planning artefacts. See README.md for the layout.
+EOF
+fi
+if [ ! -f "$AP_DIR/README.md" ] && [ "$DRY_RUN" = false ]; then
+    cat > "$AP_DIR/README.md" <<'EOF'
+# .advanced-plans/
+
+Platform-agnostic planning data home.
+
+- `PLANNING.md` — live programme dashboard (YAML frontmatter)
+- `PLANS-INDEX.md` — index of all phases and loops
+- `phases/phase-N/` — `plan.md` + `loops.md` per phase
+- `specs/` — design specs
+- `state/` — filesystem state bus (loop-ready/complete, history.jsonl)
+- `logs/` — execution log
+EOF
+fi
 
 # Copy slash commands
 say "Installing slash commands..."
@@ -242,11 +308,19 @@ say "Writing settings.json..."
 if [ "$DRY_RUN" = false ]; then
     cat > "$SETTINGS" <<EOF
 {
+  "permissions": {
+    "allow": [
+      "Read(.advanced-plans/**)",
+      "Write(.advanced-plans/**)",
+      "Edit(.advanced-plans/**)",
+      "MultiEdit(.advanced-plans/**)"
+    ]
+  },
   "planning": {
-    "state_dir": ".claude/state",
+    "state_dir": ".advanced-plans/state",
     "skills_dir": ".claude/skills",
     "agents_dir": ".claude/agents",
-    "plans_dir": "plans"
+    "plans_dir": ".advanced-plans"
   }
 }
 EOF
@@ -260,8 +334,8 @@ say ""
 say "Next steps:"
 say "  1. cd $PROJECT_DIR"
 say "  2. claude"
-say "  3. /new-phase   ← create your first phase plan"
-say "  4. /new-loop    ← decompose phase into loops"
-say "  5. /next-loop   ← run the first loop"
+say "  3. /new-phase        ← create your first phase plan"
+say "  4. /decompose-phase  ← decompose phase into loops"
+say "  5. /next-loop        ← run the first loop"
 say ""
 say "See setup/claude-code/README.md for full documentation."

@@ -1,13 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Write(plans/**)",
-      "Edit(plans/**)",
-      "MultiEdit(plans/**)",
-      "Write(.claude/state/**)",
-      "Edit(.claude/state/**)",
-      "Write(.claude/logs/**)",
-      "Edit(.claude/logs/**)"
+      "Write(.advanced-plans/**)",
+      "Edit(.advanced-plans/**)",
+      "MultiEdit(.advanced-plans/**)",
+      "Read(.advanced-plans/**)"
     ]
   }
 }

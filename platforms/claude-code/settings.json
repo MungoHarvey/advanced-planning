@@ -12,7 +12,11 @@
       "TodoRead",
       "WebSearch",
       "WebFetch(*)",
-      "Agent(*)"
+      "Agent(*)",
+      "Write(.advanced-plans/**)",
+      "Edit(.advanced-plans/**)",
+      "MultiEdit(.advanced-plans/**)",
+      "Read(.advanced-plans/**)"
     ]
   },
   "hooks": {
@@ -22,7 +26,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "mkdir -p .claude/logs && echo \"\\n=== SESSION START $(date '+%Y-%m-%d %H:%M:%S') model:${CLAUDE_MODEL:-unknown} ===\" >> .claude/logs/execution.log"
+            "command": "mkdir -p .advanced-plans/logs && echo \"\\n=== SESSION START $(date '+%Y-%m-%d %H:%M:%S') model:${CLAUDE_MODEL:-unknown} ===\" >> .advanced-plans/logs/execution.log"
           }
         ]
       }
@@ -33,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"=== SESSION END $(date '+%Y-%m-%d %H:%M:%S') ===\" >> .claude/logs/execution.log"
+            "command": "echo \"=== SESSION END $(date '+%Y-%m-%d %H:%M:%S') ===\" >> .advanced-plans/logs/execution.log"
           }
         ]
       }
@@ -44,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"[$(date '+%H:%M:%S')] AGENT START: ${CLAUDE_AGENT_NAME:-unknown} model:${CLAUDE_MODEL:-unknown}\" >> .claude/logs/execution.log"
+            "command": "echo \"[$(date '+%H:%M:%S')] AGENT START: ${CLAUDE_AGENT_NAME:-unknown} model:${CLAUDE_MODEL:-unknown}\" >> .advanced-plans/logs/execution.log"
           }
         ]
       }
@@ -55,7 +59,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"[$(date '+%H:%M:%S')] AGENT STOP:  ${CLAUDE_AGENT_NAME:-unknown}\" >> .claude/logs/execution.log"
+            "command": "echo \"[$(date '+%H:%M:%S')] AGENT STOP:  ${CLAUDE_AGENT_NAME:-unknown}\" >> .advanced-plans/logs/execution.log"
           }
         ]
       }
@@ -66,11 +70,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ -f .claude/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/*|*.claude/state/*|*.advanced-plans/*) ;; *) echo 'BLOCK: Write disabled during planning mode. Allowed: plans/, .claude/plans/, .claude/state/, and .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
+            "command": "if [ -f .advanced-plans/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *.advanced-plans/*) ;; *) echo 'BLOCK: Write disabled during planning mode. Allowed: .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
           },
           {
             "type": "command",
-            "command": "if [ -f .claude/state/gate-review-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/gate-verdicts/*|*.claude/state/*|*.advanced-plans/*) ;; *) echo 'BLOCK: Write disabled during gate review mode. Allowed: plans/gate-verdicts/, .claude/state/, and .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
+            "command": "if [ -f .advanced-plans/state/gate-review-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *.advanced-plans/*) ;; *) echo 'BLOCK: Write disabled during gate review mode. Allowed: .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
           }
         ]
       },
@@ -79,11 +83,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ -f .claude/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/*|*.claude/state/*|*.advanced-plans/*) ;; *) echo 'BLOCK: Edit disabled during planning mode. Allowed: plans/, .claude/plans/, .claude/state/, and .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
+            "command": "if [ -f .advanced-plans/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *.advanced-plans/*) ;; *) echo 'BLOCK: Edit disabled during planning mode. Allowed: .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
           },
           {
             "type": "command",
-            "command": "if [ -f .claude/state/gate-review-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/gate-verdicts/*|*.claude/state/*|*.advanced-plans/*) ;; *) echo 'BLOCK: Edit disabled during gate review mode. Allowed: plans/gate-verdicts/, .claude/state/, and .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
+            "command": "if [ -f .advanced-plans/state/gate-review-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *.advanced-plans/*) ;; *) echo 'BLOCK: Edit disabled during gate review mode. Allowed: .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
           }
         ]
       },
@@ -92,11 +96,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ -f .claude/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/*|*.claude/state/*|*.advanced-plans/*) ;; *) echo 'BLOCK: MultiEdit disabled during planning mode. Allowed: plans/, .claude/plans/, .claude/state/, and .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
+            "command": "if [ -f .advanced-plans/state/planning-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *.advanced-plans/*) ;; *) echo 'BLOCK: MultiEdit disabled during planning mode. Allowed: .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
           },
           {
             "type": "command",
-            "command": "if [ -f .claude/state/gate-review-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *plans/gate-verdicts/*|*.claude/state/*|*.advanced-plans/*) ;; *) echo 'BLOCK: MultiEdit disabled during gate review mode. Allowed: plans/gate-verdicts/, .claude/state/, and .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
+            "command": "if [ -f .advanced-plans/state/gate-review-mode ]; then case \"${CLAUDE_TOOL_INPUT_PATH:-}\" in *.advanced-plans/*) ;; *) echo 'BLOCK: MultiEdit disabled during gate review mode. Allowed: .advanced-plans/ only.' >&2; exit 2 ;; esac; fi"
           }
         ]
       }
@@ -107,7 +111,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"[$(date '+%H:%M:%S')] TODOS UPDATED\" >> .claude/logs/execution.log"
+            "command": "echo \"[$(date '+%H:%M:%S')] TODOS UPDATED\" >> .advanced-plans/logs/execution.log"
           }
         ]
       },
@@ -116,7 +120,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"[$(date '+%H:%M:%S')] BASH: exit:${CLAUDE_TOOL_RESULT_EXIT_CODE:-?}\" >> .claude/logs/execution.log"
+            "command": "echo \"[$(date '+%H:%M:%S')] BASH: exit:${CLAUDE_TOOL_RESULT_EXIT_CODE:-?}\" >> .advanced-plans/logs/execution.log"
           }
         ]
       },
@@ -125,7 +129,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"[$(date '+%H:%M:%S')] WRITE: ${CLAUDE_TOOL_INPUT_PATH:-unknown}\" >> .claude/logs/execution.log"
+            "command": "echo \"[$(date '+%H:%M:%S')] WRITE: ${CLAUDE_TOOL_INPUT_PATH:-unknown}\" >> .advanced-plans/logs/execution.log"
           }
         ]
       },
@@ -134,7 +138,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo \"[$(date '+%H:%M:%S')] EDIT:  ${CLAUDE_TOOL_INPUT_PATH:-unknown}\" >> .claude/logs/execution.log"
+            "command": "echo \"[$(date '+%H:%M:%S')] EDIT:  ${CLAUDE_TOOL_INPUT_PATH:-unknown}\" >> .advanced-plans/logs/execution.log"
           }
         ]
       }
