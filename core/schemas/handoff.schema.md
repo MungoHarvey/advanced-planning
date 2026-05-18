@@ -92,8 +92,8 @@ The executing agent (or the orchestrator, or `/next-loop`) replaces the `[inject
 |----------|---------|-------------|
 | Loop frontmatter `handoff_summary:` | Authoritative record | At loop completion |
 | `CLAUDE.md ## Planning State → Last handoff:` | Quick orientation at session start | At loop completion |
-| `.claude/state/loop-complete.json → handoff:` | Machine-readable for state bus | At loop completion |
-| `.claude/state/history.jsonl` | Append-only audit log | At loop completion (optional) |
+| `.advanced-plans/state/loop-complete.json → handoff:` | Machine-readable for state bus | At loop completion |
+| `.advanced-plans/state/history.jsonl` | Append-only audit log | At loop completion (optional) |
 
 All four locations contain the same three values. The loop frontmatter is the canonical source.
 

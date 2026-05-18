@@ -89,16 +89,17 @@ SAMPLE_PLAN = textwrap.dedent('''\
 
 @pytest.fixture
 def plan_file(tmp_path):
-    """Write SAMPLE_PLAN to a temp file and return its path."""
-    f = tmp_path / "phase-1-ralph-loops.md"
+    """Write SAMPLE_PLAN to a loop file in the canonical .advanced-plans/ layout."""
+    f = tmp_path / "phases" / "phase-1" / "loops.md"
+    f.parent.mkdir(parents=True, exist_ok=True)
     f.write_text(SAMPLE_PLAN, encoding="utf-8")
     return f
 
 
 @pytest.fixture
 def plans_dir(tmp_path, plan_file):
-    """Return the plans directory containing the sample plan."""
-    return tmp_path
+    """Return the phases root scanned by find_next_loop (`<root>/*/loops.md`)."""
+    return tmp_path / "phases"
 
 
 # ── parse_loop_frontmatter ─────────────────────────────────────────────────────
@@ -177,9 +178,27 @@ class TestFindNextLoop:
     def test_returns_none_when_all_complete(self, tmp_path):
         # Write a plan where all todos are completed
         all_done = SAMPLE_PLAN.replace("status: pending", "status: completed")
-        f = tmp_path / "phase-1-ralph-loops.md"
+        f = tmp_path / "phases" / "phase-1" / "loops.md"
+        f.parent.mkdir(parents=True, exist_ok=True)
         f.write_text(all_done, encoding="utf-8")
-        assert find_next_loop(tmp_path) is None
+        assert find_next_loop(tmp_path / "phases") is None
+
+    def test_canonical_layout_is_phases_phase_n_loops_md(self, tmp_path):
+        # The canonical loop path is .advanced-plans/phases/phase-N/loops.md
+        f = tmp_path / "phases" / "phase-1" / "loops.md"
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(SAMPLE_PLAN, encoding="utf-8")
+        result = find_next_loop(tmp_path / "phases")
+        assert result is not None
+        assert Path(result["loop_file"]).match("phases/phase-1/loops.md")
+
+    def test_flat_legacy_layout_still_supported(self, tmp_path):
+        # Legacy flat layout (no phases/ subdirs) falls back to *.md scan
+        f = tmp_path / "phase-1-ralph-loops.md"
+        f.write_text(SAMPLE_PLAN, encoding="utf-8")
+        result = find_next_loop(tmp_path)
+        assert result is not None
+        assert result["loop_name"] == "ralph-loop-002"
 
 
 # ── get_loop_handoff ───────────────────────────────────────────────────────────

@@ -45,7 +45,7 @@ Always run lint and tests before committing.
 ```yaml
 phase: 1
 name: "[Phase Name]"
-plan_file: ".claude/plans/phase-1.md"
+plan_file: ".advanced-plans/phases/phase-1/plan.md"
 status: not_started   # not_started | in_progress | complete
 ```
 
@@ -54,7 +54,7 @@ status: not_started   # not_started | in_progress | complete
 ```yaml
 loop: "ralph-loop-001"
 task: "[Task Name]"
-loop_file: ".claude/plans/phase-1-ralph-loops.md"
+loop_file: ".advanced-plans/phases/phase-1/loops.md"
 todos_done: 0
 todos_total: 0
 ```

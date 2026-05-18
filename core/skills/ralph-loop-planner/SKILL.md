@@ -40,8 +40,8 @@ Provide:
    - Markdown body: overview, success criteria, skills, inputs, outputs, dependencies, complexity
 
 4. **Output locations:**
-   - Single file: `plans/phase-{N}-ralph-loops.md` (recommended for <10 loops)
-   - Individual files: `plans/ralph-loop-{NNN}.md` + update `plans/PLANS-INDEX.md`
+   - Single file: `.advanced-plans/phases/phase-{N}/loops.md` (recommended for <10 loops)
+   - Individual files: `.advanced-plans/phases/phase-{N}/loops.md` + update `.advanced-plans/PLANS-INDEX.md`
 
 ## Output Structure per Loop
 
@@ -145,14 +145,14 @@ Always distinguish: **Broad** (from phase plan) / **Specific** (refined for this
 ## Output Locations
 
 ```
-plans/phase-{N}-ralph-loops.md      ← All loops for phase N (< 10 loops)
-plans/ralph-loop-{NNN}.md           ← Individual file (10+ loops)
-plans/PLANS-INDEX.md                ← Update Ralph Loops table with new entries
+.advanced-plans/phases/phase-{N}/loops.md      ← All loops for phase N (< 10 loops)
+.advanced-plans/phases/phase-{N}/loops.md           ← Individual file (10+ loops)
+.advanced-plans/PLANS-INDEX.md                ← Update Ralph Loops table with new entries
 ```
 
 ## After Planning
 
-1. Update `plans/PLANS-INDEX.md` — add each loop to the Ralph Loops table
+1. Update `.advanced-plans/PLANS-INDEX.md` — add each loop to the Ralph Loops table
 2. Run `plan-todos` to expand any vague todos into atomic tasks
 3. **MANDATORY**: Run `plan-skill-identification` to assign skills to each todo. This step is NOT optional — every todo must have a `skill:` field assigned (either a specific skill or `NA`) before execution begins. Skipping this step produces incomplete loop files.
 4. Run `plan-subagent-identification` to assign agents where appropriate

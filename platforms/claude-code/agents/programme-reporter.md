@@ -27,29 +27,30 @@ This agent does not follow the gate reviewer protocol. It is a synthesis agent, 
 Use `Glob` to enumerate all planning artefacts:
 
 ```
-plans/*.md              — Phase plans and ralph loop files
-plans/gate-verdicts/    — All gate verdict files (one per agent per attempt)
-.claude/state/history.jsonl  — Append-only event log
-.claude/logs/execution.log   — Execution log
+.advanced-plans/phases/*/plan.md   — Phase plans
+.advanced-plans/phases/*/loops.md  — Ralph loop files
+.advanced-plans/gate-verdicts/    — All gate verdict files (one per agent per attempt)
+.advanced-plans/state/history.jsonl  — Append-only event log
+.advanced-plans/logs/execution.log   — Execution log
 ```
 
 Read each file. The documentary record is intentionally immutable — nothing has been overwritten since the programme began. This means the record is complete and reliable.
 
 ### Step 2 — Build the phase timeline
 
-For each phase plan (`plans/phase-N.md`):
+For each phase plan (`.advanced-plans/phase-N.md`):
 - Extract the phase name, objectives, and stated success criteria
-- Count the number of attempts (from `plans/gate-verdicts/phase-N-attempt-*.json`)
+- Count the number of attempts (from `.advanced-plans/gate-verdicts/phase-N-attempt-*.json`)
 - Identify whether it passed on first attempt or required retries
 
-For each ralph loops file (`plans/phase-N-ralph-loops.md` and any versioned variants):
+For each ralph loops file (`.advanced-plans/phase-N-ralph-loops.md` and any versioned variants):
 - Count total loops and completed todos
 - Extract `handoff_summary.done` from each loop — this is the canonical record of what was produced
 - Note any loops where `handoff_summary.failed` is non-empty
 
 ### Step 3 — Analyse gate verdicts
 
-For each gate verdict file in `plans/gate-verdicts/`:
+For each gate verdict file in `.advanced-plans/gate-verdicts/`:
 - Read the verdict (pass/fail), agent, phase, attempt, and confidence
 - If verdict is `fail`: read findings and failure_notes
 - Build a picture of which phases required retries and why
@@ -72,7 +73,7 @@ Read the last phase plan's `## Outputs` section. For each listed output, verify 
 
 ### Step 6 — Write the closeout report
 
-Write the closeout narrative to `plans/programme-closeout.md`.
+Write the closeout narrative to `.advanced-plans/programme-closeout.md`.
 
 The report must include:
 
@@ -108,10 +109,10 @@ Even though this is a synthesis rather than an evaluation, write a structured ve
 Write the verdict to:
 
 ```
-plans/gate-verdicts/[phase]-attempt-[N]-programme-reporter.json
+.advanced-plans/gate-verdicts/[phase]-attempt-[N]-programme-reporter.json
 ```
 
-Example: `plans/gate-verdicts/programme-attempt-1-programme-reporter.json`
+Example: `.advanced-plans/gate-verdicts/programme-attempt-1-programme-reporter.json`
 
 The file must conform to `core/state/gate-verdict.schema.json`.
 

@@ -1,5 +1,5 @@
 ---
-description: Compact a completed phase into a cold artefact and hot manifest entry. Run after gate review passes to produce .advanced-plans/phases/phase-N/complete.md and update .advanced-plans/PLANS-INDEX.md. Idempotent — safe to re-run.
+description: Compact a completed phase into a cold artefact and hot manifest entry. Run after gate review passes to produce .advanced-plans/phases/phase-N/complete.md and update .advanced-.advanced-plans/PLANS-INDEX.md. Idempotent — safe to re-run.
 allowed-tools: Read, Write, Glob, Bash, Edit
 argument-hint: "<phase-id>"
 ---
@@ -9,7 +9,7 @@ argument-hint: "<phase-id>"
 Produce the phase compaction artefacts for a completed phase. This command runs on the main
 thread immediately after a gate pass. It reads the phase plan, gate verdict, history, and git
 log, then writes a cold artefact (`.advanced-plans/phases/phase-N/complete.md`) and updates the
-hot manifest (`.advanced-plans/PLANS-INDEX.md`). Both outputs are validated against their locked schemas
+hot manifest (`.advanced-.advanced-plans/PLANS-INDEX.md`). Both outputs are validated against their locked schemas
 before any file is written. The command is idempotent: if artefacts already exist for this
 phase, it updates them in-place rather than duplicating.
 
@@ -222,10 +222,10 @@ Omit `gate_verdict_note` entirely when a real verdict path is present.
 
 ### 10. Write hot manifest entry
 
-**Idempotency check:** read `.advanced-plans/PLANS-INDEX.md`. Search for an existing entry for phase N:
+**Idempotency check:** read `.advanced-.advanced-plans/PLANS-INDEX.md`. Search for an existing entry for phase N:
 
 ```bash
-grep -n "^- phase: [N]$" .advanced-plans/PLANS-INDEX.md
+grep -n "^- phase: [N]$" .advanced-.advanced-plans/PLANS-INDEX.md
 ```
 
 If an entry is found, locate its block (from that line through the next `- phase:` or
@@ -271,7 +271,7 @@ git rev-list --count [ANCHOR_SHA]..[END_SHA]
 ls .advanced-plans/phases/phase-[N]/complete.md
 
 # Confirm manifest entry is <=8 lines
-awk '/^- phase: [N]$/,/^- phase: [0-9]/' .advanced-plans/PLANS-INDEX.md | head -20 | wc -l
+awk '/^- phase: [N]$/,/^- phase: [0-9]/' .advanced-.advanced-plans/PLANS-INDEX.md | head -20 | wc -l
 ```
 
 If **any** checklist item fails, stop and print a diff of the failing item:
@@ -292,7 +292,7 @@ Do not silently write a non-conforming artefact.
 Phase [N] compacted.
 
   Cold artefact:  .advanced-plans/phases/phase-[N]/complete.md
-  Manifest entry: .advanced-plans/PLANS-INDEX.md (phase [N] block)
+  Manifest entry: .advanced-.advanced-plans/PLANS-INDEX.md (phase [N] block)
   Anchor SHA:     [ANCHOR_SHA]
   End SHA:        [END_SHA]
   Commits:        [COMMIT_COUNT]

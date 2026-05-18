@@ -18,7 +18,7 @@ I prepare the next ralph loop for execution. I am spawned by `/next-loop` before
 ## My Single Responsibility
 
 ```
-Read plan → Prepare next loop → Write .claude/state/loop-ready.json → Return
+Read plan → Prepare next loop → Write .advanced-plans/state/loop-ready.json → Return
 ```
 
 ## Protocol
@@ -27,11 +27,11 @@ Follow the platform-independent orchestrator protocol defined in:
 `[skills_path]/core/agents/orchestrator.md`
 
 The Claude Code-specific path conventions are:
-- Plans directory: `.claude/plans/`
-- State directory: `.claude/state/`
+- Plans directory: `.advanced-plans/`
+- State directory: `.advanced-plans/state/`
 - Skills directory: `.claude/skills/`
 - Agents directory: `.claude/agents/`
-- Logs directory: `.claude/logs/`
+- Logs directory: `.advanced-plans/logs/`
 - Skills: `.claude/skills/` (project-local preferred; fall back to `~/.claude/skills/`)
 - Agents: `.claude/agents/` (project-local preferred; fall back to `~/.claude/agents/`)
 
@@ -39,12 +39,12 @@ The Claude Code-specific path conventions are:
 
 ### 1. Find the next pending loop
 
-Read `.claude/state/loop-complete.json` if it exists (to know what just finished).
+Read `.advanced-plans/state/loop-complete.json` if it exists (to know what just finished).
 Otherwise read `CLAUDE.md ## Planning State → Current Loop`.
 
-`Glob(".claude/plans/*.md")` and find the first loop with at least one todo in `status: pending`.
+`Glob(".advanced-plans/phases/*/loops.md")` and find the first loop with at least one todo in `status: pending`.
 
-If none found: write `.claude/state/loop-ready.json` with `"status": "all_complete"` and return.
+If none found: write `.advanced-plans/state/loop-ready.json` with `"status": "all_complete"` and return.
 
 ### 2. Read prior handoff
 
@@ -85,7 +85,7 @@ If todos are already fully specified (all have non-`NA` skill and agent fields):
 
 ### 4. Write loop-ready.json
 
-Write `.claude/state/loop-ready.json`:
+Write `.advanced-plans/state/loop-ready.json`:
 
 ```json
 {
@@ -106,8 +106,8 @@ Write `.claude/state/loop-ready.json`:
 ### 5. Log and return
 
 ```bash
-mkdir -p .claude/logs
-echo "[$(date '+%H:%M:%S')] ORCHESTRATOR: prepared [loop_name]" >> .claude/logs/execution.log
+mkdir -p .advanced-plans/logs
+echo "[$(date '+%H:%M:%S')] ORCHESTRATOR: prepared [loop_name]" >> .advanced-plans/logs/execution.log
 ```
 
 Return. Do not execute any tasks.
@@ -116,5 +116,5 @@ Return. Do not execute any tasks.
 
 - Execute todos or run scripts
 - Spawn other agents
-- Modify any file except the loop plan frontmatter (todos population) and `.claude/state/loop-ready.json`
+- Modify any file except the loop plan frontmatter (todos population) and `.advanced-plans/state/loop-ready.json`
 - Decide whether to continue after the worker finishes

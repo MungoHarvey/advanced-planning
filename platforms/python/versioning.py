@@ -51,15 +51,16 @@ def _strip_version_suffix(stem: str) -> str:
 def create_retry_version(loop_file: Path | str, *, attempt_number: int) -> Path:
     """Create a versioned copy of a loop file for a retry attempt.
 
-    Given ``phase-2-ralph-loops.md`` and ``attempt_number=2``, creates
-    ``phase-2-ralph-loops-v2.md`` in the same directory. Any existing
+    Given ``.advanced-plans/phases/phase-2/loops.md`` and
+    ``attempt_number=2``, creates ``loops-v2.md`` in the same phase
+    directory. Any existing
     ``-vN`` suffix on the source file is stripped before the new version
     suffix is appended, so re-versioning a versioned file works correctly.
 
     Parameters
     ----------
     loop_file:
-        Path to the source loop file (e.g. ``plans/phase-2-ralph-loops.md``).
+        Path to the source loop file (e.g. ``.advanced-plans/phases/phase-2/loops.md``).
     attempt_number:
         Version number to append, e.g. ``2`` yields ``-v2``. Must be >= 2
         (version 1 is the original unversioned file).

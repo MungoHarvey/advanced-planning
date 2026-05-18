@@ -30,7 +30,7 @@ Read from the state directory to determine the current position:
 - If `loop-complete.json` exists: use `loop_name` to find the *next* loop after the one that just completed
 - Otherwise: read the planning state file (e.g. CLAUDE.md) for the current loop pointer
 
-Glob all loop plan files (`plans/*.md`) and find the first loop with at least one todo in `status: pending`.
+Glob all loop plan files (`.advanced-plans/phases/*/loops.md`) and find the first loop with at least one todo in `status: pending`.
 
 If no pending loops are found: write `loop-ready.json` with `"status": "all_complete"` and return.
 
@@ -112,7 +112,7 @@ Return to the main thread. Do not proceed to execute tasks.
 
 | Input | Location | Used For |
 |-------|----------|----------|
-| Loop plan files | `plans/` directory | Finding next pending loop; reading todos and handoff |
+| Loop plan files | `.advanced-plans/` directory | Finding next pending loop; reading todos and handoff |
 | Prior `loop-complete.json` | State directory | Identifying which loop just finished |
 | Planning state file | CLAUDE.md or equivalent | Session start orientation when state files are absent |
 | Skills directory | `core/skills/*/SKILL.md` | Skill discovery during todo population |
@@ -151,7 +151,7 @@ The orchestrator has access to the three planning skills used in the todo popula
 Platform adapters must specify:
 - The model to use for this role (Sonnet recommended)
 - The tool capabilities granted (read, write, edit files; glob; no execution tools needed)
-- The state directory path (e.g. `.claude/state/` for Claude Code)
+- The state directory path (e.g. `.advanced-plans/state/` for Claude Code)
 - The skills directory path (e.g. `core/skills/` for this release)
 - How invocation is triggered (slash command, API call, Python function)
 

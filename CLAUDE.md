@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A hierarchical, multi-agent planning framework that structures complex programmes as bounded, verifiable loops. Three-tier hierarchy: Phase Plans (Opus) → Ralph Loops (Sonnet orchestrates) → Todos (Sonnet executes with skill injection; Haiku for `complexity: low` todos only).
 
+> **Live programme state**: see `.advanced-plans/PLANNING.md` (YAML frontmatter dashboard) for current phase, loop, gate status, and active branches. All planning artefacts live under `.advanced-plans/`.
+
 ## Commands
 
 ```bash
@@ -43,7 +45,7 @@ powershell setup/claude-code/install.ps1 -Project /path/to/your/project  # Windo
 
 ### State Bus Protocol
 
-Three files in the `state/` directory coordinate the two-agent cycle:
+Three files in the `.advanced-plans/state/` directory coordinate the two-agent cycle:
 
 | File | Writer | Reader | Purpose |
 |------|--------|--------|---------|
@@ -53,22 +55,22 @@ Three files in the `state/` directory coordinate the two-agent cycle:
 
 ### Planning Mode Hooks
 
-During `/plan-and-phase` exploration, a `planning-mode` sentinel file is created. `PreToolUse` hooks in `settings.json` block `Write`/`Edit`/`MultiEdit` to any path outside `plans/`, `.claude/plans/`, and `.claude/state/` while this sentinel exists. This prevents accidental code changes during the exploration phase.
+During `/plan-and-phase` exploration, a `.advanced-plans/state/planning-mode` sentinel file is created. `PreToolUse` hooks in `settings.json` block `Write`/`Edit`/`MultiEdit` to any path outside `.advanced-plans/` while this sentinel exists. This prevents accidental code changes during the exploration phase.
 
 ### Gate Review Protocol
 
-At each phase boundary, `/run-gate` spawns gate agents (default: `code-review-agent`, `phase-goals-agent`) sequentially to evaluate whether phase success criteria have been met. While agents are running, a `gate-review-mode` sentinel at `.claude/state/gate-review-mode` restricts writes to `plans/gate-verdicts/` and `.claude/state/` only — preventing agents from modifying artefacts they are evaluating.
+At each phase boundary, `/run-gate` spawns gate agents (default: `code-review-agent`, `phase-goals-agent`) sequentially to evaluate whether phase success criteria have been met. While agents are running, a `gate-review-mode` sentinel at `.advanced-plans/state/gate-review-mode` restricts writes to `.advanced-plans/` only — preventing agents from modifying artefacts they are evaluating.
 
 - **Gate pass**: All agents return `verdict: pass`. `/next-phase` marks the current phase complete, advances `CLAUDE.md` to the next phase, and appends a `gate_pass` event to `history.jsonl`.
-- **Gate fail**: Any agent returns `verdict: fail`. `/next-phase` creates a versioned retry file (`phase-N-ralph-loops-v2.md`) with `gate_failure_context` injected into affected loops, freezes the original file (`status: frozen`), updates `PLANS-INDEX.md`, and appends `gate_fail` and `phase_retry` events to `history.jsonl`.
+- **Gate fail**: Any agent returns `verdict: fail`. `/next-phase` creates a versioned retry file (`.advanced-plans/phases/phase-N/loops-v2.md`) with `gate_failure_context` injected into affected loops, freezes the original file (`status: frozen`), updates `PLANS-INDEX.md`, and appends `gate_fail` and `phase_retry` events to `history.jsonl`.
 - **Versioning utilities**: `platforms/python/versioning.py` provides `create_retry_version`, `inject_failure_context`, `get_active_version`, and `freeze_loop_file` — the Python API backing `/next-phase`'s retry logic.
-- **Ralph-loop plugin compatibility**: This framework's state files live in `.claude/state/` (e.g. `loop-ready.json`, `loop-complete.json`). The ralph-loop plugin uses `.claude/ralph-loop.local.md` — no naming conflicts. Both `/next-loop --auto` and the plugin's `/ralph-loop` command can be active simultaneously.
+- **Ralph-loop plugin compatibility**: This framework's state files live in `.advanced-plans/state/` (e.g. `loop-ready.json`, `loop-complete.json`). The ralph-loop plugin uses `.claude/ralph-loop.local.md` — no naming conflicts. Both `/next-loop --auto` and the plugin's `/ralph-loop` command can be active simultaneously.
 
 ### Phase Compaction Schemas
 
 Two locked schema documents govern the compaction artefacts produced by `/phase-compact` at each gate pass:
 
-- `docs/phase-complete.schema.md` — defines the cold artefact (`plans/phase-completes/phase-N-complete.md`): a structured git-index document with frontmatter fields, one-line-bullet body sections, and a validation checklist; **Status: LOCKED** (2026-05-13).
+- `docs/phase-complete.schema.md` — defines the cold artefact (`.advanced-plans/phases/phase-N/complete.md`): a structured git-index document with frontmatter fields, one-line-bullet body sections, and a validation checklist; **Status: LOCKED** (2026-05-13).
 - `docs/phase-manifest-entry.schema.md` — defines the hot manifest entry appended to `PLANS-INDEX.md`: a YAML block with a hard ≤8-line ceiling and maximum 2 highlights; **Status: LOCKED** (2026-05-13).
 
 Changes to either schema require an explicit decision logged in this file.
@@ -77,7 +79,7 @@ Changes to either schema require an explicit decision logged in this file.
 
 | Adapter | Location | Entry Point |
 |---------|----------|-------------|
-| Claude Code | `platforms/claude-code/` | Slash commands (`/plan-and-phase`, `/new-phase`, `/next-loop`, `/next-loop --auto`, `/run-gate`, `/run-closeout`, `/next-phase`, `/next-phase --auto`, `/phase-compact`, `/progress-report`, `/loop-status`, `/check-execution`, `/model-check`) |
+| Claude Code | `platforms/claude-code/` | Slash commands (see Command Surface below) |
 | Cowork | `platforms/cowork/` | Routing `SKILL.md` + natural language |
 | Python API | `platforms/python/` | `state_manager.py`, `plan_io.py`, `handoff.py` |
 
@@ -93,12 +95,38 @@ Changes to either schema require an explicit decision logged in this file.
 ├── skills/      ← Planning skills (symlinked or copied from core/skills/)
 ├── agents/      ← Agent definitions (copied from platforms/claude-code/agents/)
 ├── schemas/     ← Schema docs (copied from core/schemas/)
-├── state/       ← Filesystem state bus (loop-ready.json, loop-complete.json, history.jsonl)
-├── logs/        ← execution.log (written by session hooks)
 └── settings.json
-plans/
-└── gate-verdicts/  ← Verdict JSON files written by gate agents during /run-gate
+.advanced-plans/             ← Platform-agnostic planning data home
+├── PLANNING.md              ← Live programme dashboard (YAML frontmatter)
+├── README.md                ← Directory map + conventions
+├── PLANS-INDEX.md           ← Index of all phases and loops
+├── phases/phase-N/          ← plan.md + loops.md (+ complete.md at gate pass) per phase
+├── specs/                   ← Design specs (brainstorming output)
+├── gate-verdicts/           ← Verdict JSON written by gate agents during /run-gate
+├── state/                   ← Filesystem state bus (loop-ready.json, loop-complete.json, history.jsonl)
+└── logs/                    ← execution.log (written by session hooks)
 ```
+
+Skills, agents, schemas, and slash commands are Claude Code runtime adapters and stay under `.claude/`. Everything the planning pipeline produces or consumes lives under `.advanced-plans/`, making the data home portable across agentic coding platforms.
+
+### Command Surface
+
+Each slash command has a single non-overlapping purpose. `/loop-status` reports current state; `/progress-report` synthesises history — they do not overlap.
+
+| Command | Purpose |
+|---------|---------|
+| `/plan-and-phase` | Interactive explore + plan pipeline (brainstorm → phase plan → loops) |
+| `/new-phase` | Headless phase-plan pipeline |
+| `/decompose-phase` | Decompose one phase plan into ralph loops |
+| `/next-loop` | Execute one loop (orchestrator → worker); `--auto` chains until phase done |
+| `/next-phase` | Gate review + advance to next phase; `--auto` chains across boundaries |
+| `/run-gate` | Standalone gate review of the current phase |
+| `/phase-compact` | Produce compaction artefacts at a gate pass |
+| `/loop-status` | Live snapshot: pending/in-progress todos |
+| `/progress-report` | Historical synthesis: completed work across loops/phases |
+| `/check-execution` | Health diagnostic for an interrupted/odd loop |
+| `/run-closeout` | Final programme narrative |
+| `/model-check` | Verify agent model routing |
 
 ## Model Tiers
 

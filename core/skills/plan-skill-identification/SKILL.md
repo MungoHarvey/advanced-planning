@@ -19,7 +19,7 @@ canonical schema order.
 ## Your Input
 
 Provide:
-- **Loop file path** (e.g. `plans/ralph-loop-002.md`)
+- **Loop file path** (e.g. `.advanced-plans/phases/phase-{N}/loops.md`)
 - **Skills directory path** — the location of available SKILL.md files for this project
 
 ## Process

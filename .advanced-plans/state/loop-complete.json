@@ -1,13 +1,13 @@
 {
-  "loop_name": "ralph-loop-035",
+  "loop_name": "ralph-loop-036",
   "loop_file": ".advanced-plans/phases/phase-9/loops.md",
   "status": "completed",
   "todos_done": 9,
   "todos_failed": 0,
   "completed_at": "2026-05-18T00:00:00Z",
   "handoff": {
-    "done": "Narrowed hook allowlists in platforms/claude-code/settings.json and hooks.json to .advanced-plans/** only (dropped Loop 032 dual-allow; sentinels now .advanced-plans/state/planning-mode and gate-review-mode); replaced legacy permission triplets in both repo-root .claude/settings.json and platforms/claude-code/settings.json with single Read/Write/Edit/MultiEdit(.advanced-plans/**) rule; re-pointed plan_io.py to scan .advanced-plans/phases/*/loops.md (with flat-layout fallback) and state_manager.py docstrings to .advanced-plans/state; added idempotent .advanced-plans/ skeleton + legacy migration (plans/, .claude/state, .claude/logs) to install.sh and install.ps1, both now emit .advanced-plans permission settings and /decompose-phase next-step text; AST import checker CLEAN, full pytest suite 70/70 passing.",
+    "done": "Rewrote CLAUDE.md for .advanced-plans/ layout (PLANNING.md pointer, Runtime Directory tree, single Command Surface table, retry-file naming .advanced-plans/phases/phase-N/loops-v2.md); re-pointed every plans/ and .claude/state|logs|plans reference across core/ and platforms/ (39 files) including agent/skill glob patterns to .advanced-plans/phases/*/loops.md; fixed checkpoint.sh PLANS_DIR/STATE_DIR to .advanced-plans; updated pytest fixtures to canonical nested layout and added 2 tests (canonical .advanced-plans/phases/phase-N/loops.md + flat-legacy fallback) — 72/72 passing; CI needs no path-filter change (no paths: filter; markdownlint globs **/*.md already covers .advanced-plans/); backfilled PLANS-INDEX.md with Phases 6 (019-022) and 7 (023-026) and loops 032-036, removed both index-gap notes; grep audit across core/, platforms/, CLAUDE.md, SKILL.md returns ZERO old-path matches; .advanced-plans/ write smoke test passed; git log --follow confirms phase-1/plan.md traces to original 5ec7168 release commit; git ls-files confirms .claude/settings.json tracked. Phase 9 ready for gate review.",
     "failed": "",
-    "needed": "Run Loop 036: rewrite CLAUDE.md to .advanced-plans/ paths, update SKILL.md path references, update pytest fixtures if needed, add markdownlint/CI filters, backfill Phase 6/7 PLANS-INDEX entries, final grep audit for residual plans/ and .claude/state|logs references, smoke test."
+    "needed": "Run /run-gate for Phase 9 gate review (code-review-agent + phase-goals-agent), then /next-phase to advance on pass."
   }
 }

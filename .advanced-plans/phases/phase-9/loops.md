@@ -532,63 +532,63 @@ todos:
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "CLAUDE.md contains the pointer line; no 'Planning State' section remains; Architecture and Workflow sections describe `.advanced-plans/` exclusively; no `plans/` or `.claude/state/` references."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-036-2"
     content: "Add the command-surface table (decided in Loop 034) to CLAUDE.md with clear non-overlapping purposes; align with PLANS-INDEX.md's workflow block. Use the boundary decision from Loop 034's handoff: /loop-status = current state, /progress-report = historical synthesis."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "CLAUDE.md contains a single command-surface table; PLANS-INDEX.md's workflow block references the same canonical list; no contradictions between the two."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-036-3"
     content: "Update every SKILL.md reference to `.claude/plans/` or top-level `plans/` across both core/skills/ and any global skills under platforms/. Includes ralph-loop-planner, phase-plan-creator, companion-detection, plan-todos, plan-skill-identification, plan-subagent-identification."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "Grep for `plans/` and `.claude/plans/` in all SKILL.md files (core/skills/, platforms/*/skills/, ~/.claude/skills/ for any framework-installed skills) returns zero matches."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-036-4"
     content: "Update pytest path references in platforms/python/tests/*.py: any fixture or constant referencing old paths re-pointed to `.advanced-plans/`. Add at least one test asserting the new path structure."
     skill: "NA"
     agent: "analysis-worker"
     outcome: "All tests reference `.advanced-plans/` paths exclusively; pytest suite passes; at least one new test asserts that `.advanced-plans/phases/phase-N/plan.md` is the canonical path."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-036-5"
     content: "Update markdownlint config (if present in repo) and CI workflow path filters in .github/workflows/ci.yml to reference `.advanced-plans/**` instead of `plans/**`."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "markdownlint config lints `.advanced-plans/**`; CI workflow path filters trigger on `.advanced-plans/**` changes; CI passes on a test push."
-    status: pending
+    status: completed
     priority: medium
   - id: "loop-036-6"
     content: "Backfill Phase 6 and Phase 7 entries in `.advanced-plans/PLANS-INDEX.md`: add their Phases table rows from the compaction manifests in `.advanced-plans/phases/phase-6/complete.md` and `phase-7/complete.md`; add their loops (019-022 for Phase 6, 023-026 for Phase 7) to the Ralph Loops table."
     skill: "NA"
     agent: "ralph-loop-worker"
     outcome: "PLANS-INDEX.md Phases table contains rows for Phases 1-9 inclusive; Ralph Loops table contains entries for loops 001-036 inclusive; the 'Index gap' note is removed."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-036-7"
     content: "Run the final grep audit: search for `plans/`, `.claude/state/`, `.claude/logs/`, `.claude/plans/` across `core/`, `platforms/`, `CLAUDE.md`, and all `SKILL.md` files. Any match is a blocker — document and fix before proceeding."
     skill: "NA"
     agent: "NA"
     outcome: "Grep audit returns zero matches across all four search roots; result documented in handoff.done."
-    status: pending
+    status: completed
     priority: high
   - id: "loop-036-8"
     content: "Smoke test: write a throwaway file to `.advanced-plans/test.md` (e.g. `echo test > .advanced-plans/test.md`) and confirm no permission prompt is triggered. Delete the test file. Document outcome (pass/fail) in handoff."
     skill: "NA"
     agent: "NA"
     outcome: "Permission rules verified end-to-end; test file written without prompt, then cleaned up; result recorded."
-    status: pending
+    status: completed
     priority: medium
   - id: "loop-036-9"
     content: "Final verification: confirm `python -m pytest platforms/python/tests/ -v` passes; confirm `git log --follow .advanced-plans/phases/phase-1/plan.md` shows the original Phase 1 commit; confirm `git ls-files .claude/settings.json` returns the file (tracked via gitignore exception). All three are gate-blocking."
     skill: "NA"
     agent: "NA"
     outcome: "All three verifications pass; recorded in handoff.done as 'Phase 9 ready for gate review'."
-    status: pending
+    status: completed
     priority: high
 
 prompt: |

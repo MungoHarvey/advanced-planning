@@ -34,7 +34,7 @@ Provide:
 2. **Generate a structured phase plan** following the template in `references/phase-plan-template.md`
 
 3. **Output as markdown** suitable for:
-   - Saving to `plans/` directory
+   - Saving to `.advanced-plans/` directory
    - Reviewing and editing inline
    - Passing to `ralph-loop-planner` for loop decomposition
 
@@ -95,14 +95,14 @@ Provide:
 
 Save the completed phase plan to:
 ```
-plans/phase-{N}.md              ← Phase plan document
-plans/PLANS-INDEX.md            ← Update with new phase entry
+.advanced-plans/phases/phase-{N}/plan.md              ← Phase plan document
+.advanced-plans/PLANS-INDEX.md            ← Update with new phase entry
 ```
 
 ## Next Steps
 
 1. Review and refine the generated phase plan
-2. Update `plans/PLANS-INDEX.md` to register the new phase
+2. Update `.advanced-plans/PLANS-INDEX.md` to register the new phase
 3. Pass to `ralph-loop-planner` to decompose into executable loops
 
 ## See Also

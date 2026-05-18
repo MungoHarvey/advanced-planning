@@ -20,7 +20,7 @@ Typical usage::
     from platforms.python.plan_io import get_loop_handoff
 
     # Read handoff from plan file
-    handoff = get_loop_handoff("plans/phase-1-ralph-loops.md", "ralph-loop-001")
+    handoff = get_loop_handoff(".advanced-plans/phases/phase-1/loops.md", "ralph-loop-001")
 
     # Or read from loop-complete.json via state_manager
     from platforms.python.state_manager import read_loop_complete

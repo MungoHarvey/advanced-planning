@@ -59,7 +59,7 @@ failed: ""
 needed: ""
 ```
 
-Also create `plans/` and `state/` directories in your workspace.
+Also create `.advanced-plans/` and `state/` directories in your workspace.
 
 ### Step 3 — Start a planning session
 
@@ -128,7 +128,7 @@ The SKILL.md handles this — you don't need to construct the prompts manually.
 
 ## Snapshot Checkpoints
 
-Because Cowork sessions don't use git, the adapter uses file snapshots instead. `checkpoint.sh` saves the current state of `plans/` and `state/` to `state/snapshots/`.
+Because Cowork sessions don't use git, the adapter uses file snapshots instead. `checkpoint.sh` saves the current state of `.advanced-plans/` and `state/` to `state/snapshots/`.
 
 ### Common commands
 
@@ -155,7 +155,7 @@ The worker runs opening and closing snapshots automatically. You can also run th
 ```
 your-workspace/
 ├── planning-state.md          ← current phase/loop/handoff state
-├── plans/
+├── .advanced-plans/
 │   ├── phase-1.md             ← phase plan
 │   └── phase-1-ralph-loops.md ← loop specs for Phase 1
 └── state/

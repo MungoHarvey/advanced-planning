@@ -167,7 +167,7 @@ and gate review into a continuous autonomous pipeline.
 
 #### 8a. Check for next phase
 
-Read `.advanced-plans/PLANS-INDEX.md` and `.advanced-plans/master-plan.md` (if they exist) to determine if more
+Read `.advanced-.advanced-plans/PLANS-INDEX.md` and `.advanced-plans/master-plan.md` (if they exist) to determine if more
 phases are planned:
 
 - If a master plan exists with a defined Phase [N+1] description: use that description as input
@@ -316,7 +316,7 @@ the original from being modified during retry.
 
 **7g. Update PLANS-INDEX.md**
 
-Read `.advanced-plans/PLANS-INDEX.md`. Update the Phase [N] entry:
+Read `.advanced-.advanced-plans/PLANS-INDEX.md`. Update the Phase [N] entry:
 - Add versioned file as the new active file
 - Set attempt number to `next_attempt`
 - Note: original file is now frozen

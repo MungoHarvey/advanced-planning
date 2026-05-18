@@ -22,7 +22,7 @@ for planning clarity, future platform adapters, and cost/complexity signalling.
 ## Your Input
 
 Provide:
-- **Loop file path** (e.g. `plans/ralph-loop-002.md`)
+- **Loop file path** (e.g. `.advanced-plans/phases/phase-{N}/loops.md`)
 - **Agents directory path** — the location of agent definition files for this project
 
 ## Process

@@ -81,9 +81,9 @@ _PLANS_INDEX_CONTENT = """\
 
 | Phase | Loop File | Status |
 |-------|-----------|--------|
-| phase-1 | plans/phase-1-ralph-loops.md | completed |
-| phase-2 | plans/phase-2-ralph-loops-v2.md | active |
-| phase-3 | plans/phase-3-ralph-loops.md | pending |
+| phase-1 | .advanced-plans/phases/phase-1/loops.md | completed |
+| phase-2 | .advanced-plans/phases/phase-2/loops-v2.md | active |
+| phase-3 | .advanced-plans/phases/phase-3/loops.md | pending |
 """
 
 
@@ -91,16 +91,16 @@ _PLANS_INDEX_CONTENT = """\
 
 class TestCreateRetryVersion:
     def test_creates_v2_file(self, tmp_path):
-        source = tmp_path / "phase-2-ralph-loops.md"
+        source = tmp_path / "loops.md"
         source.write_text(_SAMPLE_LOOP_CONTENT, encoding="utf-8")
 
         result = create_retry_version(source, attempt_number=2)
 
-        assert result.name == "phase-2-ralph-loops-v2.md"
+        assert result.name == "loops-v2.md"
         assert result.exists()
 
     def test_preserves_original(self, tmp_path):
-        source = tmp_path / "phase-2-ralph-loops.md"
+        source = tmp_path / "loops.md"
         source.write_text(_SAMPLE_LOOP_CONTENT, encoding="utf-8")
 
         create_retry_version(source, attempt_number=2)
@@ -109,7 +109,7 @@ class TestCreateRetryVersion:
         assert source.read_text(encoding="utf-8") == _SAMPLE_LOOP_CONTENT
 
     def test_content_is_copied(self, tmp_path):
-        source = tmp_path / "phase-1-ralph-loops.md"
+        source = tmp_path / "loops.md"
         source.write_text(_SAMPLE_LOOP_CONTENT, encoding="utf-8")
 
         dest = create_retry_version(source, attempt_number=2)
@@ -123,14 +123,14 @@ class TestCreateRetryVersion:
             create_retry_version(missing, attempt_number=2)
 
     def test_raises_value_error_when_attempt_less_than_2(self, tmp_path):
-        source = tmp_path / "phase-1-ralph-loops.md"
+        source = tmp_path / "loops.md"
         source.write_text("content", encoding="utf-8")
 
         with pytest.raises(ValueError, match="attempt_number must be >= 2"):
             create_retry_version(source, attempt_number=1)
 
     def test_raises_value_error_for_attempt_zero(self, tmp_path):
-        source = tmp_path / "phase-1-ralph-loops.md"
+        source = tmp_path / "loops.md"
         source.write_text("content", encoding="utf-8")
 
         with pytest.raises(ValueError):
@@ -138,16 +138,16 @@ class TestCreateRetryVersion:
 
     def test_strips_existing_version_suffix(self, tmp_path):
         # A v2 file being re-versioned to v3 should strip -v2 first
-        source = tmp_path / "phase-2-ralph-loops-v2.md"
+        source = tmp_path / "loops-v2.md"
         source.write_text(_SAMPLE_LOOP_CONTENT, encoding="utf-8")
 
         dest = create_retry_version(source, attempt_number=3)
 
-        assert dest.name == "phase-2-ralph-loops-v3.md"
+        assert dest.name == "loops-v3.md"
         assert dest.exists()
 
     def test_returns_absolute_path(self, tmp_path):
-        source = tmp_path / "phase-1-ralph-loops.md"
+        source = tmp_path / "loops.md"
         source.write_text("content", encoding="utf-8")
 
         dest = create_retry_version(source, attempt_number=2)
@@ -155,19 +155,19 @@ class TestCreateRetryVersion:
         assert dest.is_absolute()
 
     def test_creates_v3_file(self, tmp_path):
-        source = tmp_path / "phase-1-ralph-loops.md"
+        source = tmp_path / "loops.md"
         source.write_text("content", encoding="utf-8")
 
         dest = create_retry_version(source, attempt_number=3)
 
-        assert dest.name == "phase-1-ralph-loops-v3.md"
+        assert dest.name == "loops-v3.md"
 
 
 # ── TestInjectFailureContext ───────────────────────────────────────────────────
 
 class TestInjectFailureContext:
     def test_injects_block_into_yaml_fence(self, tmp_path):
-        source = tmp_path / "phase-1-ralph-loops-v2.md"
+        source = tmp_path / "loops-v2.md"
         source.write_text(_SAMPLE_LOOP_CONTENT, encoding="utf-8")
 
         inject_failure_context(source, verdict=_SAMPLE_VERDICT)
@@ -252,7 +252,7 @@ class TestGetActiveVersion:
 
         result = get_active_version(index, phase="phase-1")
 
-        assert result == "plans/phase-1-ralph-loops.md"
+        assert result == ".advanced-plans/phases/phase-1/loops.md"
 
     def test_returns_none_for_missing_phase(self, tmp_path):
         index = tmp_path / "PLANS-INDEX.md"
@@ -268,7 +268,7 @@ class TestGetActiveVersion:
 
         result = get_active_version(index, phase="phase-2")
 
-        assert result == "plans/phase-2-ralph-loops-v2.md"
+        assert result == ".advanced-plans/phases/phase-2/loops-v2.md"
 
     def test_case_insensitive_phase_lookup(self, tmp_path):
         index = tmp_path / "PLANS-INDEX.md"
@@ -276,7 +276,7 @@ class TestGetActiveVersion:
 
         result = get_active_version(index, phase="Phase-1")
 
-        assert result == "plans/phase-1-ralph-loops.md"
+        assert result == ".advanced-plans/phases/phase-1/loops.md"
 
     def test_raises_file_not_found_for_missing_index(self, tmp_path):
         missing = tmp_path / "NO-INDEX.md"
@@ -290,7 +290,7 @@ class TestGetActiveVersion:
 
         result = get_active_version(index, phase="phase-3")
 
-        assert result == "plans/phase-3-ralph-loops.md"
+        assert result == ".advanced-plans/phases/phase-3/loops.md"
 
 
 # ── TestFreezeLoopFile ─────────────────────────────────────────────────────────

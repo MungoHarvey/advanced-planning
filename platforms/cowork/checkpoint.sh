@@ -2,7 +2,7 @@
 # checkpoint.sh — Snapshot-based checkpoint utility for the Cowork planning adapter
 #
 # Replaces git checkpoints in environments without git (e.g. Cowork sandboxed VMs).
-# Snapshots the plans/ and state/ directories to state/snapshots/{label}-{timestamp}/
+# Snapshots the .advanced-plans/ and state/ directories to state/snapshots/{label}-{timestamp}/
 #
 # Usage:
 #   sh checkpoint.sh save [label]     — save a named snapshot
@@ -17,9 +17,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 WORKSPACE="$SCRIPT_DIR"
 
-STATE_DIR="$WORKSPACE/state"
+PLANS_DIR="$WORKSPACE/.advanced-plans"
+STATE_DIR="$PLANS_DIR/state"
 SNAPSHOTS_DIR="$STATE_DIR/snapshots"
-PLANS_DIR="$WORKSPACE/plans"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -28,7 +28,7 @@ usage() {
 checkpoint.sh — Planning snapshot utility
 
 Usage:
-  sh checkpoint.sh save [label]     Save current plans/ and state/ to a snapshot
+  sh checkpoint.sh save [label]     Save current .advanced-plans/ and state/ to a snapshot
   sh checkpoint.sh restore <stamp>  Restore from snapshot matching timestamp stamp
   sh checkpoint.sh list             List all available snapshots
 
@@ -55,7 +55,7 @@ cmd_save() {
     # Ensure snapshot directory exists
     mkdir -p "$SNAP_PATH"
 
-    # Snapshot plans/ if it exists
+    # Snapshot .advanced-plans/ if it exists
     PLANS_COUNT=0
     if [ -d "$PLANS_DIR" ]; then
         cp -r "$PLANS_DIR" "$SNAP_PATH/plans"
@@ -83,7 +83,7 @@ state:    $STATE_COUNT files
 MANIFEST
 
     echo "Saved: $SNAP_NAME"
-    echo "  plans/ : $PLANS_COUNT files"
+    echo "  .advanced-plans/ : $PLANS_COUNT files"
     echo "  state/ : $STATE_COUNT files"
     echo "  path   : $SNAP_PATH"
 }
@@ -114,12 +114,12 @@ cmd_restore() {
 
     echo "Restoring from: $(basename "$MATCH")"
 
-    # Restore plans/
+    # Restore .advanced-plans/
     if [ -d "$MATCH/plans" ]; then
         rm -rf "$PLANS_DIR"
         cp -r "$MATCH/plans" "$PLANS_DIR"
         PLANS_COUNT="$(find "$PLANS_DIR" -type f | wc -l | tr -d ' ')"
-        echo "  Restored plans/ : $PLANS_COUNT files"
+        echo "  Restored .advanced-plans/ : $PLANS_COUNT files"
     fi
 
     # Restore state/ files (preserve the snapshots/ subdirectory)

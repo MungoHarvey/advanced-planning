@@ -37,8 +37,8 @@ Read the description of what the user wants and route to the matching action bel
 
 | User Intent | Action |
 |-------------|--------|
-| **Create a new phase plan** — "plan this", "new phase", "scope this work" | Load `phase-plan-creator` skill → Generate phase plan → Save to `plans/phase-N.md` |
-| **Decompose phase into loops** — "break into loops", "new loop", "plan iterations" | Load `ralph-loop-planner` skill → Generate loop stubs → Save to `plans/phase-N-ralph-loops.md` |
+| **Create a new phase plan** — "plan this", "new phase", "scope this work" | Load `phase-plan-creator` skill → Generate phase plan → Save to `.advanced-plans/phase-N.md` |
+| **Decompose phase into loops** — "break into loops", "new loop", "plan iterations" | Load `ralph-loop-planner` skill → Generate loop stubs → Save to `.advanced-plans/phase-N-ralph-loops.md` |
 | **Execute the next loop** — "next loop", "run it", "continue", "execute" | Run the **Next Loop Cycle** (see below) |
 | **Progress report** — "show progress", "what happened", "status report", "what was done" | Load `progress-report` skill → Synthesise plan files, handoffs, git history → Print report |
 | **Check loop status** — "loop status", "where are we", "what's left" | Run the **Loop Status Check** (see below) |
@@ -54,7 +54,7 @@ Read skills/phase-plan-creator/SKILL.md
 Read skills/phase-plan-creator/references/phase-plan-template.md
 ```
 
-Follow the skill instructions. Save output to `plans/phase-[N].md`.
+Follow the skill instructions. Save output to `.advanced-plans/phase-[N].md`.
 Update `planning-state.md` with the new phase details.
 
 Then ask: "Shall I decompose this into ralph loops now?"
@@ -70,7 +70,7 @@ Read skills/ralph-loop-planner/references/ralph-loop-template.md
 Read skills/ralph-loop-planner/references/todo-schema.md
 ```
 
-Follow the skill instructions. Save output to `plans/phase-[N]-ralph-loops.md`.
+Follow the skill instructions. Save output to `.advanced-plans/phase-[N]-ralph-loops.md`.
 
 Optionally run the full population pipeline immediately:
 ```
@@ -180,7 +180,7 @@ sh state/checkpoint.sh save after-[loop_name]
 
 If `todos_failed > 0`:
 ```
-⚠ [N] todos did not complete. Review plans/[loop_file] before continuing.
+⚠ [N] todos did not complete. Review .advanced-plans/[loop_file] before continuing.
 ```
 
 ---
@@ -188,7 +188,7 @@ If `todos_failed > 0`:
 ## Action: Loop Status Check
 
 ```
-Glob("plans/*.md") → read all loop files
+Glob(".advanced-plans/phases/*/loops.md") → read all loop files
 ```
 
 For each loop extract: name, task_name, todo counts (pending/in_progress/completed/cancelled), handoff_summary fields.
@@ -215,8 +215,8 @@ Next action: spawn orchestrator to run ralph-loop-002
 
 Check five areas and report:
 
-1. **Todo progression**: `grep "status:" plans/*.md` — are todos advancing?
-2. **Handoff population**: `grep -A3 "handoff_summary:" plans/*.md` — are done/failed/needed fields populated?
+1. **Todo progression**: `grep "status:" .advanced-plans/phases/*/loops.md` — are todos advancing?
+2. **Handoff population**: `grep -A3 "handoff_summary:" .advanced-plans/phases/*/loops.md` — are done/failed/needed fields populated?
 3. **State files**: Do `state/loop-ready.json` and `state/loop-complete.json` exist and contain valid JSON?
 4. **Snapshot trail**: `ls state/snapshots/` — are checkpoints being created?
 5. **Skill injection**: Did the worker log skill loads in its completion note?
@@ -269,7 +269,7 @@ After setup, your workspace folder will contain:
 ```
 [workspace]/
 ├── planning-state.md           ← Persistent planning state (replaces CLAUDE.md)
-├── plans/                      ← Phase plans and ralph loop files
+├── .advanced-plans/                      ← Phase plans and ralph loop files
 │   ├── phase-1.md
 │   └── phase-1-ralph-loops.md
 ├── skills/                     ← Core planning skills (copied from core/)
@@ -302,13 +302,13 @@ This file is the persistent anchor — read it at the start of every session.
 ## Current Phase
 phase: 1
 name: "[Phase Name]"
-plan_file: "plans/phase-1.md"
+plan_file: ".advanced-plans/phases/phase-1/plan.md"
 status: in_progress
 
 ## Current Loop
 loop: "ralph-loop-001"
 task: "[Task Name]"
-loop_file: "plans/phase-1-ralph-loops.md"
+loop_file: ".advanced-plans/phases/phase-1/loops.md"
 todos_done: 0
 todos_total: 0
 

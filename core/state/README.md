@@ -63,7 +63,7 @@ See `loop-ready.schema.json` for the full JSON Schema.
 ```json
 {
   "loop_name": "ralph-loop-001",
-  "loop_file": "plans/phase-1-ralph-loops.md",
+  "loop_file": ".advanced-plans/phases/phase-1/loops.md",
   "task_name": "Schema Definitions",
   "todos_count": 5,
   "prepared_at": "2026-03-19T10:00:00Z",
@@ -90,7 +90,7 @@ See `loop-complete.schema.json` for the full JSON Schema.
 ```json
 {
   "loop_name": "ralph-loop-001",
-  "loop_file": "plans/phase-1-ralph-loops.md",
+  "loop_file": ".advanced-plans/phases/phase-1/loops.md",
   "status": "completed",
   "todos_done": 5,
   "todos_failed": 0,
@@ -130,7 +130,7 @@ Four additional event types are appended by the main thread when gate review run
 ```jsonl
 {"event": "gate_pass", "phase": "phase-2", "attempt": 1, "timestamp": "2026-03-22T12:00:00Z", "agents": ["code-review-agent", "phase-goals-agent"], "verdict_files": ["gate-verdicts/phase-2-attempt-1-code-review.json", "gate-verdicts/phase-2-attempt-1-phase-goals.json"]}
 {"event": "gate_fail", "phase": "phase-2", "attempt": 1, "timestamp": "2026-03-22T12:05:00Z", "agent": "code-review-agent", "verdict_file": "gate-verdicts/phase-2-attempt-1-code-review.json", "loops_to_revert": ["ralph-loop-002", "ralph-loop-003"]}
-{"event": "phase_retry", "phase": "phase-2", "attempt": 2, "timestamp": "2026-03-22T12:10:00Z", "new_loop_file": "plans/phase-2-ralph-loops-v2.md", "original_loop_file": "plans/phase-2-ralph-loops.md"}
+{"event": "phase_retry", "phase": "phase-2", "attempt": 2, "timestamp": "2026-03-22T12:10:00Z", "new_loop_file": ".advanced-plans/phases/phase-2/loops-v2.md", "original_loop_file": ".advanced-plans/phases/phase-2/loops.md"}
 {"event": "closeout", "timestamp": "2026-03-22T18:00:00Z", "phases_completed": 5, "total_loops": 28, "total_retries": 2, "report_file": "docs/programme-closeout.md"}
 ```
 
@@ -139,7 +139,7 @@ Four additional event types are appended by the main thread when gate review run
 ## Runtime Directory
 
 ```
-.claude/state/                  ← or equivalent for non-Claude Code platforms
+.advanced-plans/state/                  ← or equivalent for non-Claude Code platforms
 ├── loop-ready.json             ← Current assignment (overwritten each cycle)
 ├── loop-complete.json          ← Current result (overwritten each cycle)
 └── history.jsonl               ← Audit log (append-only, optional)
@@ -155,7 +155,7 @@ Four additional event types are appended by the main thread when gate review run
 | Write loop-complete.json | ralph-loop-worker agent | Worker via Agent tool | `state_manager.write_complete()` |
 | Read state files | /next-loop command | Routing SKILL.md | `state_manager.read_ready()` |
 | Append to history.jsonl | /next-loop command | Routing SKILL.md | `state_manager.append_history()` |
-| State directory location | `.claude/state/` | Workspace folder | Configurable |
+| State directory location | `.advanced-plans/state/` | Workspace folder | Configurable |
 
 ---
 
@@ -195,7 +195,7 @@ Main Thread          Gate Agent(s)
     │
     └─ If ANY verdict = fail:
         ├─ Append gate_fail to history.jsonl
-        ├─ Create versioned retry files (phase-N-ralph-loops-v{attempt+1}.md)
+        ├─ Create versioned retry files (phases/phase-N/loops-v{attempt+1}.md)
         ├─ Inject gate_failure_context into new loop files
         ├─ Update PLANS-INDEX.md active pointer
         ├─ Append phase_retry to history.jsonl

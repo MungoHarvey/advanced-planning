@@ -184,7 +184,7 @@ Write the following JSON to `state/loop-complete.json`:
 sh state/checkpoint.sh save complete-[loop_name]
 ```
 
-This replaces the git commit used in other adapters. It snapshots the current state of `plans/` and `state/` to `state/snapshots/`.
+This replaces the git commit used in other adapters. It snapshots the current state of `.advanced-plans/` and `state/` to `state/snapshots/`.
 
 ### Step 5 — Return
 
@@ -213,7 +213,7 @@ All paths are workspace-relative (no `.claude/` prefix):
 |----------|------|
 | Assignment | `state/loop-ready.json` |
 | Skills | `skills/[skill-name]/SKILL.md` |
-| Loop files | `plans/phase-N-ralph-loops.md` |
+| Loop files | `.advanced-plans/phase-N-ralph-loops.md` |
 | State bus (write) | `state/loop-complete.json` |
 | Checkpoint script | `state/checkpoint.sh` |
 | Snapshots | `state/snapshots/` |

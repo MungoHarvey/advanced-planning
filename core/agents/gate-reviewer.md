@@ -99,8 +99,8 @@ Return to the main thread.
 
 | Input | Location | Used For |
 |-------|----------|----------|
-| Phase plan file | `plans/` directory | Success criteria and output expectations |
-| Loop files for the phase | `plans/` directory | Understanding what was produced |
+| Phase plan file | `.advanced-plans/` directory | Success criteria and output expectations |
+| Loop files for the phase | `.advanced-plans/` directory | Understanding what was produced |
 | Phase output artefacts | Various locations per phase | Evaluating against success criteria |
 | Prior verdict (on retry) | `gate-verdicts/` directory | Understanding what failed previously |
 

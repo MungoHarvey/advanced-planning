@@ -24,7 +24,7 @@ def loop_complete_file(tmp_path):
     """Write a minimal loop-complete.json and return its path."""
     data = {
         "loop_name": "ralph-loop-001",
-        "loop_file": "plans/phase-1-ralph-loops.md",
+        "loop_file": ".advanced-plans/phases/phase-1/loops.md",
         "status": "completed",
         "todos_done": 4,
         "todos_failed": 0,

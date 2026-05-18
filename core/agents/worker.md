@@ -248,7 +248,7 @@ Return to the main thread. Do not advance to the next loop — that is the main 
 | Input | Location | Used For |
 |-------|----------|----------|
 | `loop-ready.json` | State directory | Assignment: loop file path, todos count, handoff context |
-| Loop plan file | `plans/` directory | Todos, success criteria, max_iterations, on_max_iterations |
+| Loop plan file | `.advanced-plans/` directory | Todos, success criteria, max_iterations, on_max_iterations |
 | SKILL.md files | Skills directory | Targeted injection; one skill per todo, per cycle |
 
 ---

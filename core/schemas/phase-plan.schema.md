@@ -7,7 +7,7 @@ A phase plan defines **what** needs to be accomplished and **why**, at a strateg
 ## File Location
 
 ```
-plans/phase-{N}.md
+.advanced-plans/phases/phase-{N}/plan.md
 ```
 
 Where `{N}` is the phase number (1-indexed, monotonically increasing).
@@ -119,7 +119,7 @@ Summary table of proposed loops. Not the full decomposition — that's done by `
 
 ## Example
 
-See `examples/planning-system-restructure/plans/phase-1.md` for a complete worked example.
+See `examples/planning-system-restructure/.advanced-plans/phases/phase-1/plan.md` for a complete worked example.
 
 ---
 

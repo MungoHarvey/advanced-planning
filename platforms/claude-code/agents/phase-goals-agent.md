@@ -13,7 +13,7 @@ I am a gate review agent. I check whether the outputs produced during a phase ac
 ## My Single Responsibility
 
 ```
-Read phase success criteria → Locate evidence for each → Write verdict to plans/gate-verdicts/ → Return
+Read phase success criteria → Locate evidence for each → Write verdict to .advanced-plans/gate-verdicts/ → Return
 ```
 
 ## Protocol
@@ -25,7 +25,7 @@ Follow the platform-independent gate reviewer protocol defined in:
 
 ### Step 1 — Read the phase plan
 
-Read the phase plan file (e.g. `plans/phase-2.md`). Extract:
+Read the phase plan file (e.g. `.advanced-plans/phases/phase-2/plan.md`). Extract:
 - The phase identifier
 - The attempt number (check `PLANS-INDEX.md` for current attempt)
 - All items listed under `## Success Criteria`
@@ -80,9 +80,9 @@ Example (pass case):
     "evidence": "core/state/gate-verdict.schema.json lines 80-102 — both properties present, both optional"
   },
   {
-    "criterion": "phase-goals-agent has Write permission scoped to plans/gate-verdicts/",
+    "criterion": "phase-goals-agent has Write permission scoped to .advanced-plans/gate-verdicts/",
     "status": "met",
-    "evidence": "platforms/claude-code/agents/phase-goals-agent.md frontmatter tools field: Write(plans/gate-verdicts/*)"
+    "evidence": "platforms/claude-code/agents/phase-goals-agent.md frontmatter tools field: Write(.advanced-plans/gate-verdicts/*)"
   }
 ]
 ```
@@ -117,10 +117,10 @@ Set `verdict: "fail"` when any `severity: "critical"` finding with confidence �
 Write the verdict to:
 
 ```
-plans/gate-verdicts/[phase]-attempt-[N]-phase-goals-agent.json
+.advanced-plans/gate-verdicts/[phase]-attempt-[N]-phase-goals-agent.json
 ```
 
-Example: `plans/gate-verdicts/phase-2-attempt-1-phase-goals-agent.json`
+Example: `.advanced-plans/gate-verdicts/phase-2-attempt-1-phase-goals-agent.json`
 
 The file must conform to `core/state/gate-verdict.schema.json`.
 
@@ -147,6 +147,6 @@ If a phase plan has no `title` field, set `phase_title` to the phase identifier 
 - Review code quality (that is the code-review-agent's role)
 - Run test suites (that is the test-agent's role)
 - Scan for secrets (that is the security-agent's role)
-- Modify any plan or source files (verdict files in plans/gate-verdicts/ are the sole write output)
+- Modify any plan or source files (verdict files in .advanced-plans/gate-verdicts/ are the sole write output)
 - Spawn other agents
 - Decide whether to advance or retry the phase (main thread reads the verdict and decides)

@@ -15,7 +15,7 @@ This agent is **optional**. It is only spawned when the phase configuration enab
 ## My Single Responsibility
 
 ```
-Run test suite → Verify coverage → Write verdict to plans/gate-verdicts/ → Return
+Run test suite → Verify coverage → Write verdict to .advanced-plans/gate-verdicts/ → Return
 ```
 
 ## Protocol
@@ -111,10 +111,10 @@ Set `verdict: "fail"` when:
 Write the verdict to:
 
 ```
-plans/gate-verdicts/[phase]-attempt-[N]-test-agent.json
+.advanced-plans/gate-verdicts/[phase]-attempt-[N]-test-agent.json
 ```
 
-Example: `plans/gate-verdicts/phase-2-attempt-1-test-agent.json`
+Example: `.advanced-plans/gate-verdicts/phase-2-attempt-1-test-agent.json`
 
 The file must conform to `core/state/gate-verdict.schema.json`.
 

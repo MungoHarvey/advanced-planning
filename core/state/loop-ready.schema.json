@@ -12,7 +12,7 @@
     },
     "loop_file": {
       "type": "string",
-      "description": "Relative path to the loop file from project root, e.g. plans/phase-1-ralph-loops.md"
+      "description": "Relative path to the loop file from project root, e.g. .advanced-plans/phases/phase-1/loops.md"
     },
     "task_name": {
       "type": "string",

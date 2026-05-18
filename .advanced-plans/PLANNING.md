@@ -1,12 +1,12 @@
 ---
 programme: "Advanced Planning Framework"
 status: in_progress
-last_updated: 2026-05-15
+last_updated: 2026-05-18
 
 current_phase: 9
-current_loop: ralph-loop-035
-gate_status: not_due
-next_action: "/next-loop"
+current_loop: ralph-loop-036
+gate_status: due
+next_action: "/run-gate"
 
 active_branches:
   - branch: main
@@ -24,11 +24,12 @@ state_files:
   history: .advanced-plans/state/history.jsonl
 
 notes: |
-  Phase 9 — .advanced-plans/ Restructure (Loop 034 just completed).
-  Loop 034 rewrote all slash commands to target .advanced-plans/ paths, renamed
-  /new-loop -> /decompose-phase (with .md.md and save-path bug fixes), established
-  canonical sentinel ownership (.advanced-plans/state/), and deduped /progress-report
-  vs /loop-status. Loop 035 narrows hook allowlists and updates Python/install.
+  Phase 9 — .advanced-plans/ Restructure: all 5 loops (032-036) complete.
+  035 narrowed hook allowlists + permissions to .advanced-plans/** and updated
+  Python path constants + install scripts. 036 rewrote CLAUDE.md, re-pointed all
+  core/ + platforms/ docs, updated pytest fixtures (72 passing), backfilled
+  PLANS-INDEX Phases 6-7. Grep audit clean; smoke test + git-history checks pass.
+  Phase 9 awaiting gate review (/run-gate).
 ---
 
 # PLANNING.md — Live Programme Dashboard

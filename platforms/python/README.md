@@ -45,7 +45,7 @@ from platforms.python.state_manager import write_loop_ready
 write_loop_ready(
     "state",
     loop_name="ralph-loop-001",
-    loop_file="plans/phase-1-ralph-loops.md",
+    loop_file=".advanced-plans/phases/phase-1/loops.md",
     task_name="Schema Definitions",
     todos_count=4,
     handoff_done="Phase plan created.",
@@ -90,7 +90,7 @@ loop = find_next_loop("plans")
 if loop:
     print(loop["loop_name"])     # "ralph-loop-002"
     print(loop["todos_count"])   # 3
-    print(loop["loop_file"])     # "plans/phase-1-ralph-loops.md"
+    print(loop["loop_file"])     # ".advanced-plans/phases/phase-1/loops.md"
 ```
 
 #### `get_pending_todos(loop_file, loop_name) → list`
@@ -100,7 +100,7 @@ Return all todos with `status: pending` for a named loop.
 ```python
 from platforms.python.plan_io import get_pending_todos
 
-todos = get_pending_todos("plans/phase-1-ralph-loops.md", "ralph-loop-002")
+todos = get_pending_todos(".advanced-plans/phases/phase-1/loops.md", "ralph-loop-002")
 for todo in todos:
     print(todo["id"], todo["content"], todo["skill"])
 ```
@@ -112,7 +112,7 @@ Update a todo's `status` field in-place within the plan file.
 ```python
 from platforms.python.plan_io import update_todo_status
 
-update_todo_status("plans/phase-1-ralph-loops.md", "ralph-loop-002", "loop-002-1", "completed")
+update_todo_status(".advanced-plans/phases/phase-1/loops.md", "ralph-loop-002", "loop-002-1", "completed")
 ```
 
 #### `parse_loop_frontmatter(loop_file, loop_name) → dict | None`

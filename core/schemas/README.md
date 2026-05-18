@@ -21,5 +21,5 @@ Produced in Phase 6. These are the contracts for the phase-compactor agent and `
 
 | Schema | Description |
 |--------|-------------|
-| [docs/phase-complete.schema.md](../../docs/phase-complete.schema.md) | Cold artefact schema for `plans/phase-completes/phase-N-complete.md`; defines frontmatter fields, body section rules, anchor SHA mechanism, and validation checklist |
+| [docs/phase-complete.schema.md](../../docs/phase-complete.schema.md) | Cold artefact schema for `.advanced-plans/phases/phase-N-complete.md`; defines frontmatter fields, body section rules, anchor SHA mechanism, and validation checklist |
 | [docs/phase-manifest-entry.schema.md](../../docs/phase-manifest-entry.schema.md) | Hot manifest entry schema for `PLANS-INDEX.md`; enforces the ≤8-line hard ceiling per phase entry and max 2 highlights |

@@ -24,7 +24,7 @@ You will be given the workspace folder path as context. All paths below are rela
    - If yes: read it to find which loop just completed, and target the *next* loop after that one
    - If no: read `planning-state.md` to find the current loop pointer
 
-2. Glob `plans/*.md` and identify the first loop with at least one todo in `status: pending`
+2. Glob `.advanced-plans/phases/*/loops.md` and identify the first loop with at least one todo in `status: pending`
 
 3. If no pending todos are found anywhere: write `state/loop-ready.json` with `"status": "all_complete"` and return immediately
 
@@ -88,7 +88,7 @@ Write the following JSON to `state/loop-ready.json`:
 ```json
 {
   "loop_name": "[name field from loop frontmatter]",
-  "loop_file": "[path to loop plan file, e.g. plans/phase-1-ralph-loops.md]",
+  "loop_file": "[path to loop plan file, e.g. .advanced-plans/phases/phase-1/loops.md]",
   "task_name": "[task_name field from loop frontmatter]",
   "todos_count": [count of todos with status: pending],
   "prepared_at": "[ISO 8601 timestamp]",
@@ -130,8 +130,8 @@ All paths are workspace-relative (no leading `/` to an absolute root, no `.claud
 | Resource | Path |
 |----------|------|
 | Planning state | `planning-state.md` |
-| Phase plans | `plans/phase-N.md` |
-| Loop files | `plans/phase-N-ralph-loops.md` |
+| Phase plans | `.advanced-plans/phase-N.md` |
+| Loop files | `.advanced-plans/phase-N-ralph-loops.md` |
 | Skills | `skills/[skill-name]/SKILL.md` |
 | State bus (read) | `state/loop-complete.json` |
 | State bus (write) | `state/loop-ready.json` |

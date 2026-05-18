@@ -17,17 +17,17 @@ description: "Generate a structured progress report by reading plan files, loop 
 
 The skill reads these existing artefacts. No new logging infrastructure is required.
 
-1. **Plan files** (`Glob .claude/plans/phase-*.md`) — phase objectives, scope, success criteria
-2. **Loop files** (`Glob .claude/plans/phase-*-ralph-loops.md` or `Glob .claude/plans/ralph-loop-*.md`) — todo statuses, handoff summaries, max_iterations
-3. **PLANS-INDEX.md** (`Read .claude/plans/PLANS-INDEX.md`) — phase/loop status overview if present
+1. **Plan files** (`Glob .advanced-plans/phases/*/plan.md`) — phase objectives, scope, success criteria
+2. **Loop files** (`Glob .advanced-plans/phases/*/loops.md`) — todo statuses, handoff summaries, max_iterations
+3. **PLANS-INDEX.md** (`Read .advanced-plans/PLANS-INDEX.md`) — phase/loop status overview if present
 4. **CLAUDE.md Planning State** (`Read CLAUDE.md`) — current phase/loop pointer, last handoff
 5. **Git history** (`git log --oneline --grep="complete:" --grep="checkpoint:" -20`) — commit trail of loop completions with timestamps
-6. **State files** (`Read .claude/state/loop-complete.json`) — most recent loop result
-7. **Execution log** (`Read .claude/logs/execution.log`) — agent spawning, model routing, tool usage (last 50 lines, if available)
+6. **State files** (`Read .advanced-plans/state/loop-complete.json`) — most recent loop result
+7. **Execution log** (`Read .advanced-plans/logs/execution.log`) — agent spawning, model routing, tool usage (last 50 lines, if available)
 
 ## Process
 
-1. Glob for all plan and loop files in `.claude/plans/`
+1. Glob for all plan and loop files under `.advanced-plans/phases/*/`
 2. For each phase plan: extract objective, status, and success criteria from YAML frontmatter
 3. For each loop file: parse YAML frontmatter to extract:
    - Todo statuses: count `pending`, `in_progress`, `completed`, `cancelled`
@@ -38,7 +38,7 @@ The skill reads these existing artefacts. No new logging infrastructure is requi
    - Total todos, completed todos, failed/cancelled todos
 5. Run `git log --oneline --grep="complete:" --grep="checkpoint:" -20` for timestamps and summaries
 6. Read `CLAUDE.md` for current position (which phase/loop is active)
-7. Read `.claude/state/loop-complete.json` for the most recent loop result
+7. Read `.advanced-plans/state/loop-complete.json` for the most recent loop result
 8. Compile into the output format below
 
 ## Output Format
@@ -90,5 +90,5 @@ Generated: [timestamp]
 - The report is read-only synthesis — it never modifies plan files or state
 - For multi-phase programmes, pass `--phase N` to scope to a single phase, or omit for the full programme
 - The git trail provides timestamps that plan files themselves do not carry
-- If `.claude/plans/` is empty or no loops have run, report that no data is available yet
+- If `.advanced-plans/` is empty or no loops have run, report that no data is available yet
 - Omit table rows and sections that have no data rather than showing empty tables

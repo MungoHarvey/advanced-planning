@@ -34,7 +34,7 @@ class TestWriteReadLoopReady:
         path = write_loop_ready(
             state_dir,
             loop_name="ralph-loop-001",
-            loop_file="plans/phase-1-ralph-loops.md",
+            loop_file=".advanced-plans/phases/phase-1/loops.md",
             task_name="Schema Definitions",
             todos_count=4,
         )
@@ -44,7 +44,7 @@ class TestWriteReadLoopReady:
         write_loop_ready(
             state_dir,
             loop_name="ralph-loop-001",
-            loop_file="plans/phase-1-ralph-loops.md",
+            loop_file=".advanced-plans/phases/phase-1/loops.md",
             task_name="Schema Definitions",
             todos_count=4,
             handoff_done="Prior work done.",
@@ -53,7 +53,7 @@ class TestWriteReadLoopReady:
         )
         data = read_loop_ready(state_dir)
         assert data["loop_name"] == "ralph-loop-001"
-        assert data["loop_file"] == "plans/phase-1-ralph-loops.md"
+        assert data["loop_file"] == ".advanced-plans/phases/phase-1/loops.md"
         assert data["task_name"] == "Schema Definitions"
         assert data["todos_count"] == 4
         assert data["status"] == "ready"
@@ -67,7 +67,7 @@ class TestWriteReadLoopReady:
         write_loop_ready(
             state_dir,
             loop_name="ralph-loop-001",
-            loop_file="plans/x.md",
+            loop_file=".advanced-plans/x.md",
             task_name="T",
             todos_count=1,
         )
@@ -80,7 +80,7 @@ class TestWriteReadLoopReady:
         write_loop_ready(
             new_state,
             loop_name="ralph-loop-001",
-            loop_file="plans/x.md",
+            loop_file=".advanced-plans/x.md",
             task_name="T",
             todos_count=1,
         )
@@ -94,7 +94,7 @@ class TestWriteReadLoopComplete:
         write_loop_complete(
             state_dir,
             loop_name="ralph-loop-001",
-            loop_file="plans/phase-1-ralph-loops.md",
+            loop_file=".advanced-plans/phases/phase-1/loops.md",
             status="completed",
             todos_done=4,
             todos_failed=0,
@@ -113,7 +113,7 @@ class TestWriteReadLoopComplete:
             write_loop_complete(
                 state_dir,
                 loop_name="ralph-loop-001",
-                loop_file="plans/x.md",
+                loop_file=".advanced-plans/x.md",
                 status="bad_status",
                 todos_done=0,
                 todos_failed=0,
@@ -129,7 +129,7 @@ class TestWriteReadLoopComplete:
         write_loop_complete(
             state_dir,
             loop_name="ralph-loop-002",
-            loop_file="plans/x.md",
+            loop_file=".advanced-plans/x.md",
             status="partial",
             todos_done=2,
             todos_failed=1,
@@ -144,7 +144,7 @@ class TestWriteReadLoopComplete:
         write_loop_complete(
             state_dir,
             loop_name="ralph-loop-001",
-            loop_file="plans/x.md",
+            loop_file=".advanced-plans/x.md",
             status="completed",
             todos_done=1,
             todos_failed=0,
@@ -190,7 +190,7 @@ class TestGetStatus:
         write_loop_ready(
             state_dir,
             loop_name="ralph-loop-001",
-            loop_file="plans/x.md",
+            loop_file=".advanced-plans/x.md",
             task_name="T",
             todos_count=2,
         )

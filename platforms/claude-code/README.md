@@ -169,7 +169,7 @@ your-project/
     ├── settings.json       ← Permissions, planning-mode hooks, gate-review-mode hooks
     ├── state/              ← loop-ready.json, loop-complete.json, sentinels (runtime)
     └── logs/               ← execution.log (runtime)
-plans/
+.advanced-plans/
 ├── phase-N.md, phase-N-ralph-loops.md                   ← plan files (runtime)
 ├── PLANS-INDEX.md                                       ← master tracker
 └── gate-verdicts/                                       ← verdict JSON files (runtime)

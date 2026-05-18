@@ -13,7 +13,7 @@ I am a gate review agent. I evaluate code produced during a phase against qualit
 ## My Single Responsibility
 
 ```
-Read phase outputs → Evaluate code quality → Write verdict to plans/gate-verdicts/ → Return
+Read phase outputs → Evaluate code quality → Write verdict to .advanced-plans/gate-verdicts/ → Return
 ```
 
 ## Protocol
@@ -117,10 +117,10 @@ In the verdict JSON, include all findings regardless of severity. **Important** 
 Write the verdict to:
 
 ```
-plans/gate-verdicts/[phase]-attempt-[N]-code-review-agent.json
+.advanced-plans/gate-verdicts/[phase]-attempt-[N]-code-review-agent.json
 ```
 
-Example: `plans/gate-verdicts/phase-2-attempt-1-code-review-agent.json`
+Example: `.advanced-plans/gate-verdicts/phase-2-attempt-1-code-review-agent.json`
 
 The file must conform to `core/state/gate-verdict.schema.json`.
 
