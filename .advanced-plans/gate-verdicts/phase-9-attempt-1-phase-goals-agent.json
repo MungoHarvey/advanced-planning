@@ -1,0 +1,37 @@
+{
+  "phase": "phase-9",
+  "attempt": 1,
+  "timestamp": "2026-05-18T12:00:00Z",
+  "agent": "phase-goals-agent",
+  "verdict": "fail",
+  "confidence": 95,
+  "phase_title": ".advanced-plans/ Restructure",
+  "criteria_outcomes": [
+    {"criterion": ".advanced-plans/ exists with full tree", "status": "met", "evidence": "All subdirs/files present (README, PLANNING, PLANS-INDEX, master-plan, phases/, specs/, state/, logs/)."},
+    {"criterion": "Old plans/, .claude/state/, .claude/logs/ removed", "status": "met", "evidence": "Glob('plans/**') empty; .claude/ has no state/ or logs/."},
+    {"criterion": ".claude/ contains only runtime", "status": "met", "evidence": "Only skills/, settings.json, settings.local.json."},
+    {"criterion": ".gitignore !.claude/settings.json exception; file tracked", "status": "met", "evidence": ".gitignore line 6 exception; git ls-files returns file."},
+    {"criterion": "PLANNING.md frontmatter populated", "status": "failed", "evidence": "gate_status 'due' is not a valid enum (not_due|pending|passed|failed); body prose stale (says loop-034, 035/036 pending)."},
+    {"criterion": "README.md documents layout, references PLANNING.md", "status": "met", "evidence": "README present with layout tree + dashboard reference."},
+    {"criterion": "All slash commands work end-to-end", "status": "failed", "evidence": "9x '.advanced-.advanced-plans/PLANS-INDEX.md' double-prefix corruption across 4 command files."},
+    {"criterion": "pytest passes", "status": "met", "evidence": "72 tests passing; tests reference .advanced-plans/ exclusively."},
+    {"criterion": "git log --follow phase-1/plan.md preserved", "status": "met", "evidence": "History traces to original release commit 5ec7168."},
+    {"criterion": "PLANS-INDEX covers Phases 1-8 (6/7 gap closed)", "status": "met", "evidence": "Phases 1-9 + loops 001-036 enumerated; gap notes removed."},
+    {"criterion": "Grep audit zero old-path matches", "status": "met", "evidence": "Zero matches in core/, platforms/, CLAUDE.md (double-prefix is separate, not old-path)."},
+    {"criterion": "Permission allow rules for .advanced-plans/**", "status": "met", "evidence": "Both .claude/settings.json and platforms/claude-code/settings.json have R/W/E/ME .advanced-plans/** rules."}
+  ],
+  "findings": [
+    {"severity": "critical", "location": "platforms/claude-code/commands/{phase-compact.md,next-phase.md,decompose-phase.md,progress-report.md}", "description": "Double-prefix '.advanced-.advanced-plans/PLANS-INDEX.md' (9 occurrences) introduced by Loop 036 substitution double-converting already-migrated paths. Breaks manifest update, phase advance, loop registration, progress reporting at runtime.", "evidence": "Grep('.advanced-.advanced-plans', commands) returns 9 matches."},
+    {"severity": "warning", "location": "phase-goals-agent.md / programme-reporter.md vs run-gate.md / next-phase.md", "description": "Flat .advanced-plans/gate-verdicts/ vs per-phase .advanced-plans/phases/phase-N/gate-verdicts/ inconsistency.", "evidence": "Agent defs use flat path; commands use per-phase path."},
+    {"severity": "warning", "location": ".advanced-plans/PLANS-INDEX.md line 90", "description": "Workflow entry says verdicts written to flat .advanced-plans/gate-verdicts/, inconsistent with run-gate.md per-phase behaviour.", "evidence": "PLANS-INDEX line 90 vs run-gate.md line 54."},
+    {"severity": "warning", "location": ".advanced-plans/PLANNING.md", "description": "gate_status 'due' invalid enum; body prose stale (loop-034, 035/036 pending).", "evidence": "Line 8 gate_status: due; spec valid values not_due|pending|passed|failed."},
+    {"severity": "warning", "location": ".advanced-plans/phases/phase-9/loops.md ralph-loop-035/036", "description": "Empty handoff_summary fields for loops 035 and 036.", "evidence": "Both handoff_summary blocks have done/failed/needed empty."}
+  ],
+  "loops_to_revert": ["ralph-loop-036"],
+  "failure_notes": [
+    "Retry Loop 036 must fix all 9 '.advanced-.advanced-plans/' occurrences: phase-compact.md (2,12,225,228,274,295), next-phase.md (170,319), decompose-phase.md (55), progress-report.md (36).",
+    "Do NOT broad search-and-replace .advanced-plans/ in already-correct files. Search specifically for the corrupted string '.advanced-.advanced-plans/' and replace only those.",
+    "Also fix: PLANNING.md gate_status -> valid enum; PLANNING.md body to reflect 035/036 complete; populate loop 035/036 handoff_summary.done.",
+    "Resolve flat vs per-phase gate-verdicts path inconsistency; pick one canonical location."
+  ]
+}

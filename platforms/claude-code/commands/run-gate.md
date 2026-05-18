@@ -51,27 +51,27 @@ Gate agents:
 ### 4. Create gate-verdicts directory
 
 ```bash
-mkdir -p .advanced-plans/phases/phase-[N]/gate-verdicts
+mkdir -p .advanced-plans/gate-verdicts
 ```
 
 ### 5. Create gate-review-mode sentinel
 
 The sentinel lives at `.advanced-plans/state/gate-review-mode`. While it exists, hook
-allowlists restrict writes to `.advanced-plans/phases/phase-[N]/gate-verdicts/` and
+allowlists restrict writes to `.advanced-plans/gate-verdicts/` and
 `.advanced-plans/state/` only.
 
 ```bash
 echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .advanced-plans/state/gate-review-mode
 ```
 
-Print: `-> Gate review mode active (write access restricted to .advanced-plans/phases/phase-[N]/gate-verdicts/)`
+Print: `-> Gate review mode active (write access restricted to .advanced-plans/gate-verdicts/)`
 
 ### 6. Determine attempt number
 
 Count existing verdict files for this phase to determine the attempt number:
 
 ```bash
-ls .advanced-plans/phases/phase-[N]/gate-verdicts/phase-[N]-attempt-*.json 2>/dev/null | wc -l
+ls .advanced-plans/gate-verdicts/phase-[N]-attempt-*.json 2>/dev/null | wc -l
 ```
 
 If `N` existing files found, `attempt = floor(N / agent_count) + 1` where `agent_count`
@@ -92,7 +92,7 @@ Phase plan: .advanced-plans/phases/phase-[N]/plan.md (read to understand success
 Loop files: .advanced-plans/phases/phase-[N]/loops.md (read for this phase)
 Prior context: [handoff summaries from all loops in this phase]
 
-Your verdict output path: .advanced-plans/phases/phase-[N]/gate-verdicts/phase-[N]-attempt-[attempt]-[agent-name].json
+Your verdict output path: .advanced-plans/gate-verdicts/phase-[N]-attempt-[attempt]-[agent-name].json
 
 Read the phase plan, all loop outputs, and evaluate whether the phase success criteria
 have been met. Write your verdict to the output path. Then return.
@@ -115,7 +115,7 @@ Print: `-> Gate review mode deactivated.`
 Read all verdict files written in this attempt:
 
 ```bash
-ls .advanced-plans/phases/phase-[N]/gate-verdicts/phase-[N]-attempt-[attempt]-*.json
+ls .advanced-plans/gate-verdicts/phase-[N]-attempt-[attempt]-*.json
 ```
 
 For each verdict file, read the `verdict` field. Aggregate:

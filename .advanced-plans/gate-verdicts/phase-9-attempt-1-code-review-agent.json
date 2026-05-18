@@ -1,0 +1,58 @@
+{
+  "phase": "phase-9",
+  "attempt": 1,
+  "timestamp": "2026-05-18T10:25:00Z",
+  "agent": "code-review-agent",
+  "verdict": "fail",
+  "confidence": 95,
+  "findings": [
+    {
+      "severity": "critical",
+      "location": "platforms/claude-code/commands/phase-compact.md (lines 2, 12, 225, 228, 274, 295), platforms/claude-code/commands/next-phase.md (lines 170, 319), platforms/claude-code/commands/decompose-phase.md (line 55), platforms/claude-code/commands/progress-report.md (line 36)",
+      "description": "Double-prefix path corruption: `.advanced-.advanced-plans/PLANS-INDEX.md` (10 occurrences across 4 command files). The Loop 036 path-substitution pass converted `.advanced-plans/PLANS-INDEX.md` references to `.advanced-.advanced-plans/PLANS-INDEX.md`, producing a nonexistent path. Any agent following `/phase-compact`, `/next-phase`, `/decompose-phase`, or `/progress-report` instructions will attempt to read/write a path that does not exist. This is a functional defect that would silently break the manifest-update step in `/phase-compact`, the phase-advance step in `/next-phase`, the loop-registration step in `/decompose-phase`, and the PLANS-INDEX read step in `/progress-report`.",
+      "evidence": "grep -rn '.advanced-.advanced-plans' platforms/claude-code/commands/ returns 10 matches. Introduced by d6f168e (ralph-loop-036) which ran a path-substitution pass that double-converted previously-correct `.advanced-plans/` references. Confirmed via `git show d6f168e -- platforms/claude-code/commands/phase-compact.md` showing the second-pass corruption."
+    },
+    {
+      "severity": "warning",
+      "location": "CLAUDE.md (Runtime Directory section, line 105)",
+      "description": "CLAUDE.md Runtime Directory diagram shows `gate-verdicts/` as a direct child of `.advanced-plans/`, but the actual design spec, run-gate.md, next-phase.md, phase-compact.md, and run-closeout.md all place gate verdicts at `.advanced-plans/phases/phase-N/gate-verdicts/`. This creates a misleading mental model for developers reading CLAUDE.md.",
+      "evidence": "CLAUDE.md line 105: `gate-verdicts/           ← Verdict JSON written by gate agents during /run-gate` listed under `.advanced-plans/` root. Design spec (specs/2026-05-14-advanced-plans-restructure-design.md line 44) shows `gate-verdicts/` nested under `phases/phase-N/`. run-gate.md line 54: `mkdir -p .advanced-plans/phases/phase-[N]/gate-verdicts`."
+    },
+    {
+      "severity": "warning",
+      "location": ".advanced-plans/PLANS-INDEX.md (Workflow section, line 90)",
+      "description": "PLANS-INDEX.md workflow table entry for `/run-gate` says 'writes verdicts to `.advanced-plans/gate-verdicts/`', which is incorrect. The actual destination is `.advanced-plans/phases/phase-N/gate-verdicts/` as implemented in run-gate.md.",
+      "evidence": "PLANS-INDEX.md line 90: `/run-gate         → spawns gate agents; writes verdicts to .advanced-plans/gate-verdicts/`. Actual path per run-gate.md: `.advanced-plans/phases/phase-[N]/gate-verdicts/`."
+    },
+    {
+      "severity": "warning",
+      "location": ".advanced-plans/PLANNING.md (body section, lines 47-64)",
+      "description": "PLANNING.md body prose is stale: it says the current loop is `ralph-loop-034` and shows loops 035 and 036 as 'pending'. The frontmatter is correct (current_loop: ralph-loop-036, gate_status: due), but the body text was not updated when loops 035/036 completed. Agents reading the body section may receive misleading state.",
+      "evidence": "PLANNING.md line 47: 'Current loop just completed: `ralph-loop-034`'. Lines 63-64: 035 status 'pending', 036 status 'pending'. Frontmatter line 8: `current_loop: ralph-loop-036` (correct). Loops 035 and 036 are both marked completed in `.advanced-plans/phases/phase-9/loops.md`."
+    },
+    {
+      "severity": "info",
+      "location": ".claude/plans/ (empty directory)",
+      "description": "An empty `.claude/plans/` directory exists at `.claude/plans/`. The Phase 9 success criterion states '.claude/ contains only Claude-Code runtime (commands, agents, skills, schemas, settings.json)'. This empty directory is untracked in git and was not removed during migration. It is harmless but violates the success criterion.",
+      "evidence": "ls -la .claude/ shows: plans (directory, May 13, empty). git ls-files .claude/plans/ returns no output (untracked). git status shows only .advanced-plans/state/gate-review-mode as untracked."
+    },
+    {
+      "severity": "info",
+      "location": "setup/claude-code/install.sh (lines 199-213), setup/claude-code/install.ps1 (equivalent section)",
+      "description": "The idempotent migration logic in install.sh copies legacy `plans/` content to `.advanced-plans/` but does not delete the source `plans/` directory after migration. The phase success criterion requires old directories to be removed. For target-project installs, this leaves a legacy `plans/` directory alongside the new `.advanced-plans/` directory.",
+      "evidence": "install.sh lines 200-203: uses `cp -R` to migrate plans/ content but no `rm -rf` or `rmdir` follows. No `rm` commands appear anywhere in the migration block. This is conservative (no data loss risk) but incomplete per the migration requirement."
+    },
+    {
+      "severity": "info",
+      "location": "platforms/cowork/SKILL.md (lines 40-41, 57, 73), platforms/cowork/agents/worker-prompt.md (line 216)",
+      "description": "Cowork adapter still references old flat-layout paths (`.advanced-plans/phase-N.md`, `.advanced-plans/phase-N-ralph-loops.md`). This is explicitly deferred per the design spec ('Cowork adapter alignment with new layout: separate phase') and does not block this gate.",
+      "evidence": "Design spec line 213: 'Cowork adapter alignment with new layout — Cowork adapter currently shells out through natural language; update to read from .advanced-plans/ is a separate concern.' Cowork SKILL.md line 40: `.advanced-plans/phase-N.md`."
+    }
+  ],
+  "loops_to_revert": [],
+  "failure_notes": [
+    "Loop 036 introduced a double-prefix path corruption: any sed-style substitution of `.advanced-plans/` references must guard against replacing already-correct `.advanced-plans/` strings a second time. The next attempt must scan ALL command files in platforms/claude-code/commands/ for occurrences of `.advanced-.advanced-plans/` and replace them with `.advanced-plans/`. Specifically: phase-compact.md (6 occurrences), next-phase.md (2 occurrences), decompose-phase.md (1 occurrence), progress-report.md (1 occurrence).",
+    "After fixing the double-prefix bug, also correct: (a) CLAUDE.md Runtime Directory diagram to show gate-verdicts under phases/phase-N/ not at .advanced-plans/ root; (b) PLANS-INDEX.md workflow table /run-gate entry to reference .advanced-plans/phases/phase-N/gate-verdicts/; (c) PLANNING.md body text to reflect that loops 035 and 036 are complete.",
+    "Do not run broad search-and-replace operations on already-migrated files without first grepping to confirm the current state. The double-prefix was caused by applying a .plans/ -> .advanced-plans/ substitution to files that already contained .advanced-plans/ strings."
+  ]
+}

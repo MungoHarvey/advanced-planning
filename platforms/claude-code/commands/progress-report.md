@@ -33,7 +33,7 @@ Otherwise report on the full programme.
 1. Glob `.advanced-plans/phases/*/plan.md` for phase plans
 2. Glob `.advanced-plans/phases/*/loops.md` for loop files (read handoff summaries)
 3. Glob `.advanced-plans/phases/*/complete.md` for phase completion artefacts
-4. Read `.advanced-.advanced-plans/PLANS-INDEX.md` if it exists
+4. Read `.advanced-plans/PLANS-INDEX.md` if it exists
 5. Read `.advanced-plans/PLANNING.md` for current programme state
 6. Run `git log --oneline --grep="complete:" --grep="checkpoint:" -30` for the commit trail
 7. Read `.advanced-plans/state/loop-complete.json` for the most recent loop result

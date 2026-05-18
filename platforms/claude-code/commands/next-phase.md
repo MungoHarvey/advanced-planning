@@ -65,7 +65,7 @@ Default gate agents: `code-review-agent`, `phase-goals-agent`
 Count existing verdict files to find attempt number:
 
 ```bash
-ls .advanced-plans/phases/phase-[N]/gate-verdicts/phase-[N]-attempt-*.json 2>/dev/null | wc -l
+ls .advanced-plans/gate-verdicts/phase-[N]-attempt-*.json 2>/dev/null | wc -l
 ```
 
 Set `attempt = (existing_count / agent_count) + 1`, minimum 1.
@@ -73,7 +73,7 @@ Set `attempt = (existing_count / agent_count) + 1`, minimum 1.
 **3c. Create gate-verdicts directory and sentinel**
 
 ```bash
-mkdir -p .advanced-plans/phases/phase-[N]/gate-verdicts
+mkdir -p .advanced-plans/gate-verdicts
 echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .advanced-plans/state/gate-review-mode
 ```
 
@@ -89,7 +89,7 @@ Attempt: [attempt]
 Phase plan: .advanced-plans/phases/phase-[N]/plan.md
 Loop files: .advanced-plans/phases/phase-[N]/loops.md
 
-Your verdict output path: .advanced-plans/phases/phase-[N]/gate-verdicts/phase-[N]-attempt-[attempt]-[agent-name].json
+Your verdict output path: .advanced-plans/gate-verdicts/phase-[N]-attempt-[attempt]-[agent-name].json
 
 Evaluate whether the phase success criteria have been met. Write your verdict to the
 output path following gate-verdict.schema.json. Then return.
@@ -114,7 +114,7 @@ Read all verdict files for this phase+attempt. Check each `verdict` field:
 If `GATE_RESULT = pass`:
 
 ```bash
-echo '{"event":"gate_pass","phase":"phase-[N]","attempt":[attempt],"timestamp":"[ISO timestamp]","agents":["code-review-agent","phase-goals-agent"],"verdict_files":[".advanced-plans/phases/phase-[N]/gate-verdicts/phase-[N]-attempt-[attempt]-code-review-agent.json",".advanced-plans/phases/phase-[N]/gate-verdicts/phase-[N]-attempt-[attempt]-phase-goals-agent.json"]}' >> .advanced-plans/state/history.jsonl
+echo '{"event":"gate_pass","phase":"phase-[N]","attempt":[attempt],"timestamp":"[ISO timestamp]","agents":["code-review-agent","phase-goals-agent"],"verdict_files":[".advanced-plans/gate-verdicts/phase-[N]-attempt-[attempt]-code-review-agent.json",".advanced-plans/gate-verdicts/phase-[N]-attempt-[attempt]-phase-goals-agent.json"]}' >> .advanced-plans/state/history.jsonl
 ```
 
 If `GATE_RESULT = fail`:
@@ -167,7 +167,7 @@ and gate review into a continuous autonomous pipeline.
 
 #### 8a. Check for next phase
 
-Read `.advanced-.advanced-plans/PLANS-INDEX.md` and `.advanced-plans/master-plan.md` (if they exist) to determine if more
+Read `.advanced-plans/PLANS-INDEX.md` and `.advanced-plans/master-plan.md` (if they exist) to determine if more
 phases are planned:
 
 - If a master plan exists with a defined Phase [N+1] description: use that description as input
@@ -293,7 +293,7 @@ block:
 ```yaml
 gate_failure_context:
   attempt: [attempt]
-  verdict_file: ".advanced-plans/phases/phase-[N]/gate-verdicts/phase-[N]-attempt-[attempt]-[agent-name].json"
+  verdict_file: ".advanced-plans/gate-verdicts/phase-[N]-attempt-[attempt]-[agent-name].json"
   summary: "[failure_notes from verdict]"
   loops_reverted:
     - loop: "[loop-name]"
@@ -316,7 +316,7 @@ the original from being modified during retry.
 
 **7g. Update PLANS-INDEX.md**
 
-Read `.advanced-.advanced-plans/PLANS-INDEX.md`. Update the Phase [N] entry:
+Read `.advanced-plans/PLANS-INDEX.md`. Update the Phase [N] entry:
 - Add versioned file as the new active file
 - Set attempt number to `next_attempt`
 - Note: original file is now frozen

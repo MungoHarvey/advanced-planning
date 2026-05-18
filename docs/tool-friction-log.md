@@ -363,3 +363,45 @@ entries from here.
   instead of assuming the prior loop landed. Also: prefer driving long
   mechanical path-rewrite loops from the main thread rather than a subagent
   when the work is deterministic and the subagent adds no isolation value.
+
+## 2026-05-18 — Phase 9 gate review (attempt 1 FAILED)
+
+### [Bulk substitution] — regex re-applied to already-migrated text (double-prefix)
+
+- **Observed**: Loop 036 used a scripted ordered-substitution pass to re-point
+  `plans/` → `.advanced-plans/` across 39 files. One rule,
+  `plans/PLANS-INDEX.md` → `.advanced-plans/PLANS-INDEX.md`, also matched the
+  `plans/PLANS-INDEX.md` *substring inside already-correct*
+  `.advanced-plans/PLANS-INDEX.md`, producing `.advanced-.advanced-plans/PLANS-INDEX.md`
+  in 4 command files (10 occurrences). Both gate agents independently caught it;
+  it was a CRITICAL verdict-blocking defect.
+- **Friction**: (1) substitution rules with no left-anchor/negative-lookbehind
+  corrupt text that already contains the replacement as a substring. (2) The
+  Loop 036 grep audit only searched for the *old* patterns, so it structurally
+  could not detect a *new-shape* corruption — it reported "clean" while the
+  repo was broken. A migration audit that only looks backward is half an audit.
+- **Suggested fix**: (a) substitution rules must be anchored
+  (`(?<![.\w-])plans/PLANS-INDEX\.md`) or run idempotently (assert a second
+  pass is a no-op). (b) Post-migration audit must ALSO grep for corruption
+  signatures of the *target* scheme (e.g. doubled prefix
+  `\.advanced-\.advanced-plans`, `\.claude/\.advanced-plans`) — not just
+  residual old paths. Add both checks to the loop-036-style audit todo.
+
+### [Agent tooling] — phase-goals-agent had no Write tool, could not emit its verdict
+
+- **Observed**: the spawned `phase-goals-agent` was provisioned with only
+  Read/Glob/Grep. Its whole job is to *write* a verdict JSON to
+  `.advanced-plans/gate-verdicts/...`. It produced the full verdict but had to
+  return it as response text; the main thread had to write the file on its
+  behalf. The agent type's advertised tool set (Read, Glob, Grep) omits Write.
+- **Friction**: a gate agent that cannot persist its own verdict breaks the
+  state-bus contract `/run-gate` relies on (immutable one-file-per-agent
+  verdicts). It works only because the main thread babysits the write, which
+  defeats the isolation the gate sentinel is meant to provide and risks the
+  verdict never being persisted if the main thread doesn't notice.
+- **Suggested fix**: add `Write` (scoped, the gate-review-mode sentinel already
+  restricts it to `.advanced-plans/gate-verdicts/` + `.advanced-plans/state/`)
+  to the `phase-goals-agent` definition's tool list, mirroring
+  `code-review-agent` which wrote its own verdict successfully. Until fixed,
+  `/run-gate` should explicitly expect phase-goals-agent to return verdict
+  text and persist it main-thread-side (document this in run-gate.md).

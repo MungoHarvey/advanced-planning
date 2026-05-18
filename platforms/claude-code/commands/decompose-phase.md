@@ -52,7 +52,7 @@ Generate loops following the skill instructions. Each loop stub has:
 
 Save to `.advanced-plans/phases/phase-[N]/loops.md` (co-located with the phase plan).
 
-Update `.advanced-.advanced-plans/PLANS-INDEX.md` to record the new loops file.
+Update `.advanced-plans/PLANS-INDEX.md` to record the new loops file.
 
 ### 7. Prompt next step
 

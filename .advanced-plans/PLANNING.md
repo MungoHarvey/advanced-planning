@@ -5,8 +5,8 @@ last_updated: 2026-05-18
 
 current_phase: 9
 current_loop: ralph-loop-036
-gate_status: due
-next_action: "/run-gate"
+gate_status: failed
+next_action: "/run-gate (re-review after attempt-1 remediation)"
 
 active_branches:
   - branch: main
@@ -44,10 +44,11 @@ current phase, loop, gate state, and recommended next action.
 
 ## What to do next
 
-Run `/next-loop` to execute the next pending loop in Phase 9.
-
-Current loop just completed: `ralph-loop-034` (Command Rewrites + Phase 8 Absorption)
-Next loop: `ralph-loop-035` (Hooks + Permissions + Python + Install)
+All 5 Phase 9 loops are complete. Gate review attempt 1 **FAILED** (both
+agents) on a self-inflicted double-prefix path corruption in 4 command
+files, introduced by Loop 036's substitution pass. The corruption and the
+secondary findings have been remediated in-place. Re-run `/run-gate` for
+attempt 2.
 
 ---
 
@@ -60,7 +61,8 @@ Phase 9 — `.advanced-plans/` Restructure decomposes into 5 loops:
 | ralph-loop-032 | Skeleton + Preconditions | completed |
 | ralph-loop-033 | File Migration | completed |
 | ralph-loop-034 | Command Rewrites + Phase 8 Absorption | completed |
-| ralph-loop-035 | Hooks + Permissions + Python + Install | pending |
-| ralph-loop-036 | Docs + Tests + Backfill + Audit | pending |
+| ralph-loop-035 | Hooks + Permissions + Python + Install | completed |
+| ralph-loop-036 | Docs + Tests + Backfill + Audit | completed (gate-1 remediated) |
 
 Loop file: `.advanced-plans/phases/phase-9/loops.md`
+Gate verdicts: `.advanced-plans/gate-verdicts/phase-9-attempt-1-*.json`

@@ -395,9 +395,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "Narrowed hook allowlists in platforms/claude-code/settings.json and hooks.json to .advanced-plans/** only; replaced legacy permission triplets in repo-root .claude/settings.json and platforms/claude-code/settings.json with single R/W/E/ME(.advanced-plans/**) rule; re-pointed plan_io.py to scan .advanced-plans/phases/*/loops.md (legacy flat fallback retained) and state_manager.py docstrings; added idempotent .advanced-plans/ skeleton + legacy migration to install.sh and install.ps1; AST checker CLEAN, pytest 70/70."
   failed: ""
-  needed: ""
+  needed: "Run Loop 036 for docs/tests/PLANS-INDEX backfill and final audit."
 
 todos:
   - id: "loop-035-1"
@@ -522,9 +522,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
-  failed: ""
-  needed: ""
+  done: "Rewrote CLAUDE.md for .advanced-plans/ (PLANNING.md pointer, Runtime Directory tree, Command Surface table); re-pointed all plans//.claude path references across core/ + platforms/ (39 files incl. agent/skill glob patterns); fixed checkpoint.sh dir vars; migrated pytest fixtures to canonical nested layout + added 2 tests (72 passing); backfilled PLANS-INDEX Phases 6-7 and loops 032-036; old-path grep audit clean; smoke + git-history checks pass."
+  failed: "Gate attempt 1 failed: the path-substitution pass double-converted already-correct .advanced-plans/PLANS-INDEX.md into .advanced-.advanced-plans/ in 4 command files (10 occurrences); the grep audit missed it because it only searched for OLD patterns. Remediated in-place after gate: corruption fixed, gate-verdicts path canonicalised to flat, PLANNING.md gate_status corrected, handoffs populated."
+  needed: "Re-run /run-gate for Phase 9 attempt 2."
 
 todos:
   - id: "loop-036-1"
