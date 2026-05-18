@@ -340,3 +340,26 @@ entries from here.
   brainstorming → phase-plan-creator chaining that already works well.
   Document this chain explicitly in CLAUDE.md's Architecture section so it's
   clear that the three-skill pipeline is intended to run end-to-end.
+
+## 2026-05-18 — Phase 9 execution (Loop 035)
+
+### [Worker durability] — ralph-loop-worker subagent died mid-loop on usage limit
+
+- **Observed**: the Loop 035 ralph-loop-worker exhausted account usage after
+  ~45 tool calls (todos 1–5 done, 6 in_progress, 7–9 pending). It returned a
+  usage-limit string instead of writing loop-complete.json, so the state bus
+  showed loop-complete.json still pointing at Loop 034. The `/next-loop --auto`
+  chain had no signal that the loop was partially applied — files were edited
+  and uncommitted but no completion record existed.
+- **Friction**: a subagent that dies mid-loop leaves the state bus silently
+  stale. Auto-chain can't distinguish "not started" from "half-applied,
+  uncommitted." Recovery required a manual resume-review pass (git diff +
+  per-todo status inspection in loops.md) from the main thread.
+- **Suggested fix**: have the worker write a `loop-complete.json` with
+  `status: partial` and per-todo progress as its *first* action would not help
+  (it dies unpredictably). Better: `/next-loop` should, before spawning the
+  orchestrator, detect "loop-ready.json newer than loop-complete.json AND
+  working tree dirty" and run a resume-review verification automatically
+  instead of assuming the prior loop landed. Also: prefer driving long
+  mechanical path-rewrite loops from the main thread rather than a subagent
+  when the work is deterministic and the subagent adds no isolation value.
