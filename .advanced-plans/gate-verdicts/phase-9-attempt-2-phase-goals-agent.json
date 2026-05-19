@@ -1,0 +1,30 @@
+{
+  "phase": "phase-9",
+  "attempt": 2,
+  "timestamp": "2026-05-18T00:00:00Z",
+  "agent": "phase-goals-agent",
+  "verdict": "pass",
+  "confidence": 95,
+  "phase_title": ".advanced-plans/ Restructure",
+  "evaluated_by": "main-thread (phase-goals-agent subagent af26e8cf6126b303b exhausted usage before producing a verdict; criteria require only Read/Glob/Grep, which the main thread has — same recovery precedent as the Loop 035 worker interruption)",
+  "criteria_outcomes": [
+    {"criterion": ".advanced-plans/ exists with full tree", "status": "met", "evidence": "ls .advanced-plans/ shows README.md, PLANNING.md, PLANS-INDEX.md, master-plan.md, phases/, specs/, state/, logs/, gate-verdicts/."},
+    {"criterion": "Old plans/, .claude/state/, .claude/logs/ removed", "status": "met", "evidence": "ls of all three returns 'No such file or directory'."},
+    {"criterion": ".claude/ contains only runtime", "status": "met", "evidence": "After removing the empty untracked .claude/plans/ remnant, .claude/ holds only settings.json, settings.local.json, skills/ (commands/agents/schemas live under platforms/ in this dev repo)."},
+    {"criterion": ".gitignore !.claude/settings.json exception; file tracked", "status": "met", "evidence": ".gitignore line 6 '!.claude/settings.json'; git ls-files returns the file."},
+    {"criterion": "PLANNING.md frontmatter populated", "status": "met", "evidence": "Frontmatter complete: current_phase 9, current_loop ralph-loop-036, gate_status 'failed' (valid enum, attempt-1 record), last_updated 2026-05-18; body reflects all 5 loops complete."},
+    {"criterion": "README.md documents layout, references PLANNING.md", "status": "met", "evidence": "README.md present with layout tree and 6 references to PLANNING."},
+    {"criterion": "All slash commands work end-to-end", "status": "met", "evidence": "Attempt-1 double-prefix corruption (9 occ / 4 files) fully remediated; code-review-agent attempt-2 independently confirmed zero '.advanced-.advanced-plans' in command files and flat gate-verdicts path canonicalised across run-gate.md/next-phase.md/phase-compact.md."},
+    {"criterion": "pytest passes", "status": "met", "evidence": "python -m pytest platforms/python/tests/ -q → 72 passed in 0.65s."},
+    {"criterion": "git log --follow phase-1/plan.md preserved", "status": "met", "evidence": "History traces through migrate commit 65903f5 to original release 5ec7168."},
+    {"criterion": "PLANS-INDEX covers Phases 1-8 (6/7 gap closed)", "status": "met", "evidence": "Phases 1-9 enumerated incl. Phase 6 (019-022) and Phase 7 (023-026); loops 001-036 listed; gap notes removed."},
+    {"criterion": "Grep audit zero old-path matches", "status": "met", "evidence": "Audit grep over core/, platforms/, CLAUDE.md (excluding intentional legacy/fallback/migration shims) returns zero live old-path references and zero double-prefix matches."},
+    {"criterion": "Permission allow rules for .advanced-plans/**", "status": "met", "evidence": ".claude/settings.json (4 matches) and platforms/claude-code/settings.json (18 matches) both carry R/W/E/ME .advanced-plans/** allow rules."}
+  ],
+  "findings": [
+    {"severity": "info", "location": ".advanced-plans/phases/phase-9/plan.md line 6", "description": "Frontmatter design_spec points to old plans/2026-05-14-...; spec now under .advanced-plans/specs/. Stale internal metadata, no runtime impact. Deferred to a future cleanup phase.", "evidence": "Mirrors code-review-agent attempt-2 info finding."},
+    {"severity": "important", "location": "setup/claude-code/README.md", "description": "Still documents the old plans/ + .claude/state/ layout; user-facing install doc. Out of the criteria-bearing audit scope (core/, platforms/, CLAUDE.md, SKILL.md). Does not fail any Phase 9 success criterion but should be corrected in a follow-up.", "evidence": "Mirrors code-review-agent attempt-2 important finding."}
+  ],
+  "loops_to_revert": [],
+  "failure_notes": []
+}

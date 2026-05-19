@@ -1,0 +1,55 @@
+{
+  "phase": "phase-9",
+  "attempt": 2,
+  "timestamp": "2026-05-18T00:00:00Z",
+  "agent": "code-review-agent",
+  "verdict": "pass",
+  "confidence": 90,
+  "phase_title": ".advanced-plans/ Restructure",
+  "findings": [
+    {
+      "severity": "info",
+      "location": ".advanced-plans/phases/phase-9/loops.md line 526",
+      "description": "Occurrence of '.advanced-.advanced-plans' string is inside the loop-036 handoff_summary.failed narrative — it is the documented evidence of the now-fixed attempt-1 corruption, not a live path reference. Confirmed not functional.",
+      "evidence": "grep -n '.advanced-.advanced-plans' .advanced-plans/phases/phase-9/loops.md returns line 526 only, within a 'failed:' YAML string value"
+    },
+    {
+      "severity": "info",
+      "location": ".advanced-plans/phases/phase-9/plan.md line 6",
+      "description": "Frontmatter field 'design_spec: plans/2026-05-14-advanced-plans-restructure-design.md' references the old pre-migration path, which no longer exists. The file is now at '.advanced-plans/specs/2026-05-14-advanced-plans-restructure-design.md'. This is a stale metadata reference in an internal plan artefact; it does not affect any command's runtime behaviour.",
+      "evidence": "ls plans/2026-05-14-advanced-plans-restructure-design.md → not found; ls .advanced-plans/specs/2026-05-14-advanced-plans-restructure-design.md → found"
+    },
+    {
+      "severity": "important",
+      "location": "setup/claude-code/README.md lines 72-78, 123, 200-218, 270-285",
+      "description": "setup/claude-code/README.md still documents the old layout: it shows 'plans/' as the planning data home, references '.claude/state/', shows old post-loop project layout, and describes '/run-gate' writing verdicts to 'plans/gate-verdicts/'. This is user-facing install documentation that would mislead a new adopter about where planning data lives.",
+      "evidence": "grep -n 'plans/' setup/claude-code/README.md returns 6 matches showing old layout at lines 74, 123, 201, 217, 280. setup/claude-code/ was not in the audit scope of the grep audit (which covered core/, platforms/, CLAUDE.md, SKILL.md files); this file was missed."
+    },
+    {
+      "severity": "info",
+      "location": ".claude/plans/",
+      "description": "An empty directory '.claude/plans/' exists on disk (not tracked by git). It is an untracked filesystem artefact from the old layout, likely a remnant pre-migration. Since git ls-files returns nothing for it and it is empty, it has no functional impact.",
+      "evidence": "ls -la .claude/plans/ shows total 4 (. and .. only); git ls-files .claude/plans/ returns empty"
+    },
+    {
+      "severity": "info",
+      "location": "setup/claude-code/install.sh lines 200-202",
+      "description": "The idempotent migration block in install.sh uses 'cp -R $PROJECT_DIR/plans/.' when it detects a legacy layout. This is intentional — the old path is being READ as the migration source, not written as a new home. The logic is correct and safe.",
+      "evidence": "Context at line 198-200: 'if [ -d $PROJECT_DIR/plans ] && [ ! -f $AP_DIR/PLANS-INDEX.md ]' guards the copy; copy direction is plans/ → .advanced-plans/"
+    },
+    {
+      "severity": "info",
+      "location": "platforms/python/plan_io.py",
+      "description": "plan_io.py retains a 'flat legacy fallback' code path that accepts 'plans/' as a phases_dir argument. This is an intentional backward-compatibility shim documented in the docstring, not a live path reference. Zero-dependency invariant confirmed clean by AST checker.",
+      "evidence": "grep -n 'plans/' platforms/python/plan_io.py shows only docstring references to the legacy layout; AST checker: NONE"
+    },
+    {
+      "severity": "info",
+      "location": "Attempt-1 remediation items — all verified clean",
+      "description": "All four attempt-1 critical/warning findings are confirmed resolved: (1) zero '.advanced-.advanced-plans' occurrences in core/, platforms/, CLAUDE.md outside gate-verdict evidence files; (2) gate-verdicts path canonicalised to flat '.advanced-plans/gate-verdicts/' in all commands (run-gate.md, next-phase.md, phase-compact.md — verified); (3) PLANNING.md gate_status is 'failed' (valid enum); (4) loops 035 and 036 handoff_summary blocks are fully populated with substantive content.",
+      "evidence": "grep returns zero matches for double-prefix in command files; grep gate_status .advanced-plans/PLANNING.md returns 'gate_status: failed'; grep handoff_summary .advanced-plans/phases/phase-9/loops.md shows non-empty done/failed/needed fields for both 035 and 036"
+    }
+  ],
+  "loops_to_revert": [],
+  "failure_notes": []
+}

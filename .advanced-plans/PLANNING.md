@@ -1,12 +1,12 @@
 ---
 programme: "Advanced Planning Framework"
-status: in_progress
-last_updated: 2026-05-18
+status: complete
+last_updated: 2026-05-19
 
 current_phase: 9
 current_loop: ralph-loop-036
-gate_status: failed
-next_action: "/run-gate (re-review after attempt-1 remediation)"
+gate_status: passed
+next_action: "/phase-compact then /run-closeout — Phase 9 was the final phase; programme complete"
 
 active_branches:
   - branch: main
@@ -14,8 +14,8 @@ active_branches:
     session: primary
 
 phases:
-  complete: [1, 2, 3, 4, 5, 6, 7, 8]
-  pending: [9]
+  complete: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+  pending: []
   failed: []
 
 state_files:
