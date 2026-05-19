@@ -107,9 +107,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "docs/phase-handoff.schema.md written (LOCKED, Validation Checklist, 7 mandatory sections); platforms/python/handoff_digest.py implemented (zero-dep, ASCII-safe, ceiling-enforced, gate-fail path); 38 tests added, 154 total passing; AST checker: only pre-existing context_meter.py __future__ flag"
   failed: ""
-  needed: ""
+  needed: "Loop 039: reframe phase-compact.md command to invoke generate_handoff_digest and add transparency-report + consent-gate steps"
 
 todos:
   - id: "loop-038-1"
@@ -117,28 +117,28 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "docs/phase-handoff.schema.md exists with a Validation Checklist; mirrors design-doc schema section"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-038-2"
     content: "Implement handoff.md generation logic (from phase plan + complete.md + gate verdict + history slice) producing schema-conforming content"
     skill: "NA"
     agent: "NA"
     outcome: "Generation produces a valid .advanced-plans/phases/phase-N/handoff.md for a completed phase fixture"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-038-3"
     content: "Implement token_ceiling enforcement: build fails listing offending sections if digest exceeds ceiling (no silent truncation)"
     skill: "NA"
     agent: "NA"
     outcome: "A fixture digest over ceiling causes a non-zero failure naming offending sections"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-038-4"
     content: "Implement gate-fail path: status: failed_vM with non-empty Errors & issues section"
     skill: "NA"
     agent: "NA"
     outcome: "Given a fail verdict, generation yields handoff.md with status failed_vM and populated issues section"
-    status: pending
+    status: completed
     priority: medium
 
 prompt: |

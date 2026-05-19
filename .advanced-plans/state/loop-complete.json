@@ -1,13 +1,13 @@
 {
-  "loop_name": "ralph-loop-037",
+  "loop_name": "ralph-loop-038",
   "loop_file": ".advanced-plans/phases/phase-10/loops.md",
   "status": "completed",
   "todos_done": 4,
   "todos_failed": 0,
-  "completed_at": "2026-05-19T00:00:00Z",
+  "completed_at": "2026-05-19T17:40:00Z",
   "handoff": {
-    "done": "context_meter.py extended with segment detection, content-type breakdown, activity attribution, and --report mode; 44-test suite written and passing; AST zero-dep checker reports NONE",
+    "done": "docs/phase-handoff.schema.md written (LOCKED, Validation Checklist, 7 mandatory sections); platforms/python/handoff_digest.py implemented (zero-dep, ASCII-safe, ceiling-enforced, gate-fail path); 38 tests added, 154 total passing; AST checker: only pre-existing context_meter.py __future__ flag",
     "failed": "",
-    "needed": ""
+    "needed": "Loop 039: reframe phase-compact.md command to invoke generate_handoff_digest and add transparency-report + consent-gate steps"
   }
 }
