@@ -25,6 +25,7 @@ Tracking document for the **Advanced Planning System — Open-Source Restructure
 | 7 | `/phase-compact` Slash Command | [`phase-7/`](phases/phase-7/) | **complete** | 023–026 | Verdict schema extended; /phase-compact implemented; phase-6 compacted end-to-end; agent template documented |
 | 8 | Framework Consistency Remediation | [`phase-8/plan.md`](phases/phase-8/plan.md) | **complete** | 027 | Loop 027 complete (hook + permissions hygiene). Loops 028–031 absorbed into Phase 9. |
 | 9 | `.advanced-plans/` Restructure | [`phase-9/complete.md`](phases/phase-9/complete.md) | **complete** | 032–036 | Migrate data home to `.advanced-plans/` for cross-platform portability; introduce `PLANNING.md` dashboard with YAML frontmatter; absorbs Phase 8 Loops 028–031. Design: [`2026-05-14-advanced-plans-restructure-design.md`](specs/2026-05-14-advanced-plans-restructure-design.md). Gate PASSED attempt 2. |
+| 10 | /phase-compact Context-Compaction Reframe | [`phase-10/plan.md`](phases/phase-10/plan.md) | **draft** | 037–041 | Reframe /phase-compact from terse-artefact writer to conversation-context compaction (Approach A): per-phase handoff.md resume digest + unchanged LOCKED complete.md; context_meter transparency report; CLAUDE.md ## Compaction Instructions; PreCompact freshness hook; AskUserQuestion consent/handoff. Design: [`2026-05-19-phase-compact-context-compaction-design.md`](specs/2026-05-19-phase-compact-context-compaction-design.md). |
 
 ---
 
