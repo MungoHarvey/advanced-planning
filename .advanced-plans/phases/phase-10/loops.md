@@ -197,9 +197,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "phase-compact.md extended with steps 13-16: handoff.md generation via handoff_digest.py, transparency report via context_meter --report, idempotent CLAUDE.md ## Compaction Instructions maintenance, AskUserQuestion consent gate + ready /compact line + closing summary (never self-compacts); steps 1-12 byte-intact (zero removed lines in git diff)"
   failed: ""
-  needed: ""
+  needed: "Loop 040: write PreCompact hook script + register in hooks.json/settings.json + add persistent ## Compaction Instructions block + decision-log entry to CLAUDE.md"
 
 todos:
   - id: "loop-039-1"
@@ -207,28 +207,28 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "phase-compact.md steps 1-12 unchanged; new write-handoff step present and ordered after complete.md write"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-039-2"
     content: "Add transparency-report step invoking context_meter.py --report (what/how/projected-saving)"
     skill: "NA"
     agent: "NA"
     outcome: "Command step runs context_meter --report and presents occupancy + breakdown + projection"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-039-3"
     content: "Add step to maintain CLAUDE.md ## Compaction Instructions block (rewrite pointing at current phase handoff.md)"
     skill: "NA"
     agent: "NA"
     outcome: "Command step idempotently rewrites the CLAUDE.md block; running twice yields one block"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-039-4"
     content: "Add AskUserQuestion consent gate + ready /compact line handoff + closing summary (never self-compacts; order invariant)"
     skill: "NA"
     agent: "NA"
     outcome: "Command ends with consent gate; on yes presents ready /compact line; closing states context not yet compacted"
-    status: pending
+    status: completed
     priority: high
 
 prompt: |

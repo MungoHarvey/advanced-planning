@@ -303,6 +303,196 @@ Phase [N] compacted.
 Run /next-phase (or continue planning) to begin the next phase.
 ```
 
+### 13. Write and validate `handoff.md`
+
+**Order invariant:** this step runs after `complete.md` is written and schema-validated (Step 11).
+The digest is a phase-level resume seed — it must exist and be valid before any compaction guidance
+is offered.
+
+Run the handoff digest generator:
+
+```bash
+python platforms/python/handoff_digest.py .advanced-plans/phases/phase-[N]
+```
+
+The script reads `plan.md`, `complete.md`, the gate verdict files, and the `history.jsonl` slice
+for phase N, then writes `.advanced-plans/phases/phase-[N]/handoff.md` conforming to
+`docs/phase-handoff.schema.md`.
+
+**Ceiling enforcement:** if the generated digest exceeds `token_ceiling` (1500 tokens), the script
+exits non-zero and prints the offending sections. Stop and tighten the digest manually before
+continuing.
+
+**Idempotency:** if `handoff.md` already exists, the script overwrites it in-place — a second run
+produces exactly one file.
+
+**Gate-fail path:** if the phase verdict is `fail`, the digest is written with
+`status: failed_vM`. The `## Errors & issues encountered` section must be non-empty.
+
+After the script exits 0, confirm:
+
+```bash
+ls .advanced-plans/phases/phase-[N]/handoff.md
+```
+
+Print:
+
+```
+  Handoff digest: .advanced-plans/phases/phase-[N]/handoff.md  (ceiling OK)
+```
+
+If the script exits non-zero:
+
+```
+Error: handoff.md generation failed.
+  [script output]
+Fix the offending sections before continuing.
+```
+
+Stop.
+
+### 14. Transparency report
+
+Run context occupancy measurement and present it in plain language:
+
+```bash
+python platforms/python/context_meter.py --report
+```
+
+If the meter cannot locate a session transcript, it prints `occupancy unavailable` and exits 0 —
+this is a graceful degrade. Continue regardless.
+
+Present the output to the user with the following framing:
+
+```
+Context occupancy report
+------------------------
+[paste context_meter --report output here]
+
+What this means:
+  - The bulk of context is raw tool I/O (file Reads + bash output) already on disk.
+  - Injected skill/command/tool-schema bodies reload on demand — they do not need to
+    survive compaction.
+  - After compaction the resume seed becomes handoff.md (~1.5k tokens) + PLANNING.md
+    frontmatter — on-task, no re-reading required.
+```
+
+If occupancy is unavailable, print:
+
+```
+Context occupancy report
+------------------------
+  occupancy: unavailable (no session transcript found)
+  breakdown: unavailable
+  projected saving: unavailable
+
+Compaction guidance below is still valid; proceed.
+```
+
+### 15. Maintain `## Compaction Instructions` block in CLAUDE.md
+
+Rewrite (or insert if absent) a `## Compaction Instructions` block in `CLAUDE.md`.
+This step is **idempotent**: running `/phase-compact` twice produces exactly one block.
+
+The block must contain the following tuned retention policy (substitute the actual phase N
+number for `phase-N`):
+
+```markdown
+## Compaction Instructions
+
+When compacting this conversation, use the following retention policy:
+
+/compact Retain verbatim: .advanced-plans/phases/phase-[N]/handoff.md (the
+validated phase resume digest), .advanced-plans/PLANNING.md frontmatter, and
+any open cross-phase decisions/threads. Preserve all DECISIONS and their
+rationale. Discard: verbatim file-Read contents and bash/tool_result output
+(recoverable from disk + git); injected skill/command/tool-schema bodies;
+gate-review agent-by-agent back-and-forth (final verdicts are on disk);
+prior compaction summaries now superseded by handoff.md; resolved remediation
+detail. Goal: keep the distilled signal, shed the raw I/O that dominates
+context.
+```
+
+Procedure:
+
+1. Read `CLAUDE.md`.
+2. Search for an existing `## Compaction Instructions` section.
+3. If found, replace the entire block (from `## Compaction Instructions` through the blank
+   line before the next `##` heading or end-of-file) with the updated block above.
+4. If not found, append the block at the end of `CLAUDE.md`.
+5. Write the file.
+6. Verify: `grep -c "## Compaction Instructions" CLAUDE.md` must print `1`.
+
+Print:
+
+```
+  CLAUDE.md ## Compaction Instructions: updated (points at phase-[N] handoff.md)
+```
+
+### 16. Consent gate and compaction handoff
+
+**Order invariant:** this step runs only after Steps 13-15 confirm artefacts written and validated.
+This command NEVER self-invokes `/compact` — that is impossible and forbidden. This step only
+emits the ready line for the user to run.
+
+Ask the user:
+
+```
+AskUserQuestion: Artefacts written and validated:
+  - .advanced-plans/phases/phase-[N]/complete.md   (schema-valid cold artefact)
+  - .advanced-plans/phases/phase-[N]/handoff.md    (ceiling-OK resume digest)
+  - CLAUDE.md ## Compaction Instructions            (updated)
+
+Context is NOT yet compacted. The command never self-compacts.
+
+Would you like to compact the conversation context now? (yes / no)
+```
+
+**If yes:**
+
+Present the ready `/compact` line for the user to run:
+
+```
+Ready to compact. Copy and run the following line:
+
+/compact Retain verbatim: .advanced-plans/phases/phase-[N]/handoff.md (the
+validated phase resume digest), .advanced-plans/PLANNING.md frontmatter, and
+any open cross-phase decisions/threads. Preserve all DECISIONS and their
+rationale. Discard: verbatim file-Read contents and bash/tool_result output
+(recoverable from disk + git); injected skill/command/tool-schema bodies;
+gate-review agent-by-agent back-and-forth (final verdicts are on disk);
+prior compaction summaries now superseded by handoff.md; resolved remediation
+detail. Goal: keep the distilled signal, shed the raw I/O that dominates
+context.
+```
+
+Print closing summary:
+
+```
+Phase [N] compaction artefacts complete.
+
+  Artefacts written and validated:
+    Cold artefact:  .advanced-plans/phases/phase-[N]/complete.md
+    Handoff digest: .advanced-plans/phases/phase-[N]/handoff.md
+    Manifest entry: .advanced-plans/PLANS-INDEX.md (phase [N] block)
+    CLAUDE.md:      ## Compaction Instructions updated
+
+  Context is NOT yet compacted.
+  Run the /compact line above to compact. The resumed context will contain
+  handoff.md + PLANNING.md dashboard as the on-task seed.
+
+  Run /next-phase to begin the next phase (before or after compacting).
+```
+
+**If no:**
+
+```
+Phase [N] compaction artefacts complete. Context not compacted.
+
+  The /compact line and ## Compaction Instructions block in CLAUDE.md remain
+  available whenever you choose to compact. Run /next-phase to continue.
+```
+
 ## Error Modes
 
 | Condition | Behaviour |
@@ -313,6 +503,8 @@ Run /next-phase (or continue planning) to begin the next phase.
 | `anchor_sha` or `end_sha` does not resolve via `git rev-parse` | Print the failing SHA and stop |
 | Schema validation failure (cold artefact or manifest entry) | Print per-item diff of each failing checklist item; do not silently advance |
 | Gate-fail input (`verdict: fail` in verdict file) | Write `.advanced-plans/phases/phase-[N]/complete-v[attempt]-failed.md` with `status: failed_v[attempt]`; manifest entry uses `status: failed_v[attempt]`; do not overwrite any existing pass-form artefact |
+| `handoff_digest.py` exits non-zero (ceiling exceeded) | Print offending sections; stop before consent gate |
+| `context_meter.py` cannot find transcript | Print "occupancy unavailable"; continue (graceful degrade) |
 
 ## Notes
 
@@ -325,6 +517,14 @@ commits were amended between runs (though this is discouraged after gate pass).
 
 **No `/clear` here:** context clearing is a separate concern. Run `/phase-compact`
 first to write artefacts, then apply `/clear` separately if desired.
+
+**No self-compaction:** this command cannot and does not invoke `/compact` itself. There is no
+`SlashCommand` tool; `PreCompact` is reactive/block-only; the SDK has no compaction API. The
+command emits the ready `/compact` line for the user to run. Context is never compacted without
+explicit user consent.
+
+**Order invariant:** artefacts are written and validated (Steps 9-13) before any compaction
+guidance is offered (Steps 14-16). This ensures compaction is always guided by a valid digest.
 
 **Gate-fail artefacts:** failed-attempt artefacts (`complete-v[M]-failed.md`) persist
 on disk when the phase is retried. If a later attempt passes, the pass-form artefact

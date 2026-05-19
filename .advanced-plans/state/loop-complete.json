@@ -1,13 +1,13 @@
 {
-  "loop_name": "ralph-loop-038",
+  "loop_name": "ralph-loop-039",
   "loop_file": ".advanced-plans/phases/phase-10/loops.md",
   "status": "completed",
   "todos_done": 4,
   "todos_failed": 0,
-  "completed_at": "2026-05-19T17:40:00Z",
+  "completed_at": "2026-05-19T00:00:00Z",
   "handoff": {
-    "done": "docs/phase-handoff.schema.md written (LOCKED, Validation Checklist, 7 mandatory sections); platforms/python/handoff_digest.py implemented (zero-dep, ASCII-safe, ceiling-enforced, gate-fail path); 38 tests added, 154 total passing; AST checker: only pre-existing context_meter.py __future__ flag",
+    "done": "phase-compact.md extended with steps 13-16: handoff.md generation via handoff_digest.py, transparency report via context_meter --report, idempotent CLAUDE.md ## Compaction Instructions maintenance, AskUserQuestion consent gate + ready /compact line + closing summary (never self-compacts); steps 1-12 byte-intact (zero removed lines in git diff)",
     "failed": "",
-    "needed": "Loop 039: reframe phase-compact.md command to invoke generate_handoff_digest and add transparency-report + consent-gate steps"
+    "needed": "Loop 040: write PreCompact hook script + register in hooks.json/settings.json + add persistent ## Compaction Instructions block + decision-log entry to CLAUDE.md"
   }
 }
