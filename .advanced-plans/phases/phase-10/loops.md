@@ -375,7 +375,7 @@ max_iterations: 3
 on_max_iterations: checkpoint
 
 handoff_summary:
-  done: ""
+  done: "154 pytest passes; AST NONE (no __future__, stdlib-only confirmed); LOCKED files (complete.md + both schemas) byte-unchanged (empty git diff); phase-compact.md steps 1-12 intact (additions-only diff); handoff_digest.py dry-run on phase-9 produces valid 1449-token digest; context_meter --report prints occupancy+breakdown+projected-saving; PreCompact hook exits 0 with and without handoff.md; gate-fail path yields status:failed_v2 + non-empty Errors section; ceiling-fail raises SystemExit naming offending sections; friction log appended (3 entries: AST allow-set drift, missing skills, self-repo command gap)"
   failed: ""
   needed: ""
 
@@ -385,28 +385,28 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "python -m pytest platforms/python/tests/ -v passes; AST checker reports NONE"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-041-2"
     content: "Assert complete.md + docs/phase-complete.schema.md + docs/phase-manifest-entry.schema.md byte-unchanged across the phase (git diff against phase anchor)"
     skill: "NA"
     agent: "NA"
     outcome: "git diff 6384f80..HEAD -- those three paths is empty"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-041-3"
     content: "End-to-end dry run: run reframed /phase-compact logic on a completed phase, verify report numbers vs context_meter, verify handoff.md within ceiling, verify CLAUDE.md block + PreCompact present"
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Dry run produces a valid handoff.md, accurate transparency report, and a ready /compact line; documented in loop handoff"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-041-4"
     content: "Confirm gate-fail path and ceiling-fail test both behave per design; update docs/tool-friction-log.md with any friction observed this phase"
     skill: "NA"
     agent: "NA"
     outcome: "Both negative paths verified; friction log appended if applicable"
-    status: pending
+    status: completed
     priority: medium
 
 prompt: |

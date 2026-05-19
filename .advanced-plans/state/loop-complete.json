@@ -1,13 +1,13 @@
 {
-  "loop_name": "ralph-loop-040",
+  "loop_name": "ralph-loop-041",
   "loop_file": ".advanced-plans/phases/phase-10/loops.md",
   "status": "completed",
   "todos_done": 4,
   "todos_failed": 0,
-  "completed_at": "2026-05-19T19:00:00Z",
+  "completed_at": "2026-05-19T18:00:00Z",
   "handoff": {
-    "done": "precompact_handoff_check.py written (stdlib-only, always exits 0, no-ops without handoff.md); registered in hooks.json + settings.json as PreCompact event; CLAUDE.md ## Compaction Instructions block added (generalised phase-pointer policy); Phase 10 decision-log entry added to CLAUDE.md under Phase Compaction Schemas",
+    "done": "154 pytest passes; AST NONE (no __future__, stdlib-only confirmed); LOCKED files (complete.md + both schemas) byte-unchanged (empty git diff); phase-compact.md steps 1-12 intact (additions-only diff); handoff_digest.py dry-run on phase-9 produces valid 1449-token digest; context_meter --report prints occupancy+breakdown+projected-saving; PreCompact hook exits 0 with and without handoff.md; gate-fail path yields status:failed_v2 + non-empty Errors section; ceiling-fail raises SystemExit naming offending sections; friction log appended (3 entries: AST allow-set drift, missing skills, self-repo command gap)",
     "failed": "",
-    "needed": "Loop 041: full pytest + AST + LOCKED-files byte-unchanged verification + E2E dry run"
+    "needed": ""
   }
 }

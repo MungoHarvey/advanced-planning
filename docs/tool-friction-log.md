@@ -484,3 +484,57 @@ entries from here.
   verdict. Must reuse the existing gate machinery (gate-review-mode sentinel,
   per-agent immutable verdicts, history.jsonl event) — not a parallel
   implementation.
+
+---
+
+## 2026-05-19 -- Phase 10 (context-compaction reframe) session
+
+### [AST checker] -- Worker used wrong allow-set in Loop 037, permitting `__future__`
+
+- **Observed**: Loop 037's worker ran its AST zero-dep check with an allow-set
+  that included `__future__`. The CI-canonical allow-set (CLAUDE.md) explicitly
+  excludes it. The discrepancy meant context_meter.py shipped with a
+  `from __future__ import annotations` import that would have failed the real CI
+  job. Loop 038's advance caught and removed the import.
+- **Friction**: the allow-set is defined in prose in CLAUDE.md, not in a
+  machine-readable constant shared between the CI workflow, the worker's
+  inline check, and the test suite. Each executor re-types it and can
+  silently diverge.
+- **Suggested fix**: define the canonical allowed-import set once in a
+  `core/constraints.json` (or similar) file and read it from the CI job, the
+  AST-checker helper, and any worker todo that runs the check. A single source
+  of truth prevents per-worker drift.
+
+### [Skills] -- `schema-design` and `permission-config` not installed; loops fell back to design doc
+
+- **Observed**: Loops 038 and 040 declared `skill: "schema-design"` and
+  `skill: "permission-config"` respectively. Neither skill exists at
+  `.claude/skills/` or `~/.claude/skills/` in this repo. The worker logged
+  "skill not found" and proceeded using the design-doc section as a substitute
+  reference.
+- **Friction**: the loop plan was written assuming installed skills that are
+  actually absent. The fallback worked here because the design doc was
+  authoritative and nearby, but the silent degradation gives no warning to the
+  operator and would fail silently in a context-lean session.
+- **Suggested fix**: (a) add a preflight check in the worker that surfaces
+  missing skills as a visible warning (not a halt) in execution.log; (b)
+  audit loop plans against installed skills before execution, or add
+  `schema-design` and `permission-config` as stubs under `core/skills/`.
+
+### [Slash commands] -- `/next-loop` and `/decompose-phase` unusable in the framework's own source repo
+
+- **Observed**: the framework's slash commands live under
+  `platforms/claude-code/commands/` (source), not `.claude/commands/` (runtime).
+  Running `/next-loop` or `/decompose-phase` from within the source repo itself
+  fails because Claude Code only discovers commands under `.claude/commands/`.
+  All Phase 10 loops were driven via direct worker invocations rather than
+  through the command interface.
+- **Friction**: developing the framework involves testing the very machinery
+  that cannot be invoked via its own interface. Every loop requires a manual
+  "spawn worker" step; the `/next-loop --auto` chain that the framework
+  documents as its primary execution path is unavailable.
+- **Suggested fix**: the install script (`setup/claude-code/install.sh`) should
+  be run against the source repo itself (self-install), or a dev-mode symlink
+  from `.claude/commands/` -> `platforms/claude-code/commands/` should be
+  established and documented so framework developers can exercise the live
+  command surface.
