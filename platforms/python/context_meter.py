@@ -19,8 +19,6 @@ Extensions (Loop 037):
 - --report mode: occupancy + how-used narrative + projected post-compaction saving
 """
 
-from __future__ import annotations
-
 import argparse
 import json
 import sys

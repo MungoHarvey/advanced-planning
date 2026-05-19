@@ -4,9 +4,9 @@ status: in_progress
 last_updated: 2026-05-19
 
 current_phase: 10
-current_loop: ralph-loop-038
+current_loop: ralph-loop-039
 gate_status: not_due
-next_action: "/next-loop --auto (037 complete; chaining 038–041)"
+next_action: "/next-loop --auto (037–038 complete; chaining 039–041)"
 
 active_branches:
   - branch: main
