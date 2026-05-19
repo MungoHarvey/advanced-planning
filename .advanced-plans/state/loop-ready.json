@@ -1,13 +1,13 @@
 {
-  "loop_name": "ralph-loop-040",
+  "loop_name": "ralph-loop-041",
+  "task_name": "Verification + End-to-End",
   "loop_file": ".advanced-plans/phases/phase-10/loops.md",
-  "task_name": "PreCompact Hook + CLAUDE.md Policy",
   "todos_count": 4,
-  "prepared_at": "2026-05-19T08:00:00Z",
+  "prepared_at": "2026-05-19T00:00:00Z",
   "status": "ready",
   "handoff_injected": {
-    "done": "phase-compact.md extended with steps 13-16: handoff.md generation via handoff_digest.py, transparency report via context_meter --report, idempotent CLAUDE.md ## Compaction Instructions maintenance, AskUserQuestion consent gate + ready /compact line + closing summary (never self-compacts); steps 1-12 byte-intact (zero removed lines in git diff)",
+    "done": "Loops 037-040 complete: context_meter.py extended; handoff_digest.py + docs/phase-handoff.schema.md; phase-compact.md steps 13-16; precompact hook + CLAUDE.md policy. 154 tests passing; AST NONE; LOCKED files byte-unchanged so far",
     "failed": "",
-    "needed": "Loop 040: write PreCompact hook script (never blocks, always exits 0) + register in hooks.json/settings.json + add persistent ## Compaction Instructions block to CLAUDE.md + decision-log entry to CLAUDE.md"
+    "needed": "Loop 041 full pytest+AST+LOCKED-byte-unchanged proof + e2e dry run on a completed phase + friction-log update"
   }
 }
