@@ -4,9 +4,9 @@ status: in_progress
 last_updated: 2026-05-19
 
 current_phase: 10
-current_loop: ralph-loop-037
+current_loop: ralph-loop-038
 gate_status: not_due
-next_action: "/decompose-phase 10 (decompose Phase 10 plan into ralph loops 037–041)"
+next_action: "/next-loop --auto (037 complete; chaining 038–041)"
 
 active_branches:
   - branch: main
