@@ -86,6 +86,11 @@ section existed — their cold artefacts exist but manifest entries are not yet 
 | 034 | 9 | Command Rewrites + Phase 8 Absorption | `phases/phase-9/loops.md` | **complete** | — | 1 |
 | 035 | 9 | Hooks + Permissions + Python + Install | `phases/phase-9/loops.md` | **complete** | — | 1 |
 | 036 | 9 | Docs + Tests + Backfill + Audit | `phases/phase-9/loops.md` | **complete** | — | 1 |
+| 037 | 10 | Context Meter Extension | `phases/phase-10/loops.md` | **pending** | — | 1 |
+| 038 | 10 | Handoff Digest Schema + Generation | `phases/phase-10/loops.md` | **pending** | — | 1 |
+| 039 | 10 | Command Reframe | `phases/phase-10/loops.md` | **pending** | — | 1 |
+| 040 | 10 | PreCompact Hook + CLAUDE.md Policy | `phases/phase-10/loops.md` | **pending** | — | 1 |
+| 041 | 10 | Verification + End-to-End | `phases/phase-10/loops.md` | **pending** | — | 1 |
 
 ---
 
