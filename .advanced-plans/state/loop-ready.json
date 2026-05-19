@@ -1,13 +1,13 @@
 {
-  "loop_name": "ralph-loop-038",
-  "task_name": "Handoff Digest Schema + Generation",
+  "loop_name": "ralph-loop-039",
   "loop_file": ".advanced-plans/phases/phase-10/loops.md",
+  "task_name": "Command Reframe",
   "todos_count": 4,
   "prepared_at": "2026-05-19T00:00:00Z",
   "status": "ready",
   "handoff_injected": {
-    "done": "context_meter.py extended with segment detection, content-type breakdown, activity attribution, and --report mode; 44-test suite written and passing; AST zero-dep checker reports NONE",
+    "done": "docs/phase-handoff.schema.md written; platforms/python/handoff_digest.py implemented (generate_handoff_digest); 38 tests, 154 total passing; AST clean",
     "failed": "",
-    "needed": ""
+    "needed": "Loop 039 reframe phase-compact.md to invoke generate_handoff_digest + add transparency-report + consent-gate steps"
   }
 }
