@@ -286,9 +286,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "precompact_handoff_check.py written (stdlib-only, always exits 0, no-ops without handoff.md); registered in hooks.json + settings.json as PreCompact event; CLAUDE.md ## Compaction Instructions block added (generalised phase-pointer policy); Phase 10 decision-log entry added to CLAUDE.md under Phase Compaction Schemas"
   failed: ""
-  needed: ""
+  needed: "Loop 041: full pytest + AST + LOCKED-files byte-unchanged verification + E2E dry run"
 
 todos:
   - id: "loop-040-1"
@@ -296,28 +296,28 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "Hook script exists; simulated invocation with and without a handoff.md both exit 0; never emits a blocking decision"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-040-2"
     content: "Register PreCompact hook in platforms/claude-code/hooks/hooks.json and settings.json"
     skill: "permission-config"
     agent: "NA"
     outcome: "hooks.json + settings.json contain a valid PreCompact entry pointing at the script; JSON parses"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-040-3"
     content: "Add persistent ## Compaction Instructions block to CLAUDE.md (tuned retention policy, generalised phase-pointer form)"
     skill: "NA"
     agent: "NA"
     outcome: "CLAUDE.md contains ## Compaction Instructions with the retention policy text"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-040-4"
     content: "Add Phase 10 decision-log entry to CLAUDE.md per the design doc"
     skill: "NA"
     agent: "NA"
     outcome: "CLAUDE.md decision log records the phase-compact reframe decision"
-    status: pending
+    status: completed
     priority: medium
 
 prompt: |

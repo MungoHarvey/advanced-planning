@@ -21,6 +21,17 @@
       ]
     }
   ],
+  "PreCompact": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python platforms/claude-code/hooks/precompact_handoff_check.py"
+        }
+      ]
+    }
+  ],
   "PreToolUse": [
     {
       "matcher": "Write",

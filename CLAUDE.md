@@ -75,6 +75,14 @@ Two locked schema documents govern the compaction artefacts produced by `/phase-
 
 Changes to either schema require an explicit decision logged in this file.
 
+**Decision log:**
+- `/phase-compact` reframed (2026-05-19) from terse-artefact writer to conversation-context
+  compaction. Adds per-phase `handoff.md` resume digest (Approach A), a transparency report
+  via `context_meter.py`, a persistent `## Compaction Instructions` block steering all
+  compactions, and a `PreCompact` freshness hook. `complete.md` and both compaction schemas
+  remain LOCKED and unchanged. Programmatic `/compact` invocation confirmed impossible;
+  consent + ready-to-run handoff is the maximum. `/clear`-based flow rejected.
+
 ## Platform Adapters
 
 | Adapter | Location | Entry Point |
@@ -167,3 +175,25 @@ Three jobs in `.github/workflows/ci.yml`, all must pass on `main` and PRs:
 1. **Markdown lint** — `markdownlint-cli2` (currently non-blocking via `|| true`)
 2. **JSON schema validation** — validates all `core/state/*.json` files parse correctly
 3. **Python tests** — runs `pytest` across Python 3.10, 3.11, 3.12; then verifies zero external imports via AST checker
+
+## Compaction Instructions
+
+When compacting this conversation (via `/compact` or auto-threshold), use this retention policy:
+
+**Retain verbatim:** `.advanced-plans/phases/phase-N/handoff.md` (the validated phase
+resume digest for the most recently completed phase), `.advanced-plans/PLANNING.md`
+frontmatter, and any open cross-phase decisions/threads.
+
+**Preserve:** all DECISIONS and their rationale.
+
+**Discard:** verbatim file-Read contents and bash/tool_result output (recoverable from
+disk and git); injected skill/command/tool-schema bodies (reload on demand); gate-review
+agent-by-agent back-and-forth (final verdicts are on disk); prior compaction summaries
+now superseded by handoff.md; resolved remediation detail.
+
+**Goal:** keep the distilled signal, shed the raw I/O that dominates context.
+
+> This block is maintained by `/phase-compact` (rewritten to point at the current
+> phase handoff.md after each gate pass). The `PreCompact` hook validates the digest
+> before every compaction. If no handoff.md exists yet (mid-phase), this policy alone
+> steers retention.

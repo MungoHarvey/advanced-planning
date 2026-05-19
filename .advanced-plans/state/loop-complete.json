@@ -1,13 +1,13 @@
 {
-  "loop_name": "ralph-loop-039",
+  "loop_name": "ralph-loop-040",
   "loop_file": ".advanced-plans/phases/phase-10/loops.md",
   "status": "completed",
   "todos_done": 4,
   "todos_failed": 0,
-  "completed_at": "2026-05-19T00:00:00Z",
+  "completed_at": "2026-05-19T19:00:00Z",
   "handoff": {
-    "done": "phase-compact.md extended with steps 13-16: handoff.md generation via handoff_digest.py, transparency report via context_meter --report, idempotent CLAUDE.md ## Compaction Instructions maintenance, AskUserQuestion consent gate + ready /compact line + closing summary (never self-compacts); steps 1-12 byte-intact (zero removed lines in git diff)",
+    "done": "precompact_handoff_check.py written (stdlib-only, always exits 0, no-ops without handoff.md); registered in hooks.json + settings.json as PreCompact event; CLAUDE.md ## Compaction Instructions block added (generalised phase-pointer policy); Phase 10 decision-log entry added to CLAUDE.md under Phase Compaction Schemas",
     "failed": "",
-    "needed": "Loop 040: write PreCompact hook script + register in hooks.json/settings.json + add persistent ## Compaction Instructions block + decision-log entry to CLAUDE.md"
+    "needed": "Loop 041: full pytest + AST + LOCKED-files byte-unchanged verification + E2E dry run"
   }
 }
