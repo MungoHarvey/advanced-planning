@@ -1,13 +1,13 @@
 {
-  "loop_name": "ralph-loop-036",
-  "loop_file": ".advanced-plans/phases/phase-9/loops.md",
+  "loop_name": "ralph-loop-037",
+  "loop_file": ".advanced-plans/phases/phase-10/loops.md",
   "status": "completed",
-  "todos_done": 9,
+  "todos_done": 4,
   "todos_failed": 0,
-  "completed_at": "2026-05-18T00:00:00Z",
+  "completed_at": "2026-05-19T00:00:00Z",
   "handoff": {
-    "done": "Rewrote CLAUDE.md for .advanced-plans/ layout (PLANNING.md pointer, Runtime Directory tree, single Command Surface table, retry-file naming .advanced-plans/phases/phase-N/loops-v2.md); re-pointed every plans/ and .claude/state|logs|plans reference across core/ and platforms/ (39 files) including agent/skill glob patterns to .advanced-plans/phases/*/loops.md; fixed checkpoint.sh PLANS_DIR/STATE_DIR to .advanced-plans; updated pytest fixtures to canonical nested layout and added 2 tests (canonical .advanced-plans/phases/phase-N/loops.md + flat-legacy fallback) — 72/72 passing; CI needs no path-filter change (no paths: filter; markdownlint globs **/*.md already covers .advanced-plans/); backfilled PLANS-INDEX.md with Phases 6 (019-022) and 7 (023-026) and loops 032-036, removed both index-gap notes; grep audit across core/, platforms/, CLAUDE.md, SKILL.md returns ZERO old-path matches; .advanced-plans/ write smoke test passed; git log --follow confirms phase-1/plan.md traces to original 5ec7168 release commit; git ls-files confirms .claude/settings.json tracked. Phase 9 ready for gate review.",
+    "done": "context_meter.py extended with segment detection, content-type breakdown, activity attribution, and --report mode; 44-test suite written and passing; AST zero-dep checker reports NONE",
     "failed": "",
-    "needed": "Run /run-gate for Phase 9 gate review (code-review-agent + phase-goals-agent), then /next-phase to advance on pass."
+    "needed": ""
   }
 }

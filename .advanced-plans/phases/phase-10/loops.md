@@ -17,7 +17,7 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "context_meter.py extended with segment detection, content-type breakdown, activity attribution, and --report mode; 44-test suite written and passing; AST zero-dep checker reports NONE"
   failed: ""
   needed: ""
 
@@ -27,28 +27,28 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "context_meter.py exposes a function returning per-segment [start,end,span,tok] list; manual run on live transcript prints >=1 segment"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-037-2"
     content: "Add content-type breakdown (tool_use / tool_result / text / thinking / str token shares) and activity attribution buckets"
     skill: "NA"
     agent: "NA"
     outcome: "Running the meter prints a content-type table summing to ~100% and an activity-attribution table"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-037-3"
     content: "Add transparency-report output mode: occupancy + how-used narrative + projected post-compaction saving; keep one-line mode as default"
     skill: "NA"
     agent: "NA"
     outcome: "`python context_meter.py --report` prints occupancy, breakdown, and a projected-saving line; default invocation still prints the single line"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-037-4"
     content: "Write pytest suite test_context_meter.py: occupancy math, segment split, content-type buckets, transcript auto-detect, missing-transcript degrade"
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "pytest platforms/python/tests/test_context_meter.py passes; AST zero-dep checker reports NONE for context_meter.py"
-    status: pending
+    status: completed
     priority: high
 
 prompt: |
