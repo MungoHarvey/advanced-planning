@@ -1,13 +1,14 @@
 {
-  "loop_name": "ralph-loop-041",
-  "task_name": "Verification + End-to-End",
-  "loop_file": ".advanced-plans/phases/phase-10/loops.md",
-  "todos_count": 4,
-  "prepared_at": "2026-05-19T00:00:00Z",
+  "phase": "phase-11",
+  "loop_name": "ralph-loop-042",
+  "loop_file": ".advanced-plans/phases/phase-11/loops.md",
+  "task_name": "Constraints + Schema Cleanup",
+  "todos_count": 6,
   "status": "ready",
   "handoff_injected": {
-    "done": "Loops 037-040 complete: context_meter.py extended; handoff_digest.py + docs/phase-handoff.schema.md; phase-compact.md steps 13-16; precompact hook + CLAUDE.md policy. 154 tests passing; AST NONE; LOCKED files byte-unchanged so far",
+    "done": "Phase 10 complete (gate PASSED attempt 1); Phase 11 plan + loops decomposed and committed 727d51c",
     "failed": "",
-    "needed": "Loop 041 full pytest+AST+LOCKED-byte-unchanged proof + e2e dry run on a completed phase + friction-log update"
-  }
+    "needed": "Execute Phase 11 Loop 042: establish core/constraints.json + platforms/python/ast_check.py as zero-dep AST allow-set source of truth; drop complexity field and Haiku tier everywhere"
+  },
+  "prepared_at": "2026-05-20T00:00:00Z"
 }
