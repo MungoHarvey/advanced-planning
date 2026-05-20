@@ -236,6 +236,111 @@ def read_history(state_dir: Path | str) -> list[dict[str, Any]]:
     return records
 
 
+# ── Stale-state cleanup (S9) ──────────────────────────────────────────────────
+
+def archive_cross_phase_state(
+    state_dir: Path | str,
+    current_phase: str,
+) -> Optional[Path]:
+    """Archive loop-ready.json (and loop-complete.json if present) when they
+    belong to a phase other than ``current_phase``.
+
+    Called by the orchestrator at startup (Step 0 of the stale-state cleanup
+    protocol documented in core/agents/orchestrator.md).
+
+    Parameters
+    ----------
+    state_dir:
+        Directory where state files live.
+    current_phase:
+        The phase currently active, e.g. ``"phase-11"``.  Read from
+        ``.advanced-plans/PLANNING.md`` ``current_phase`` frontmatter field.
+
+    Returns
+    -------
+    Path or None
+        If archiving occurred: path to the archived loop-ready.json file.
+        If no archiving was needed (phase matches or no loop-ready.json):
+        returns ``None``.
+    """
+    d = Path(state_dir)
+    ready_path = d / "loop-ready.json"
+
+    if not ready_path.exists():
+        return None
+
+    data = json.loads(ready_path.read_text(encoding="utf-8"))
+    old_phase = data.get("phase", "")
+
+    if not old_phase or old_phase == current_phase:
+        # Phase matches or field absent -- nothing to archive.
+        return None
+
+    # Build archive directory and timestamp.
+    archive_dir = d / "archive"
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")  # noqa: DTZ005
+
+    # Archive loop-ready.json.
+    archived_ready = archive_dir / f"{old_phase}-{ts}-loop-ready.json"
+    ready_path.rename(archived_ready)
+
+    # Archive loop-complete.json if present.
+    complete_path = d / "loop-complete.json"
+    if complete_path.exists():
+        archived_complete = archive_dir / f"{old_phase}-{ts}-loop-complete.json"
+        complete_path.rename(archived_complete)
+
+    return archived_ready
+
+
+# ── Resume detection (S8 IRON RULE) ───────────────────────────────────────────
+
+def detect_mid_loop_death(state_dir: Path | str, dirty: bool) -> bool:
+    """Detect the Loop-035 failure mode: worker died mid-loop.
+
+    Returns True if BOTH of the following conditions hold:
+    - ``loop-ready.json`` exists AND its mtime is strictly newer than
+      ``loop-complete.json`` mtime (or loop-complete.json is absent)
+    - ``dirty`` is True (the working tree has uncommitted changes)
+
+    When True, ``/next-loop`` must invoke resume-review and require operator
+    acknowledgment before spawning a new orchestrator.
+
+    Parameters
+    ----------
+    state_dir:
+        Directory where state files live.
+    dirty:
+        Whether the git working tree has uncommitted changes.  The caller
+        (the ``/next-loop`` command) is responsible for determining this
+        (e.g. by running ``git status --porcelain``).
+
+    Returns
+    -------
+    bool
+        True if mid-loop death is suspected, False if state is clean.
+    """
+    d = Path(state_dir)
+    ready_path = d / "loop-ready.json"
+    complete_path = d / "loop-complete.json"
+
+    if not ready_path.exists():
+        # No loop-ready at all — state bus is clean.
+        return False
+
+    ready_mtime = ready_path.stat().st_mtime
+    if complete_path.exists():
+        complete_mtime = complete_path.stat().st_mtime
+        ready_is_newer = ready_mtime > complete_mtime
+    else:
+        # loop-complete.json absent means no loop ever finished — treat as
+        # potentially stale if working tree is dirty.
+        ready_is_newer = True
+
+    return ready_is_newer and dirty
+
+
 # ── Status query ───────────────────────────────────────────────────────────────
 
 def get_status(state_dir: Path | str) -> dict[str, Any]:

@@ -426,7 +426,7 @@ Anthropic's `plugin-dev` toolkit provides an 8-phase guided workflow for buildin
 
 **Agent model tiers**: Agent frontmatter should specify the model tier where the system benefits from it. The orchestrator benefits from Sonnet's reasoning; the worker can often use Haiku for cost efficiency.
 
-**Hook integration**: The `PreToolUse` hook for planning mode (blocking writes outside `.claude/plans/` during exploration) translates directly to the plugin hooks system. The hook logic is identical; only the configuration location changes.
+**Hook integration**: The `PreToolUse` hook for planning mode (blocking writes outside `.advanced-plans/` during exploration) translates directly to the plugin hooks system. The hook logic is identical; only the configuration location changes.
 
 **Progressive disclosure**: Following Anthropic's pattern, skills should have lean core documentation with detailed references available on demand. The ralph-loop-planner skill, for instance, has a core SKILL.md of ~200 words with a `references/` directory containing the full template and worked examples.
 

@@ -37,6 +37,55 @@ The Claude Code-specific path conventions are:
 
 ## Steps
 
+### 0. Stale-state cleanup (cross-phase guard)
+
+Before doing anything else, check whether the existing state bus files belong to
+the current phase.
+
+```bash
+# Read current phase from PLANNING.md frontmatter
+CURRENT_PHASE=$(python -c "
+import pathlib, re
+text = pathlib.Path('.advanced-plans/PLANNING.md').read_text(encoding='utf-8')
+m = re.search(r'current_phase:\s*(\S+)', text)
+print(m.group(1) if m else '')
+")
+
+# Read phase field from existing loop-ready.json (if present)
+READY_PHASE=$(python -c "
+import json, pathlib
+p = pathlib.Path('.advanced-plans/state/loop-ready.json')
+if p.exists():
+    d = json.loads(p.read_text(encoding='utf-8'))
+    print(d.get('phase', ''))
+else:
+    print('')
+")
+```
+
+If `READY_PHASE` is non-empty AND does NOT equal `CURRENT_PHASE`:
+
+```bash
+# Archive stale cross-phase state
+TS=$(date '+%Y-%m-%dT%H-%M-%S')
+ARCHIVE_DIR=".advanced-plans/state/archive"
+mkdir -p "$ARCHIVE_DIR"
+
+READY=".advanced-plans/state/loop-ready.json"
+COMPLETE=".advanced-plans/state/loop-complete.json"
+
+[ -f "$READY" ]    && mv "$READY"    "$ARCHIVE_DIR/${READY_PHASE}-${TS}-loop-ready.json"
+[ -f "$COMPLETE" ] && mv "$COMPLETE" "$ARCHIVE_DIR/${READY_PHASE}-${TS}-loop-complete.json"
+
+echo "[$(date '+%H:%M:%S')] ORCHESTRATOR: archived cross-phase state for ${READY_PHASE}" >> .advanced-plans/logs/execution.log
+```
+
+**Archive path format**:
+`.advanced-plans/state/archive/<old-phase>-<YYYY-MM-DDTHH-MM-SS>-loop-ready.json`
+
+If `READY_PHASE` is empty or matches `CURRENT_PHASE`: log `state-bus phase matches; skipping cleanup`
+and continue to Step 1.
+
 ### 1. Find the next pending loop
 
 Read `.advanced-plans/state/loop-complete.json` if it exists (to know what just finished).
@@ -89,6 +138,7 @@ Write `.advanced-plans/state/loop-ready.json`:
 
 ```json
 {
+  "phase": "[current_phase from PLANNING.md frontmatter, e.g. phase-11]",
   "loop_name": "[name from frontmatter]",
   "loop_file": "[path to loop file]",
   "task_name": "[task_name from frontmatter]",

@@ -67,18 +67,18 @@ plans/
 ### Step 3 — Decompose Into Loops
 
 ```
-/new-loop 1
+/decompose-phase 1
 ```
 
-Reads `phase-1.md` and creates `phase-1-ralph-loops.md` with YAML frontmatter stubs for each
-loop: `name`, `task_name`, `max_iterations`, `on_max_iterations`, empty `todos[]`, and a blank
-`handoff_summary`. Todos are populated when each loop starts.
+Reads `phase-1/plan.md` and creates `.advanced-plans/phases/phase-1/loops.md` with YAML
+frontmatter stubs for each loop: `name`, `task_name`, `max_iterations`, `on_max_iterations`,
+empty `todos[]`, and a blank `handoff_summary`. Todos are populated when each loop starts.
 
 **Expected output:**
 ```
-plans/
-├── phase-1.md
-└── phase-1-ralph-loops.md
+.advanced-plans/phases/phase-1/
+├── plan.md
+└── loops.md
 ```
 
 ### Step 4 — Run the First Loop
@@ -96,11 +96,11 @@ Full two-agent cycle:
 
 **Expected output:**
 ```
-.claude/state/
+.advanced-plans/state/
 ├── loop-ready.json
 └── loop-complete.json
 
-plans/phase-1-ralph-loops.md  ← todos marked completed, handoff_summary populated
+.advanced-plans/phases/phase-1/loops.md  ← todos marked completed, handoff_summary populated
 ```
 
 ### Step 5 — Check Progress
@@ -131,7 +131,7 @@ If you prefer to explore the codebase before committing to a plan, use this work
 
 The difference from the standard flow:
 - `/plan-and-phase` activates planning mode (read-only enforcement) during exploration
-- Findings are saved to `.claude/plans/exploration-notes.md` for review before planning starts
+- Findings are saved to `.advanced-plans/specs/exploration-notes.md` for review before planning starts
 - `--auto` on `/next-loop` chains loops without manual re-invocation between each one
 
 ### Full Autonomous Pipeline
@@ -153,7 +153,7 @@ always stop auto mode (manual review required for versioned retry).
 ```
 
 Spawns gate agents (code-review-agent, phase-goals-agent) to evaluate whether the phase's
-success criteria are actually met. Each agent writes a verdict JSON to `plans/gate-verdicts/`.
+success criteria are actually met. Each agent writes a verdict JSON to `.advanced-plans/gate-verdicts/`.
 
 If all pass: run `/next-phase` to advance. If any fail: `/next-phase` creates versioned
 retry files with failure context injected, so the retry starts knowing what went wrong.
@@ -164,10 +164,10 @@ retry files with failure context injected, so the retry starts knowing what went
 |---------|-------------|
 | `/plan-and-phase [desc]` | Explore codebase read-only, then run full planning pipeline |
 | `/new-phase` | Full pipeline: phase plan → loops → todos → skills → agents |
-| `/new-loop [N]` | Decompose phase N into loop files using `ralph-loop-planner` skill |
+| `/decompose-phase [N]` | Decompose phase N into loop files using `ralph-loop-planner` skill |
 | `/next-loop` | Execute the next pending loop (full two-agent cycle) |
 | `/next-loop --auto` | Chain loops until phase complete or failure |
-| `/run-gate` | Spawn gate agents to evaluate phase outputs (verdicts in `plans/gate-verdicts/`) |
+| `/run-gate` | Spawn gate agents to evaluate phase outputs (verdicts in `.advanced-plans/gate-verdicts/`) |
 | `/next-phase` | Run gate review → advance on pass, create versioned retry on fail |
 | `/run-closeout` | Programme closeout — final narrative from complete documentary record |
 | `/progress-report` | Structured report from plan files, handoffs, and git history |

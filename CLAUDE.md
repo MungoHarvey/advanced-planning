@@ -95,6 +95,9 @@ Changes to either schema require an explicit decision logged in this file.
 
 ### Runtime Directory
 
+See `docs/path-conventions.md` for the full canonical path map, deprecated tokens, and
+"where to find what" reference.
+
 `install.sh` creates this structure in the target project (not in this repo):
 
 ```

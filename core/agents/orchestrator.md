@@ -24,6 +24,31 @@ Read plan → Prepare next loop → Write loop-ready.json → Return
 
 ## Loop Preparation Protocol
 
+### Step 0 — Stale-state cleanup (cross-phase guard)
+
+Before doing anything else, check whether the existing state bus files belong to the
+current phase.  This prevents a previous phase's `loop-ready.json` from contaminating
+the new phase's execution.
+
+1. Read `.advanced-plans/PLANNING.md` frontmatter and extract the `current_phase` value
+   (e.g. `"phase-11"`).
+2. If `loop-ready.json` exists in the state directory, read its `phase` field.
+3. Compare the two values:
+   - **Match (or `phase` field absent)**: proceed normally to Step 1. No cleanup needed.
+   - **Mismatch** (e.g. `loop-ready.json` says `"phase-10"` but current is `"phase-11"`):
+     archive both `loop-ready.json` AND `loop-complete.json` before writing new ones.
+4. To archive stale files:
+   - Create `.advanced-plans/state/archive/` if it does not exist.
+   - Move `loop-ready.json` to `.advanced-plans/state/archive/<old-phase>-<ISO-timestamp>-loop-ready.json`
+   - Move `loop-complete.json` (if present) to `.advanced-plans/state/archive/<old-phase>-<ISO-timestamp>-loop-complete.json`
+   - Use the same timestamp string for both files in a given cleanup run.
+   - Log: `echo "[$(date '+%H:%M:%S')] ORCHESTRATOR: archived cross-phase state for <old-phase>" >> .advanced-plans/logs/execution.log`
+5. Continue to Step 1 with a clean state directory.
+
+**Archive path format**: `.advanced-plans/state/archive/<old-phase>-<YYYY-MM-DDTHH-MM-SS>-loop-ready.json`
+
+Example: `.advanced-plans/state/archive/phase-10-2026-05-20T14-30-00-loop-ready.json`
+
 ### Step 1 — Identify the next pending loop
 
 Read from the state directory to determine the current position:
@@ -72,6 +97,7 @@ Write `loop-ready.json` to the state directory:
 
 ```json
 {
+  "phase": "[current phase identifier, e.g. phase-11]",
   "loop_name": "[name field from loop frontmatter]",
   "loop_file": "[path to loop plan file]",
   "task_name": "[task_name field from loop frontmatter]",

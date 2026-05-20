@@ -80,7 +80,7 @@ Written by the orchestrator to hand off to the worker:
 ```json
 {
   "loop_name": "ralph-loop-003",
-  "loop_file": "plans/phase-1-ralph-loops.md",
+  "loop_file": ".advanced-plans/phases/phase-1/loops.md",
   "task_name": "Agent Role Definitions",
   "todos_count": 4,
   "prepared_at": "2024-03-15T14:22:00+00:00",
@@ -100,7 +100,7 @@ Written by the worker when the loop finishes:
 ```json
 {
   "loop_name": "ralph-loop-003",
-  "loop_file": "plans/phase-1-ralph-loops.md",
+  "loop_file": ".advanced-plans/phases/phase-1/loops.md",
   "status": "completed",
   "todos_done": 4,
   "todos_failed": 0,
@@ -168,7 +168,7 @@ The core (schemas, skills, agent protocols, state bus) is platform-agnostic. Eac
 |----------|------------|--------|---------|
 | Entry point | Slash commands | Routing SKILL.md | Python function calls |
 | Agent spawning | `claude --model` | Agent tool | Framework-specific |
-| State directory | `.claude/state/` | `state/` | Configurable |
+| State directory | `.advanced-plans/state/` | `state/` | Configurable |
 | Checkpoints | `git commit` | `checkpoint.sh` | User-defined |
 | Session tracking | TodoWrite hook | TodoWrite tool | Optional |
 | Gate agent spawning | Agent tool from /run-gate | Agent tool | Framework-specific |
@@ -191,7 +191,7 @@ After all loops in a phase complete, the gate review sub-phase verifies outputs 
 
 ### Gate Verdict Protocol
 
-Each agent writes a structured verdict to `plans/gate-verdicts/`:
+Each agent writes a structured verdict to `.advanced-plans/gate-verdicts/`:
 
 - **Confidence scoring**: Findings scored 0–100; only ≥80 confidence triggers failure
 - **Immutable verdicts**: One file per agent per attempt, never overwritten
@@ -246,5 +246,5 @@ advanced-planning/
 │   └── python/       ← Python API, unit tests, framework examples
 ├── docs/             ← Documentation suite (this file, and others)
 ├── examples/         ← Worked examples (planning-system-restructure)
-└── plans/            ← The plan files used to build this very repository
+└── .advanced-plans/  ← The plan files used to build this very repository
 ```

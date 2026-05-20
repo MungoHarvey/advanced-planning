@@ -38,6 +38,46 @@ print `All loops complete. Phase finished.` and stop.
 git add -A && git commit -m "checkpoint: before next-loop cycle" 2>/dev/null || true
 ```
 
+### 3a. Resume-detection check (mid-loop death guard)
+
+Before spawning the orchestrator, check for signs that a previous worker died mid-loop:
+
+```bash
+# Get mtime of state bus files (seconds since epoch)
+READY_MTIME=$(python -c "import os,pathlib; p=pathlib.Path('.advanced-plans/state/loop-ready.json'); print(int(p.stat().st_mtime)) if p.exists() else print(0)")
+COMPLETE_MTIME=$(python -c "import os,pathlib; p=pathlib.Path('.advanced-plans/state/loop-complete.json'); print(int(p.stat().st_mtime)) if p.exists() else print(0)")
+DIRTY=$(git status --porcelain | wc -l | tr -d ' ')
+```
+
+**Decision logic:**
+
+- If `loop-ready.json` does NOT exist: state bus is clean. Log `state-bus clean (no loop-ready.json); proceeding` and continue to Step 4.
+- If `loop-ready.json` mtime > `loop-complete.json` mtime AND `DIRTY > 0`:
+  - This matches the Loop-035 failure mode: worker died after orchestrator wrote the ready file but
+    before (or during) execution, leaving a dirty working tree.
+  - Load and invoke the `resume-review` skill if available (`.claude/skills/resume-review/SKILL.md`
+    or `~/.claude/skills/resume-review/SKILL.md`).
+  - Print the following and **PAUSE for operator acknowledgment** before continuing:
+    ```
+    WARN: mid-loop death detected.
+      loop-ready.json is newer than loop-complete.json AND the working tree is dirty.
+      This may mean a previous worker died before completing its loop.
+
+      Options:
+        1. Continue — spawn a fresh orchestrator (prior loop state will be overwritten)
+        2. Investigate — run /check-execution to diagnose the interrupted loop
+        3. Abort — stop here; fix manually then re-run /next-loop
+
+    Type 1, 2, or 3 and press Enter:
+    ```
+  - Only proceed to Step 4 if operator selects option 1.
+  - If option 2 or 3: stop.
+- Otherwise (loop-complete.json is newer than or equal to loop-ready.json, OR working tree is clean):
+  - Log `state-bus clean; proceeding` and continue to Step 4.
+
+**This check MUST NOT block when state is genuinely clean** (e.g. after a successful loop
+completion the loop-complete.json is newer than loop-ready.json).
+
 ### 4. Spawn ralph-orchestrator
 
 Spawn the `ralph-orchestrator` subagent (Sonnet model).

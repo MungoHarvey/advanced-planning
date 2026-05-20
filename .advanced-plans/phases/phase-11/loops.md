@@ -267,9 +267,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "docs/path-conventions.md created; migration audit complete (KEEP/REWRITE disposition applied to docs/); /next-loop Step 3a resume-detection inserted; detect_mid_loop_death() + archive_cross_phase_state() added to state_manager.py; 16 new tests pass (7 resume + 9 cleanup); ralph-orchestrator Step 0 stale-state cleanup protocol added to both core/ and platforms/ agent files; CLAUDE.md links to path-conventions.md; 184 tests pass, AST NONE."
   failed: ""
-  needed: ""
+  needed: "Execute Loop 045: dogfood self-install (idempotent install.sh/ps1, CONTRIBUTING.md, install idempotency test)."
 
 todos:
   - id: "loop-044-1"
@@ -277,42 +277,42 @@ todos:
     skill: "schema-design"
     agent: "NA"
     outcome: "docs/path-conventions.md exists; CLAUDE.md Runtime Directory section links to it"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-044-2"
     content: "Migration-consistency audit pass: grep platforms/claude-code/commands/**, platforms/claude-code/agents/**, core/skills/**, docs/** for occurrences of plans/, .claude/plans/, .claude/state/, plans/gate-verdicts/, /new-loop; for each occurrence, decide case-by-case (keep legitimate runtime .claude/ references; rewrite stale data references to .advanced-plans/)"
     skill: "NA"
     agent: "NA"
     outcome: "Audit table in the loop-044 commit message lists every match with disposition (keep/rewrite); offenders rewritten in-place"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-044-3"
     content: "Add /next-loop resume-detection step (Step 3a, before orchestrator spawn): check if loop-ready.json mtime > loop-complete.json mtime AND working tree is dirty; if so, invoke resume-review skill and require operator acknowledgment before continuing"
     skill: "command-rewriting"
     agent: "NA"
     outcome: "platforms/claude-code/commands/next-loop.md has the new step inserted at the correct position; clean state still passes through unchanged"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-044-4"
     content: "Write IRON-RULE regression test for S8: fixture creates loop-ready.json with mtime newer than loop-complete.json + a dirty working tree; assert /next-loop invokes resume-review before spawning orchestrator (test via platforms/python/test_next_loop_resume.py or similar shim — implement the assert mechanism that fits the existing test layout)"
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Regression test exists and passes; documents the Loop-035 failure mode it guards against"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-044-5"
     content: "Update core/agents/ralph-orchestrator.md to add stale-state cleanup at startup: read current phase from PLANNING.md frontmatter; compare to phase field in existing loop-ready.json; if mismatch, archive both loop-ready.json and loop-complete.json to .advanced-plans/state/archive/<old-phase>-<timestamp>.json before writing new ones"
     skill: "NA"
     agent: "NA"
     outcome: "Orchestrator agent definition contains the cleanup protocol with explicit archive path; archive dir created if not present"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-044-6"
     content: "Write test for orchestrator stale-state cleanup: fixture with cross-phase loop-ready.json; assert archive directory contains the moved file and the new orchestrator startup wrote fresh files"
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Test exists and passes; archived file path matches the documented format"
-    status: pending
+    status: completed
     priority: medium
 
 prompt: |

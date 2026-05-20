@@ -16,7 +16,7 @@ How does a user or programme initiate planning actions?
 
 | Adapter | Entry Point |
 |---------|------------|
-| Claude Code | Slash commands: `/new-phase`, `/new-loop`, `/next-loop` |
+| Claude Code | Slash commands: `/new-phase`, `/decompose-phase`, `/next-loop` |
 | Cowork | Routing `SKILL.md` — natural language intent dispatch |
 | Generic | Python function calls: `find_next_loop()`, `write_loop_ready()` |
 
@@ -42,7 +42,7 @@ Where do `loop-ready.json`, `loop-complete.json`, and `history.jsonl` live?
 
 | Adapter | State Directory |
 |---------|----------------|
-| Claude Code | `.claude/state/` |
+| Claude Code | `.advanced-plans/state/` |
 | Cowork | `state/` (workspace-relative) |
 | Generic | Configurable via `STATE_DIR` parameter |
 
@@ -101,8 +101,8 @@ A single `SKILL.md` file with a broad trigger description handles all planning i
 | Intent | Action |
 |--------|--------|
 | "run the next loop" | Execute Next Loop Cycle (7-step Agent tool sequence) |
-| "show me the status" | Read planning-state.md and plans/ |
-| "create a phase plan" | Load core skills and author plans/phase-N.md |
+| "show me the status" | Read planning-state.md and .advanced-plans/ |
+| "create a phase plan" | Load core skills and author .advanced-plans/phases/phase-N/plan.md |
 ```
 
 No slash commands exist in Cowork. The routing skill replaces them.

@@ -120,18 +120,18 @@ Use `escalate` for loops whose partial completion leaves the system in an incons
 ## Planning Mode
 
 **Planning mode** is a temporary read-only enforcement state activated during `/plan-and-phase`
-exploration. When active, a sentinel file `.claude/state/planning-mode` is present. The
+exploration. When active, a sentinel file `.advanced-plans/state/planning-mode` is present. The
 `PreToolUse` hooks in `settings.json` check for this sentinel and block `Write`, `Edit`,
-and `MultiEdit` tool calls to any path outside `.claude/plans/` and `.claude/state/`.
+and `MultiEdit` tool calls to any path outside `.advanced-plans/`.
 
 This prevents accidental changes to source code during the exploration phase, when the
 goal is to read and understand — not to modify.
 
 **Lifecycle**:
-1. `/plan-and-phase` creates the sentinel: `echo "$(date -Iseconds)" > .claude/state/planning-mode`
-2. Exploration proceeds read-only (exploration notes saved to `.claude/plans/`)
+1. `/plan-and-phase` creates the sentinel: `echo "$(date -Iseconds)" > .advanced-plans/state/planning-mode`
+2. Exploration proceeds read-only (exploration notes saved to `.advanced-plans/specs/`)
 3. Human review gate — user confirms, edits, or stops
-4. Sentinel removed: `rm -f .claude/state/planning-mode`
+4. Sentinel removed: `rm -f .advanced-plans/state/planning-mode`
 5. Full planning pipeline runs with writes re-enabled
 
 The sentinel is always removed before the planning pipeline runs, so no hooks interfere
@@ -154,7 +154,7 @@ the planning system already produces during normal execution.
 2. Loop files (`phase-N-ralph-loops.md`) — todo statuses and handoff summaries
 3. `CLAUDE.md` Planning State — current position in the plan
 4. Git log (`complete:` and `checkpoint:` commits) — timestamps for loop completions
-5. `.claude/state/loop-complete.json` — most recent loop result
+5. `.advanced-plans/state/loop-complete.json` — most recent loop result
 6. `.claude/logs/execution.log` — agent activity log
 
 The report is read-only. It never modifies plan files. Use `/progress-report --phase N`
@@ -218,7 +218,7 @@ A **gate reviewer** is an agent that evaluates the outputs of a completed phase 
 
 ### Gate Verdict
 
-A **gate verdict** is a structured assessment written by a gate reviewer to `plans/gate-verdicts/`. Each verdict includes:
+A **gate verdict** is a structured assessment written by a gate reviewer to `.advanced-plans/gate-verdicts/`. Each verdict includes:
 
 - A pass/fail decision
 - Confidence scoring per finding (0–100); only findings with confidence ≥80 trigger failure
@@ -239,7 +239,7 @@ This preserves a complete audit trail of what was tried and why it failed.
 
 ### Gate-Review-Mode
 
-**Gate-review-mode** is a sentinel-based enforcement state, analogous to Planning Mode, that restricts agents to read-only operations during gate evaluation. When the sentinel is present, `Write`, `Edit`, and `MultiEdit` calls to paths outside `plans/gate-verdicts/` are blocked. This prevents gate agents from accidentally modifying the artefacts they are evaluating.
+**Gate-review-mode** is a sentinel-based enforcement state, analogous to Planning Mode, that restricts agents to read-only operations during gate evaluation. When the sentinel is present, `Write`, `Edit`, and `MultiEdit` calls to paths outside `.advanced-plans/gate-verdicts/` are blocked. This prevents gate agents from accidentally modifying the artefacts they are evaluating.
 
 ### Failure Context Injection
 
