@@ -3,10 +3,10 @@ programme: "Advanced Planning Framework"
 status: in_progress
 last_updated: 2026-05-19
 
-current_phase: 10
-current_loop: ralph-loop-041
-gate_status: passed
-next_action: "/next-phase (Phase 10 gate PASSED attempt 1 — advance to Phase 11 or run /run-closeout)"
+current_phase: 11
+current_loop: ralph-loop-042
+gate_status: pending
+next_action: "/next-loop (Phase 11 plan + loops decomposed — execute Loop 042 first)"
 
 active_branches:
   - branch: main

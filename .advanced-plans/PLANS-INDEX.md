@@ -25,7 +25,8 @@ Tracking document for the **Advanced Planning System — Open-Source Restructure
 | 7 | `/phase-compact` Slash Command | [`phase-7/`](phases/phase-7/) | **complete** | 023–026 | Verdict schema extended; /phase-compact implemented; phase-6 compacted end-to-end; agent template documented |
 | 8 | Framework Consistency Remediation | [`phase-8/plan.md`](phases/phase-8/plan.md) | **complete** | 027 | Loop 027 complete (hook + permissions hygiene). Loops 028–031 absorbed into Phase 9. |
 | 9 | `.advanced-plans/` Restructure | [`phase-9/complete.md`](phases/phase-9/complete.md) | **complete** | 032–036 | Migrate data home to `.advanced-plans/` for cross-platform portability; introduce `PLANNING.md` dashboard with YAML frontmatter; absorbs Phase 8 Loops 028–031. Design: [`2026-05-14-advanced-plans-restructure-design.md`](specs/2026-05-14-advanced-plans-restructure-design.md). Gate PASSED attempt 2. |
-| 10 | /phase-compact Context-Compaction Reframe | [`phase-10/plan.md`](phases/phase-10/plan.md) | **draft** | 037–041 | Reframe /phase-compact from terse-artefact writer to conversation-context compaction (Approach A): per-phase handoff.md resume digest + unchanged LOCKED complete.md; context_meter transparency report; CLAUDE.md ## Compaction Instructions; PreCompact freshness hook; AskUserQuestion consent/handoff. Design: [`2026-05-19-phase-compact-context-compaction-design.md`](specs/2026-05-19-phase-compact-context-compaction-design.md). |
+| 10 | /phase-compact Context-Compaction Reframe | [`phase-10/plan.md`](phases/phase-10/plan.md) | **complete** | 037–041 | Reframe /phase-compact from terse-artefact writer to conversation-context compaction (Approach A): per-phase handoff.md resume digest + unchanged LOCKED complete.md; context_meter transparency report; CLAUDE.md ## Compaction Instructions; PreCompact freshness hook; AskUserQuestion consent/handoff. Gate PASSED attempt 1 (both agents). Design: [`2026-05-19-phase-compact-context-compaction-design.md`](specs/2026-05-19-phase-compact-context-compaction-design.md). |
+| 11 | Friction Remediation & v0.x Pre-Release | [`phase-11/plan.md`](phases/phase-11/plan.md) | **draft** | 042–046 | Resolve 9 highest-impact tool-friction-log entries (constraints.json + ast_check.py, drop complexity/Haiku, missing skill stubs + worker preflight, phase-goals-agent +Write with fallback, plan-subagent-identification NA default, migration-consistency audit + path-conventions doc, /next-loop resume detection, orchestrator stale-state cleanup, idempotent self-install) + bootstrap version scheme and cut v0.11.0 tag at gate pass. Design: [`2026-05-20-phase-11-friction-remediation-design.md`](specs/2026-05-20-phase-11-friction-remediation-design.md). |
 
 ---
 
@@ -86,11 +87,16 @@ section existed — their cold artefacts exist but manifest entries are not yet 
 | 034 | 9 | Command Rewrites + Phase 8 Absorption | `phases/phase-9/loops.md` | **complete** | — | 1 |
 | 035 | 9 | Hooks + Permissions + Python + Install | `phases/phase-9/loops.md` | **complete** | — | 1 |
 | 036 | 9 | Docs + Tests + Backfill + Audit | `phases/phase-9/loops.md` | **complete** | — | 1 |
-| 037 | 10 | Context Meter Extension | `phases/phase-10/loops.md` | **pending** | — | 1 |
-| 038 | 10 | Handoff Digest Schema + Generation | `phases/phase-10/loops.md` | **pending** | — | 1 |
-| 039 | 10 | Command Reframe | `phases/phase-10/loops.md` | **pending** | — | 1 |
-| 040 | 10 | PreCompact Hook + CLAUDE.md Policy | `phases/phase-10/loops.md` | **pending** | — | 1 |
-| 041 | 10 | Verification + End-to-End | `phases/phase-10/loops.md` | **pending** | — | 1 |
+| 037 | 10 | Context Meter Extension | `phases/phase-10/loops.md` | **complete** | — | 1 |
+| 038 | 10 | Handoff Digest Schema + Generation | `phases/phase-10/loops.md` | **complete** | — | 1 |
+| 039 | 10 | Command Reframe | `phases/phase-10/loops.md` | **complete** | — | 1 |
+| 040 | 10 | PreCompact Hook + CLAUDE.md Policy | `phases/phase-10/loops.md` | **complete** | — | 1 |
+| 041 | 10 | Verification + End-to-End | `phases/phase-10/loops.md` | **complete** | — | 1 |
+| 042 | 11 | Constraints + Schema Cleanup | `phases/phase-11/loops.md` | **pending** | — | 1 |
+| 043 | 11 | Skills + Agents | `phases/phase-11/loops.md` | **pending** | — | 1 |
+| 044 | 11 | Migration Audit + Durability | `phases/phase-11/loops.md` | **pending** | — | 1 |
+| 045 | 11 | Dogfood Self-Install | `phases/phase-11/loops.md` | **pending** | — | 1 |
+| 046 | 11 | Verification + v0.11.0 Release | `phases/phase-11/loops.md` | **pending** | — | 1 |
 
 ---
 
