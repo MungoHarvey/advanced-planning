@@ -1,14 +1,13 @@
 {
-  "phase": "phase-11",
-  "loop_name": "ralph-loop-042",
+  "loop_name": "ralph-loop-043",
   "loop_file": ".advanced-plans/phases/phase-11/loops.md",
   "status": "completed",
-  "todos_done": 6,
+  "todos_done": 8,
   "todos_failed": 0,
   "completed_at": "2026-05-20T00:00:00Z",
   "handoff": {
-    "done": "core/constraints.json + platforms/python/ast_check.py created; CI yml updated to module invocation; complexity field and Haiku tier removed from all files; CLAUDE.md Key Constraints references core/constraints.json; 168 tests pass, AST check NONE.",
+    "done": "core/skills/schema-design/SKILL.md and core/skills/permission-config/SKILL.md created; install scripts updated with skill comment; worker preflight protocol added to both worker.md files; run-gate state-bus contract clarified; plan-subagent-identification NA default + Reserved Values added to core/ and ~/.claude/ copies; no agent: ralph-loop-worker todo assignments found in any phase; 168 tests pass, AST check NONE.",
     "failed": "",
-    "needed": "Execute Loop 043: create schema-design and permission-config skill stubs, install script updates, worker preflight check, and agent/command fixes."
+    "needed": "Execute Loop 044: migration-consistency audit, path-conventions.md, /next-loop resume-detection, orchestrator stale-state cleanup."
   }
 }

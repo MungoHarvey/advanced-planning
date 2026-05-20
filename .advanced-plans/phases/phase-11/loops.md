@@ -131,9 +131,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "core/skills/schema-design/SKILL.md and core/skills/permission-config/SKILL.md created; install scripts updated with skill comment; worker preflight protocol added to both worker.md files; run-gate state-bus contract clarified; plan-subagent-identification NA default + Reserved Values added to core/ and ~/.claude/ copies; no agent: ralph-loop-worker todo assignments found in any phase; 168 tests pass, AST check NONE."
   failed: ""
-  needed: ""
+  needed: "Execute Loop 044: migration-consistency audit, path-conventions.md, /next-loop resume-detection, orchestrator stale-state cleanup."
 
 todos:
   - id: "loop-043-1"
@@ -141,56 +141,56 @@ todos:
     skill: "schema-design"
     agent: "NA"
     outcome: "SKILL.md exists at core/skills/schema-design/ with frontmatter + 3 mandatory sections; passes the skill-format check"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-043-2"
     content: "Create core/skills/permission-config/SKILL.md similarly; content describes editing hooks.json / settings.json / agent tool sets and verifying that edits land"
     skill: "schema-design"
     agent: "NA"
     outcome: "SKILL.md exists at core/skills/permission-config/ with frontmatter + 3 mandatory sections"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-043-3"
     content: "Update setup/claude-code/install.sh and install.ps1 to copy/symlink the two new skills into .claude/skills/ at install time"
     skill: "permission-config"
     agent: "NA"
     outcome: "Install scripts include schema-design and permission-config in their skill-copy step; manual dry-run on a temp project shows the skills land at .claude/skills/"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-043-4"
     content: "Add worker preflight skill check to core/agents/ralph-loop-worker.md: at the start of each todo, resolve the declared skill: field; if not found at core/skills/<name>/SKILL.md, .claude/skills/<name>/SKILL.md, or ~/.claude/skills/<name>/SKILL.md, log WARN to stdout + execution.log and proceed (do NOT halt)"
     skill: "NA"
     agent: "NA"
     outcome: "Worker agent definition contains the preflight protocol; warning format is 'WARN: skill <name> declared by todo <id> but not installed; proceeding without skill injection'"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-043-5"
     content: "Edit platforms/claude-code/agents/phase-goals-agent.md to add Write to the tools field (Read, Glob, Grep, Write). Mirror the change in any other agent-registry file if present"
     skill: "permission-config"
     agent: "NA"
     outcome: "phase-goals-agent.md tools field includes Write; git diff shows the single-line change"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-043-6"
     content: "Update platforms/claude-code/commands/run-gate.md to remove the 'expect text-only verdict' workaround prose; document that gate agents persist their own verdicts per the state-bus contract"
     skill: "command-rewriting"
     agent: "NA"
     outcome: "run-gate.md no longer instructs the main thread to persist verdicts on behalf of phase-goals-agent (or any other agent)"
-    status: pending
+    status: completed
     priority: medium
   - id: "loop-043-7"
     content: "Update plan-subagent-identification SKILL.md (project core/ + user runtime) so the default for a todo with no clear specialised agent is agent: NA, NOT agent: ralph-loop-worker; add an explicit Reserved Values note that ralph-loop-worker is the loop executor and MUST NOT appear on individual todos"
     skill: "docs-rewrite"
     agent: "NA"
     outcome: "Skill text documents NA as default and reserves ralph-loop-worker; both project and ~/.claude/ copies updated (or the project core/ canonical version, with note to re-install)"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-043-8"
     content: "Sweep .advanced-plans/phases/** for agent: ralph-loop-worker on individual todos and rewrite to agent: NA (Phase 8 Loop 027 is the known offender; check Phase 9/10 for any additional cases)"
     skill: "NA"
     agent: "NA"
     outcome: "grep -r 'agent: ralph-loop-worker' .advanced-plans/phases/ returns no matches"
-    status: pending
+    status: completed
     priority: medium
 
 prompt: |

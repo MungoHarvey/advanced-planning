@@ -46,6 +46,24 @@ If any skill path referenced in a todo does not exist at `.claude/skills/[skill]
 check `~/.claude/skills/[skill]/SKILL.md` as a fallback. If neither exists, log the missing
 skill and proceed without it — do not halt the entire loop.
 
+**Preflight skill check** (run for each todo before execution):
+
+Resolve skill paths in this order:
+1. `core/skills/<name>/SKILL.md` (project source tree)
+2. `.claude/skills/<name>/SKILL.md` (project-local installed)
+3. `~/.claude/skills/<name>/SKILL.md` (global installed)
+
+If none of the three paths exist for a declared skill, log to stdout AND to
+`.advanced-plans/logs/execution.log`:
+
+```
+WARN: skill '<name>' declared by todo <id> but not installed; proceeding without skill injection
+```
+
+Do NOT halt. Continue executing the todo using general capability and any available
+context (design spec sections, prior loop context). Record the warning in the
+handoff_summary.failed field if the missing skill materially affected output quality.
+
 ## On Start
 
 1. Read `.advanced-plans/state/loop-ready.json` — this is my assignment

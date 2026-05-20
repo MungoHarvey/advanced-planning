@@ -171,3 +171,7 @@ Run /next-phase to create versioned retry files and begin retry.
 - Verdict files are immutable: one file per agent per attempt, never overwritten
 - Default agents (`code-review-agent`, `phase-goals-agent`) can be overridden with `--agents`
 - Run `/run-closeout` after the final phase passes to produce the programme narrative
+- **State-bus contract**: each gate agent is responsible for writing its own verdict file
+  directly to `.advanced-plans/gate-verdicts/`. The main thread reads the verdict files in
+  Step 9 but does NOT persist verdicts on behalf of any agent. If an agent cannot write its
+  own verdict, that is a tool-permission failure to diagnose, not a workaround to implement.

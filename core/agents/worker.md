@@ -69,9 +69,16 @@ For each todo with status: pending, in order:
        All loaded skills are active simultaneously for this todo.
        When skills overlap, the more specific skill takes precedence.
 
-     Path resolution:
-       1. Project-local: [skills_directory]/[skill-name]/SKILL.md
-       2. Global fallback: ~/.claude/skills/[skill-name]/SKILL.md
+     Path resolution (checked in order; first match wins):
+       1. Source tree:    core/skills/[skill-name]/SKILL.md
+       2. Project-local:  [skills_directory]/[skill-name]/SKILL.md
+       3. Global fallback: ~/.claude/skills/[skill-name]/SKILL.md
+
+     If none of the three paths exist for a declared skill, log to stdout AND to
+     the execution log:
+       WARN: skill '<name>' declared by todo <id> but not installed; proceeding without skill injection
+     Do NOT halt — continue executing the todo. Record the warning in handoff_summary.failed
+     if the missing skill materially affected output quality.
 
   4. EXECUTE THE TASK
      Perform the work described in content

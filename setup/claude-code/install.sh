@@ -279,6 +279,10 @@ for agent in "$REPO_ROOT/platforms/claude-code/agents/"*.md; do
 done
 
 # Install skills (copy or symlink)
+# All subdirectories of core/skills/ are included automatically.
+# Current skills: companion-detection, phase-plan-creator, plan-skill-identification,
+#   plan-subagent-identification, plan-todos, ralph-loop-planner, progress-report,
+#   schema-design, permission-config
 say "Installing core skills..."
 if [ "$SYMLINK" = true ]; then
     do_ln "$REPO_ROOT/core/skills" "$CLAUDE_DIR/skills"

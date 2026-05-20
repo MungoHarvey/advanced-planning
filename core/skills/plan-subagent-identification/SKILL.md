@@ -47,6 +47,14 @@ Provide:
    - Task is a simple one-liner (git commit, file copy, log write)
    - No suitable subagent exists and the task does not warrant creating one
    - Task requires the orchestrator's full session context to complete
+   - **Default**: when there is no clear specialised agent for a todo, assign `agent: NA`
+
+## Reserved Values
+
+`agent: ralph-loop-worker` **MUST NOT** appear on individual todos. The `ralph-loop-worker`
+is the loop executor itself - it runs all todos inline. Assigning it on a todo would be
+circular (the worker cannot spawn itself as a subagent). Use `agent: NA` as the default
+for any todo the loop worker executes directly.
 
 4. **Assign agent IDs** from available agents, or flag `MISSING: [description]` if a suitable
    agent does not exist yet.
@@ -58,28 +66,18 @@ Provide:
 
 ## Model Tier Economics
 
-Subagent assignment also implies model tier selection. The three-tier model hierarchy:
+Subagent assignment also implies model tier selection. The two-tier model hierarchy
+for loop execution:
 
 | Role | Typical Model | Scope |
 |------|---------------|-------|
 | Orchestrator / Planning | Opus | Strategic decisions, phase plans, loop decomposition |
 | Loop orchestrator | Sonnet | Loop preparation, context assembly, handoff writing |
-| Loop worker | Sonnet (default); Haiku for low-complexity | Bounded task execution, file operations, code runs |
+| Loop worker | Sonnet | Bounded task execution, file operations, code runs |
 
 When assigning tasks to a worker subagent, you are delegating execution to an isolated
-execution context, keeping the orchestrator focused on coordination. Most worker todos
-run at Sonnet tier for reliable compositional reasoning; only todos with `complexity: low`
-are eligible for Haiku.
-
-### Complexity Assessment
-
-When assigning agents, also consider the todo's `complexity` field:
-
-| Complexity | Model | Criteria |
-|-----------|-------|----------|
-| `low` | Haiku eligible | Single-file edits, command execution, file copy, template fills |
-| `medium` (default) | Sonnet | Multi-file changes, skill-guided tasks, domain reasoning |
-| `high` | Sonnet | Cross-cutting changes, complex verification, architectural decisions |
+execution context, keeping the orchestrator focused on coordination. All worker todos
+run at Sonnet tier.
 
 ## Output Format
 
@@ -88,28 +86,25 @@ todos:
   - id: "loop-002-1"
     content: "Migrate phase-plan-creator skill into core/skills/"
     skill: "skill-creator"
-    agent: "ralph-loop-worker"    # ← was NA, now assigned (bounded execution task)
+    agent: "NA"    # ← default; loop worker executes inline
     outcome: "SKILL.md exists at target path; zero platform-specific references present"
     status: pending
-    complexity: medium
     priority: high
 
   - id: "loop-002-2"
     content: "Verify all five skills are platform-agnostic"
     skill: "NA"
-    agent: "ralph-loop-worker"    # ← assigned (self-contained verification)
+    agent: "NA"    # ← default; loop worker executes inline
     outcome: "Zero occurrences of platform-specific terms across all core/skills/ SKILL.md files"
     status: pending
-    complexity: low
     priority: high
 
   - id: "loop-002-3"
     content: "Update handoff_summary in loop frontmatter"
     skill: "NA"
-    agent: "NA"                   # ← orchestrator task; touches plan file
+    agent: "NA"    # ← orchestrator task; touches plan file
     outcome: "handoff_summary.done populated with completed task list"
     status: pending
-    complexity: low
     priority: medium
 ```
 

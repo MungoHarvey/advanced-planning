@@ -218,6 +218,10 @@ foreach ($agent in $platformAgents) {
 
 # ---------------------------------------------------------------------------
 # Skills (copy or junction)
+# All subdirectories of core\skills\ are included automatically.
+# Current skills: companion-detection, phase-plan-creator, plan-skill-identification,
+#   plan-subagent-identification, plan-todos, ralph-loop-planner, progress-report,
+#   schema-design, permission-config
 # ---------------------------------------------------------------------------
 Say "Installing core skills..."
 $skillsSrc  = Join-Path $RepoRoot "core\skills"
