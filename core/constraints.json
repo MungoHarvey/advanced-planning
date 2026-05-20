@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Canonical zero-dependency allow-set for platforms/python/ source modules. This is the single source of truth for CI AST checking and documentation.",
+  "allowed_imports": [
+    "ast",
+    "json",
+    "pathlib",
+    "re",
+    "datetime",
+    "typing",
+    "os",
+    "sys",
+    "tempfile",
+    "textwrap",
+    "argparse",
+    "asyncio"
+  ],
+  "explicitly_excluded": [
+    "__future__"
+  ],
+  "notes": [
+    "__future__ is explicitly excluded: it is not an external dependency but its presence historically indicated feature-flag usage incompatible with this framework's stdlib-only policy.",
+    "All entries in allowed_imports are top-level module names. Sub-module imports (e.g. pathlib.Path) are permitted when the top-level name is in the allow-set.",
+    "Test files under platforms/python/tests/ are exempt from this constraint (pytest is allowed in tests)."
+  ]
+}

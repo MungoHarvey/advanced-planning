@@ -17,9 +17,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "core/constraints.json + platforms/python/ast_check.py created; CI yml updated to module invocation; complexity field and Haiku tier removed from all files; CLAUDE.md Key Constraints references core/constraints.json; 168 tests pass, AST check NONE."
   failed: ""
-  needed: ""
+  needed: "Execute Loop 043: create schema-design and permission-config skill stubs, install script updates, worker preflight check, and agent/command fixes."
 
 todos:
   - id: "loop-042-1"
@@ -27,42 +27,42 @@ todos:
     skill: "schema-design"
     agent: "NA"
     outcome: "core/constraints.json exists; valid JSON; lint passes; allow-set matches CLAUDE.md Key Constraints"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-042-2"
     content: "Create platforms/python/ast_check.py (stdlib-only) exposing load_allowed_imports(), check_file(path) -> list[Violation], and CLI mode via python -m platforms.python.ast_check <paths...>"
     skill: "NA"
     agent: "NA"
     outcome: "Module exists; CLI on a clean file exits 0; CLI on a fixture with __future__ exits non-zero and names the violating file"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-042-3"
     content: "Write platforms/python/tests/test_ast_check.py: parses fixture JSON, happy-path file with only allowed imports, violation fixture with __future__ produces non-empty result, round-trip test that load_allowed_imports() equals the JSON content"
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Test file exists; pytest passes; coverage includes happy + violation + round-trip"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-042-4"
     content: "Update .github/workflows/ci.yml: replace inline AST checker python with python -m platforms.python.ast_check platforms/python/ (excluding tests/)"
     skill: "permission-config"
     agent: "NA"
     outcome: "CI yml diff shows inline python block replaced by module invocation; YAML valid"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-042-5"
     content: "Drop complexity: field everywhere — remove from CLAUDE.md text; remove the Haiku row from CLAUDE.md Model Tiers table entirely; sweep .advanced-plans/phases/** and core/schemas/** for stale complexity: lines and remove"
     skill: "NA"
     agent: "NA"
     outcome: "grep -r 'complexity:' .advanced-plans/phases/ core/schemas/ CLAUDE.md returns no matches; Model Tiers table has no Haiku row"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-042-6"
     content: "Update CLAUDE.md Key Constraints section to reference core/constraints.json as the authoritative source of the allow-set"
     skill: "NA"
     agent: "NA"
     outcome: "CLAUDE.md text reads 'See core/constraints.json' (or similar) in Key Constraints; allow-set list either points-to or mirrors the JSON"
-    status: pending
+    status: completed
     priority: medium
 
 prompt: |

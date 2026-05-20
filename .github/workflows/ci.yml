@@ -82,30 +82,4 @@ jobs:
 
       - name: Verify no external dependencies
         run: |
-          python -c "
-          # Verify the generic adapter uses only standard library
-          import ast, pathlib, sys
-          allowed_stdlib = {
-              'json', 'pathlib', 're', 'datetime', 'typing',
-              'os', 'sys', 'tempfile', 'textwrap', 'argparse', 'asyncio',
-          }
-          src_files = list(pathlib.Path('platforms/python').glob('*.py'))
-          violations = []
-          for f in src_files:
-              tree = ast.parse(f.read_text())
-              for node in ast.walk(tree):
-                  if isinstance(node, (ast.Import, ast.ImportFrom)):
-                      if isinstance(node, ast.Import):
-                          names = [alias.name.split('.')[0] for alias in node.names]
-                      else:
-                          names = [node.module.split('.')[0]] if node.module else []
-                      for name in names:
-                          if name not in allowed_stdlib and not name.startswith('adapters'):
-                              violations.append(f'{f.name}: imports {name!r}')
-          if violations:
-              print('External dependency violations:')
-              for v in violations:
-                  print(f'  {v}')
-              sys.exit(1)
-          print(f'All {len(src_files)} source files use only allowed imports.')
-          "
+          python -m platforms.python.ast_check platforms/python/ --exclude tests/ --exclude examples/

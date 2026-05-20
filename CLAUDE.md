@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-A hierarchical, multi-agent planning framework that structures complex programmes as bounded, verifiable loops. Three-tier hierarchy: Phase Plans (Opus) → Ralph Loops (Sonnet orchestrates) → Todos (Sonnet executes with skill injection; Haiku for `complexity: low` todos only).
+A hierarchical, multi-agent planning framework that structures complex programmes as bounded, verifiable loops. Three-tier hierarchy: Phase Plans (Opus) → Ralph Loops (Sonnet orchestrates) → Todos (Sonnet executes with skill injection).
 
 > **Live programme state**: see `.advanced-plans/PLANNING.md` (YAML frontmatter dashboard) for current phase, loop, gate status, and active branches. All planning artefacts live under `.advanced-plans/`.
 
@@ -142,8 +142,7 @@ Each slash command has a single non-overlapping purpose. `/loop-status` reports 
 |------|--------------|-----------|
 | Phase planning | Opus | Once per phase |
 | Loop orchestration | Sonnet | Once per loop |
-| Todo execution (worker) | Sonnet | Per todo (default) |
-| Low-complexity todos | Haiku | Per todo (when `complexity: low`) |
+| Todo execution (worker) | Sonnet | Per todo |
 | Gate review | Sonnet | Once per phase boundary |
 | Closeout synthesis | Sonnet | Once per programme |
 | Progress reporting | Sonnet | On demand |
@@ -163,7 +162,7 @@ Override agent tiers via the `model:` field in agent frontmatter. Skills are mod
 ## Key Constraints
 
 - Python 3.10+ required
-- The Python API must remain zero-dependency (standard library only) — CI enforces this with an AST import checker. Allowed imports: `json`, `pathlib`, `re`, `datetime`, `typing`, `os`, `sys`, `tempfile`, `textwrap`, `argparse`, `asyncio`
+- The Python API must remain zero-dependency (standard library only) — CI enforces this with `python -m platforms.python.ast_check`. The canonical allow-set is defined in `core/constraints.json` (see that file for the authoritative list; currently: `ast`, `json`, `pathlib`, `re`, `datetime`, `typing`, `os`, `sys`, `tempfile`, `textwrap`, `argparse`, `asyncio`; `__future__` is explicitly excluded)
 - Core files must never reference platform-specific paths (no `.claude/` in core)
 - New skills require frontmatter (`name`, `description`) and sections: `## When to Use`, `## Process`, `## Output Format`. Skills are model-agnostic — the executing agent's model determines capability, not the skill.
 - Plan files use YAML frontmatter in markdown; ralph loops contain `todos[]` arrays with canonical field order (`id`/`content`/`skill`/`agent`/`outcome`/`status`/`priority`)
