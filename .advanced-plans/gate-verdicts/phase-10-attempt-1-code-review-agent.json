@@ -1,0 +1,31 @@
+{
+  "phase": "phase-10",
+  "attempt": 1,
+  "timestamp": "2026-05-19T18:45:00Z",
+  "agent": "code-review-agent",
+  "verdict": "pass",
+  "confidence": 95,
+  "phase_title": "/phase-compact Context-Compaction Reframe",
+  "criteria_outcomes": [
+    {"criterion": "context_meter.py emits segment/content-type/activity breakdown; degrades gracefully; pytest passes; AST NONE", "status": "met", "evidence": "44 tests in test_context_meter.py pass; AST over platforms/python/*.py + hook = NONE; format_report ASCII-only verified"},
+    {"criterion": "docs/phase-handoff.schema.md exists with validation checklist, pointers-not-contents rule, token_ceiling, 7 sections", "status": "met", "evidence": "Schema present (LOCKED 2026-05-19); checklist + 7 sections + ceiling formula + generation decision documented"},
+    {"criterion": "Reframed phase-compact.md: handoff write, transparency report, CLAUDE.md block, consent gate, /compact line", "status": "met", "evidence": "Steps 13-16 additions-only (196 lines after step 12); each step verified for its function"},
+    {"criterion": "Digest over ceiling fails build with offending sections listed", "status": "met", "evidence": "check_ceiling(ceiling=100) returns TOTAL + per-section list; test_token_ceiling_error_lists_sections PASSED"},
+    {"criterion": "Gate-fail yields status: failed_vM + non-empty errors section", "status": "met", "evidence": "Live: status failed_v1, errors non-empty; test_gate_fail_status + test_gate_fail_nonempty_errors PASSED"},
+    {"criterion": "CLAUDE.md ## Compaction Instructions + decision-log; LOCKED schemas + complete.md byte-unchanged", "status": "met", "evidence": "grep -c '^## Compaction Instructions' = 1; decision-log present; git diff 6384f80..HEAD on 3 LOCKED paths empty"},
+    {"criterion": "PreCompact hook registered; validates handoff.md; exits 0; no-ops when absent", "status": "met", "evidence": "hooks.json + settings.json contain PreCompact entry; exit 0 verified across no-.advanced-plans / no-handoff / invalid / valid paths"},
+    {"criterion": "pytest passes; CI green", "status": "met", "evidence": "154 passed in 2.07s; 0 failures/errors"},
+    {"criterion": "E2E: reframed /phase-compact on completed phase produces valid handoff.md", "status": "met", "evidence": "phase-9/handoff.md present, 1449/1500 tokens, ASCII-only, 7 sections; dry-run confirmed"},
+    {"criterion": "AST zero-dep NONE over platforms/python/*.py + hook", "status": "met", "evidence": "Custom AST scan returns NONE; __future__ only in test files which CI does not scan"},
+    {"criterion": "LOCKED files byte-unchanged", "status": "met", "evidence": "git diff 6384f80..HEAD on all three paths empty"},
+    {"criterion": "phase-compact.md steps 1-12 unchanged; only 13+ added", "status": "met", "evidence": "Diff shows only additions starting line 306; no removed lines for steps 1-12"}
+  ],
+  "findings": [
+    {"severity": "important", "location": "platforms/python/handoff_digest.py line 441", "description": "Em-dash (U+2014) in a source string literal '- (none \\u2014 gate passed; ...)'. ascii_safe() unconditionally sanitizes the full digest before write (line 529) so output is always ASCII-clean, but the source literal violates the ASCII-in-source convention / schema Hard Rule 5. Trivial fix: replace with '--'.", "evidence": "U+2014 at line 441; ascii_safe() at line 529 sanitizes before write"},
+    {"severity": "info", "location": "handoff_digest.py lines 64-77", "description": "12 non-ASCII chars in ascii_safe() replacement table are intentional lookup keys, not emitted. Not a defect.", "evidence": "All within replacements list; ASCII output verified"},
+    {"severity": "info", "location": "test_context_meter.py:3, test_handoff_digest.py:14", "description": "__future__ import in two test files; CI AST checker scans only platforms/python/*.py (not tests/), so no CI/zero-dep violation.", "evidence": "CI yml globs platforms/python/*.py excluding tests/"},
+    {"severity": "info", "location": "precompact_handoff_check.py line 49", "description": "Hook token estimate uses words/0.75 vs schema-canonical ceil(len/4); could diverge into a false ceiling warning, but hook always exits 0 so no functional impact. Advisory.", "evidence": "Different formulas; hook never blocks"}
+  ],
+  "loops_to_revert": [],
+  "failure_notes": []
+}

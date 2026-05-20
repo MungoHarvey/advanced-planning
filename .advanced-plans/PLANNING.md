@@ -5,8 +5,8 @@ last_updated: 2026-05-19
 
 current_phase: 10
 current_loop: ralph-loop-041
-gate_status: pending
-next_action: "/run-gate (Phase 10 all 5 loops complete — gate review due)"
+gate_status: passed
+next_action: "/next-phase (Phase 10 gate PASSED attempt 1 — advance to Phase 11 or run /run-closeout)"
 
 active_branches:
   - branch: main
