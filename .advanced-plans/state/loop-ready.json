@@ -1,14 +1,14 @@
 {
   "phase": "phase-11",
-  "loop_name": "ralph-loop-042",
+  "loop_name": "ralph-loop-043",
   "loop_file": ".advanced-plans/phases/phase-11/loops.md",
-  "task_name": "Constraints + Schema Cleanup",
-  "todos_count": 6,
+  "task_name": "Skills + Agents",
+  "todos_count": 8,
   "status": "ready",
   "handoff_injected": {
-    "done": "Phase 10 complete (gate PASSED attempt 1); Phase 11 plan + loops decomposed and committed 727d51c",
+    "done": "core/constraints.json + platforms/python/ast_check.py created; CI yml updated to module invocation; complexity field and Haiku tier removed from all files; CLAUDE.md Key Constraints references core/constraints.json; 168 tests pass, AST check NONE.",
     "failed": "",
-    "needed": "Execute Phase 11 Loop 042: establish core/constraints.json + platforms/python/ast_check.py as zero-dep AST allow-set source of truth; drop complexity field and Haiku tier everywhere"
+    "needed": "Execute Loop 043: create schema-design and permission-config skill stubs, install script updates, worker preflight check, and agent/command fixes."
   },
   "prepared_at": "2026-05-20T00:00:00Z"
 }
