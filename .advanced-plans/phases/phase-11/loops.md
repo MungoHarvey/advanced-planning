@@ -532,7 +532,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "Tag exists locally + on origin; GitHub Release page exists with the CHANGELOG-sourced body; remote in sync"
-    status: pending
+    status: completed
     priority: medium
 
 prompt: |

@@ -6,7 +6,8 @@ last_updated: 2026-05-19
 current_phase: 11
 current_loop: ralph-loop-046
 gate_status: passed
-next_action: "Execute todo loop-046-8: cut v0.11.0 annotated tag + push origin + GitHub Release"
+released: v0.11.0
+next_action: "Phase 11 SHIPPED at v0.11.0 (pre-release). Options: /new-phase for Phase 12 (workflow seams + Phase 11 warnings sweep) or /run-closeout if pausing here."
 
 active_branches:
   - branch: main
