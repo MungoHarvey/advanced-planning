@@ -171,7 +171,20 @@ Run /next-phase to create versioned retry files and begin retry.
 - Verdict files are immutable: one file per agent per attempt, never overwritten
 - Default agents (`code-review-agent`, `phase-goals-agent`) can be overridden with `--agents`
 - Run `/run-closeout` after the final phase passes to produce the programme narrative
-- **State-bus contract**: each gate agent is responsible for writing its own verdict file
-  directly to `.advanced-plans/gate-verdicts/`. The main thread reads the verdict files in
-  Step 9 but does NOT persist verdicts on behalf of any agent. If an agent cannot write its
-  own verdict, that is a tool-permission failure to diagnose, not a workaround to implement.
+- **State-bus contract (PRIMARY)**: each gate agent is responsible for writing its own verdict
+  file directly to `.advanced-plans/gate-verdicts/`. The main thread reads the verdict files
+  in Step 9 but does NOT persist verdicts on behalf of any agent. `phase-goals-agent` has
+  `Write` in its `tools:` frontmatter field (added in Phase 11 Loop 043). This is the
+  expected behaviour.
+- **CONTINGENCY (if agent Write tool unavailable at runtime)**: If the agent spawned in
+  Step 7 returns without having written a verdict file (i.e. the Write tool did not
+  propagate from frontmatter into the runtime tool set), the main thread MAY persist the
+  verdict on behalf of the agent as follows:
+  1. Prompt the agent a second time: "You need to return the full verdict JSON as your
+     final message. I will write it to disk."
+  2. Write the returned JSON to the expected verdict path using the main-thread Write tool.
+  3. Log a warning: `WARN: phase-goals-agent could not write its own verdict — main-thread
+     persisted on behalf (upstream tool-permission issue)`.
+  This contingency path is a workaround for a runtime tool-permission gap and should be
+  diagnosed and fixed in the next phase. Do NOT use this contingency unless the agent
+  demonstrably fails to create the file on the primary path.

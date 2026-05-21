@@ -1,15 +1,13 @@
 {
-  "phase": "phase-11",
-  "loop_name": "ralph-loop-045",
+  "loop_name": "ralph-loop-046",
   "loop_file": ".advanced-plans/phases/phase-11/loops.md",
   "status": "completed",
-  "todos_done": 4,
+  "todos_done": 7,
   "todos_failed": 0,
-  "completed_at": "2026-05-21T00:00:00Z",
+  "completed_at": "2026-05-21T09:45:00Z",
   "handoff": {
-    "done": "install.sh + install.ps1 updated with idempotent skip-data-scaffold and self-install detection (symlinks/junctions for source repo); CONTRIBUTING.md created with Dev-Mode section + CLAUDE.md cross-reference; test_install_idempotency.py added (5 tests covering existing-data preservation + fresh-scaffold creation + stdout messaging); CRLF-in-install.sh + cp1252-subprocess fixes applied on main-thread recovery; 189 tests pass, AST NONE.",
+    "done": "S5/S8/S10 E2Es verified (FALLBACK path taken for S5: run-gate.md has PRIMARY + CONTINGENCY blocks; S8 7/7 tests pass; S10 install.sh --project . preserves .advanced-plans/, populates .claude/); VERSION=0.11.0; CHANGELOG.md backfilled v0.6-v0.11; README Installation updated with Releases subsection; final gate: 189 tests pass, AST NONE, no complexity: fields, no agent: ralph-loop-worker fields, LOCKED files byte-unchanged.",
     "failed": "",
-    "needed": "Execute Loop 046: Verification Plan E2Es (S5 phase-goals-agent Write tool, S8 resume detection, S10 self-install on this repo); VERSION + CHANGELOG.md backfill v0.6-v0.11; README install link; final verification gate; v0.11.0 tag (POST-gate only)."
-  },
-  "recovery_note": "Worker died on API ConnectionRefused after writing all 4 expected files. Main-thread recovery verified outputs, fixed two issues (CRLF line endings in install.sh; cp1252-vs-UTF-8 subprocess decode in test_install_idempotency.py), ran pytest + AST, marked todos complete."
+    "needed": "Execute todo loop-046-8 POST-/run-gate-PASS only: cut v0.11.0 annotated tag, push origin main + tag, create GitHub Release from CHANGELOG section."
+  }
 }

@@ -473,9 +473,9 @@ max_iterations: 3
 on_max_iterations: checkpoint
 
 handoff_summary:
-  done: ""
+  done: "S5/S8/S10 E2Es verified (FALLBACK path taken for S5: run-gate.md has PRIMARY + CONTINGENCY blocks; S8 7/7 tests pass; S10 install.sh --project . preserves .advanced-plans/, populates .claude/); VERSION=0.11.0; CHANGELOG.md backfilled v0.6-v0.11; README Installation updated with Releases subsection; final gate: 189 tests pass, AST NONE, no complexity: fields, no agent: ralph-loop-worker fields, LOCKED files byte-unchanged."
   failed: ""
-  needed: ""
+  needed: "Execute todo loop-046-8 POST-/run-gate-PASS only: cut v0.11.0 annotated tag, push origin main + tag, create GitHub Release from CHANGELOG section."
 
 todos:
   - id: "loop-046-1"
@@ -483,49 +483,49 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Either: (a) PRIMARY path — agent writes the verdict file directly, /run-gate workaround prose stays removed; OR (b) FALLBACK path — /run-gate documents the workaround as the contract, friction-log entry marked upstream-blocked"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-046-2"
     content: "E2E for S8 (resume-detection): create the regression fixture (loop-ready.json mtime newer than loop-complete.json + dirty tree); invoke /next-loop; assert resume-review skill invocation precedes orchestrator spawn"
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Test run captured in commit message; resume-detection observed firing in the expected position"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-046-3"
     content: "E2E for S10 (self-install on this repo): run setup/claude-code/install.sh --project . on the source repo; verify .advanced-plans/ byte-unchanged via git diff; verify .claude/commands/, .claude/skills/, .claude/agents/, .claude/schemas/ populated with symlinks; run /loop-status and assert exit 0"
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Install completes; data preserved; runtime dirs populated; /loop-status exits clean; commit captures the verification output"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-046-4"
     content: "Create VERSION file at repo root containing the single line 0.11.0"
     skill: "NA"
     agent: "NA"
     outcome: "VERSION exists; matches /^0\\.11\\.0$/"
-    status: pending
+    status: completed
     priority: medium
   - id: "loop-046-5"
     content: "Create CHANGELOG.md (Keep-a-Changelog format) with sections backfilled from PLANS-INDEX.md v0.6 through v0.11; each version section names the phase, completion date, and loop count matching PLANS-INDEX; v0.11.0 section includes the breaking-change note (complexity field removed, Haiku tier dropped) and lists the 9 friction entries resolved"
     skill: "docs-rewrite"
     agent: "NA"
     outcome: "CHANGELOG.md exists; one heading per PLANS-INDEX phase from v0.6; loop counts match; v0.11.0 section complete"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-046-6"
     content: "Update README.md Installation section to reference VERSION; add a brief 'Releases' subsection pointing at GitHub Releases and the CHANGELOG"
     skill: "docs-rewrite"
     agent: "NA"
     outcome: "README.md mentions VERSION and CHANGELOG; install instructions reference the tag"
-    status: pending
+    status: completed
     priority: medium
   - id: "loop-046-7"
     content: "Final verification gate: python -m pytest platforms/python/tests/ -v (all green); python -m platforms.python.ast_check platforms/python/ (NONE); grep guards (no complexity:, no agent: ralph-loop-worker on todos); LOCKED files git diff empty"
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "All five checks pass; output captured in commit message; ready for gate review"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-046-8"
     content: "Post-gate-pass actions (DO NOT execute until /run-gate returns PASS): cut annotated git tag v0.11.0 with message sourced from CHANGELOG.md v0.11.0 section; push origin main + tag; draft GitHub Release body from the CHANGELOG section; create release via gh release create v0.11.0 --notes-file <(extract CHANGELOG section)"

@@ -162,3 +162,112 @@ WARN: skill command-rewriting declared by todo 044-3 but not installed; proceedi
 [18:18:31] TODO DONE: 045-2
 [18:19:33] TODO DONE: 045-3
 [00:00:00] ORCHESTRATOR: prepared ralph-loop-046
+[09:42:38] WORKER START: ralph-loop-046
+[09:43:04] TODO DONE: loop-046-1
+--- S8 E2E verification ---
+============================= test session starts =============================
+platform win32 -- Python 3.12.7, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\mharvey2\AppData\Local\anaconda3\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\mharvey2\Documents\Coding\advanced-planning
+plugins: anyio-4.10.0, langsmith-0.4.34, asyncio-0.21.1, cov-6.2.1, timeout-2.4.0
+asyncio: mode=Mode.STRICT
+collecting ... collected 7 items
+
+platforms/python/tests/test_next_loop_resume.py::TestDetectMidLoopDeath::test_detects_mid_loop_death_ready_newer_and_dirty PASSED [ 14%]
+platforms/python/tests/test_next_loop_resume.py::TestDetectMidLoopDeath::test_clean_when_complete_newer_than_ready PASSED [ 28%]
+platforms/python/tests/test_next_loop_resume.py::TestDetectMidLoopDeath::test_clean_when_complete_newer_and_tree_clean PASSED [ 42%]
+platforms/python/tests/test_next_loop_resume.py::TestDetectMidLoopDeath::test_clean_when_no_loop_ready PASSED [ 57%]
+platforms/python/tests/test_next_loop_resume.py::TestDetectMidLoopDeath::test_ready_newer_but_tree_clean_is_not_death PASSED [ 71%]
+platforms/python/tests/test_next_loop_resume.py::TestDetectMidLoopDeath::test_no_loop_complete_and_dirty_is_death PASSED [ 85%]
+platforms/python/tests/test_next_loop_resume.py::TestDetectMidLoopDeath::test_no_loop_complete_and_clean_tree_is_not_death PASSED [100%]
+
+============================== 7 passed in 0.30s ==============================
+[09:43:35] TODO DONE: loop-046-2
+--- S10 E2E verification ---
+bash setup/claude-code/install.sh --project . output:
+[install] Self-install detected: project is the source repo root
+[install] Runtime dirs will be symlinked so source edits surface immediately
+[install] Installing Advanced Planning System
+[install]   repo:    /c/Users/mharvey2/Documents/Coding/advanced-planning
+[install]   project: .
+[install]   target:  ./.claude
+[install]   mode:    SELF-INSTALL (symlinks for runtime dirs)
+[install] 
+[install] Preserving existing planning data at ./.advanced-plans — skipping scaffold
+[install] Installing runtime dirs as symlinks (self-install mode)...
+[install]   + commands -> platforms/claude-code/commands
+[install]   + skills -> core/skills
+[install]   + schemas -> core/schemas
+[install]   + agents/README.md -> core/agents
+[install]   + agents/gate-reviewer.md -> core/agents
+[install]   + agents/orchestrator.md -> core/agents
+[install]   + agents/worker.md -> core/agents
+[install]   + agents/analysis-worker.md -> platforms/claude-code/agents
+[install]   + agents/code-review-agent.md -> platforms/claude-code/agents
+[install]   + agents/phase-goals-agent.md -> platforms/claude-code/agents
+[install]   + agents/programme-reporter.md -> platforms/claude-code/agents
+[install]   + agents/ralph-loop-worker.md -> platforms/claude-code/agents
+[install]   + agents/ralph-orchestrator.md -> platforms/claude-code/agents
+[install]   + agents/security-agent.md -> platforms/claude-code/agents
+[install]   + agents/test-agent.md -> platforms/claude-code/agents
+[install] Writing settings.json...
+[install] 
+[install] Installation complete.
+[install] 
+[install] Next steps:
+[install]   1. cd .
+[install]   2. claude
+[install]   3. /new-phase        ← create your first phase plan
+[install]   4. /decompose-phase  ← decompose phase into loops
+[install]   5. /next-loop        ← run the first loop
+[install] 
+[install] See setup/claude-code/README.md for full documentation.
+git diff .advanced-plans/ (should be only execution.log):
+warning: in the working copy of '.advanced-plans/logs/execution.log', LF will be replaced by CRLF the next time Git touches it
+.advanced-plans/logs/execution.log
+.claude/ dirs populated:
+.claude/agents/:
+README.md
+analysis-worker.md
+code-review-agent.md
+gate-reviewer.md
+orchestrator.md
+phase-goals-agent.md
+programme-reporter.md
+ralph-loop-worker.md
+ralph-orchestrator.md
+security-agent.md
+test-agent.md
+worker.md
+
+.claude/commands/:
+check-execution.md
+decompose-phase.md
+loop-status.md
+model-check.md
+new-phase.md
+next-loop.md
+next-phase.md
+phase-compact.md
+plan-and-phase.md
+progress-report.md
+run-closeout.md
+run-gate.md
+
+.claude/schemas/:
+README.md
+handoff.schema.md
+phase-plan.schema.md
+ralph-loop.schema.md
+todo.schema.md
+
+.claude/skills/:
+companion-detection
+permission-config
+phase-plan-creator
+plan-skill-identification
+[09:44:51] TODO DONE: loop-046-3
+[09:44:59] TODO DONE: loop-046-4
+[09:47:13] TODO DONE: loop-046-5
+[09:47:33] TODO DONE: loop-046-6
+[09:49:35] TODO DONE: loop-046-7

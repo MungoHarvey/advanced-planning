@@ -46,7 +46,9 @@ Phase Plan (Opus — strategic)
 
 ### 1. Install
 
-Clone the repository and install into your project:
+Clone the repository and install into your project. The current release is
+**v0.11.0** (see [CHANGELOG.md](CHANGELOG.md) for what changed and
+[Releases](#releases) below for tagged builds).
 
 **macOS / Linux:**
 ```bash
@@ -65,6 +67,15 @@ cd advanced-planning
 This copies commands, skills, agents, schemas, and hooks into your project's `.claude/` directory. For global installation (commands available in all projects), use `--global` instead of `--project`.
 
 See `setup/claude-code/README.md` for all options (`--global`, `--symlink`, `--dry-run`).
+
+#### Releases
+
+Tagged releases are published on the [GitHub Releases page](https://github.com/MungoHarvey/advanced-planning/releases). Each release uses the version number from the `VERSION` file at the repository root and includes the corresponding `CHANGELOG.md` section as the release notes. To install a specific tagged release, check out that tag before running the install script:
+
+```bash
+git checkout v0.11.0
+sh setup/claude-code/install.sh --project /path/to/your/project
+```
 
 ### 2. Plan a phase
 
