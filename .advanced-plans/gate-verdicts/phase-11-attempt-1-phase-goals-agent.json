@@ -1,0 +1,32 @@
+{
+  "phase": "phase-11",
+  "attempt": 1,
+  "timestamp": "2026-05-21T12:20:00Z",
+  "agent": "phase-goals-agent",
+  "verdict": "pass",
+  "confidence": 93,
+  "phase_title": "Friction Remediation & v0.x Pre-Release",
+  "criteria_outcomes": [
+    {"criterion": "core/constraints.json + platforms/python/ast_check.py + CI shells out; round-trip test; pytest passes", "status": "met", "evidence": "constraints.json present; ast_check.py load_allowed_imports() L72, check_file() L96, __main__ L270; ci.yml L85 module invocation; 189 tests pass per code-review-agent verdict"},
+    {"criterion": "Zero complexity: under .advanced-plans/phases/** and core/schemas/; no Haiku row in CLAUDE.md Model Tiers; CHANGELOG.md documents the break", "status": "met", "evidence": "grep complexity: in .advanced-plans/phases/ returns only prose; CLAUDE.md no Haiku row; CHANGELOG.md [0.11.0] Changed (BREAKING) section present"},
+    {"criterion": "core/skills/schema-design/SKILL.md and core/skills/permission-config/SKILL.md exist with mandatory sections; install script copies them", "status": "met", "evidence": "Both SKILL.md present; mandatory sections verified; install.sh wildcard loop over core/skills/ auto-includes"},
+    {"criterion": "Worker preflight check warns and proceeds on missing skill; tests cover", "status": "met", "evidence": "ralph-loop-worker.md ## Mandatory Preflight L49; WARN format L60; core/agents/worker.md mirrors; tests in 16 new test set"},
+    {"criterion": "PRIMARY: phase-goals-agent writes verdict directly. FALLBACK: run-gate.md documents main-thread persist-on-behalf contract.", "status": "met", "evidence": "FALLBACK path active. phase-goals-agent.md tools field includes Write (L5) BUT runtime tool set does NOT include Write -- confirmed live during this gate. run-gate.md CONTINGENCY block L179 documents the upstream-blocked workaround. Criterion met per FALLBACK clause. Friction-log entry marked partially-resolved (upstream-blocked)."},
+    {"criterion": "Zero agent: ralph-loop-worker on todos; plan-subagent-identification documents NA default and reserves the worker", "status": "met", "evidence": "grep returns only prose; SKILL.md L50 Default: NA; L52-56 Reserved Values section; MUST NOT appear on individual todos"},
+    {"criterion": "Migration-consistency audit complete; docs/path-conventions.md exists; stale directives rewritten", "status": "met", "evidence": "docs/path-conventions.md present with canonical path map + deprecated tokens + where-to-find-what table; Loop 044 handoff confirms case-by-case audit"},
+    {"criterion": "/next-loop resume-detection: IRON-RULE regression test", "status": "met", "evidence": "next-loop.md Step 3a L41 mtime+dirty check; detect_mid_loop_death() in state_manager.py; test_next_loop_resume.py 7 tests including IRON-RULE regression fixture"},
+    {"criterion": "Orchestrator stale-state cleanup: cross-phase loop-ready.json archived", "status": "met", "evidence": "ralph-orchestrator.md Step 0 L40; archive_cross_phase_state() in state_manager.py; test_orchestrator_state_cleanup.py 9 tests"},
+    {"criterion": "Dogfood self-install: existing .advanced-plans/ preserved; .claude/ runtime populated", "status": "met", "evidence": "install.sh SELF_INSTALL detection L183-196; idempotent skip-data-scaffold L207-213; install.ps1 mirror; CONTRIBUTING.md Dev-Mode; test_install_idempotency.py 5 tests; Loop 046 E2E confirmed"},
+    {"criterion": "VERSION file 0.11.0; CHANGELOG covers v0.6-v0.11 with matching loop counts; tag cut on gate pass; remote pushed; GitHub Release", "status": "met", "evidence": "VERSION = 0.11.0; CHANGELOG.md sections [0.11.0] through [0.6.0]; README.md updated; tag cut + push + GitHub Release deferred to post-gate todo 046-8 by design"},
+    {"criterion": "All existing tests pass; new tests per S1/S4/S6/S8/S9/S10 succeed; AST zero-dep NONE", "status": "met", "evidence": "189 tests pass (154 baseline + 35 new across ast_check, next_loop_resume, orchestrator_state_cleanup, install_idempotency); AST NONE per code-review-agent runtime confirmation"},
+    {"criterion": "LOCKED files byte-unchanged", "status": "met", "evidence": "git diff 1bb073c on docs/phase-complete.schema.md, docs/phase-manifest-entry.schema.md, docs/phase-handoff.schema.md, .advanced-plans/phases/phase-9/complete.md produces empty output per code-review-agent verdict"}
+  ],
+  "findings": [
+    {"severity": "warning", "location": "README.md:311", "description": "README.md Model Tiers table still contains the Haiku row. CLAUDE.md was cleaned but README.md was missed. Misleads users reading the README. Outside criterion 2 strict scope (only required CLAUDE.md + CHANGELOG.md) but a coherence gap. Recommend Phase 12 sweep.", "evidence": "grep Haiku README.md returns L311; grep Haiku CLAUDE.md empty"},
+    {"severity": "warning", "location": "platforms/claude-code/agents/ralph-orchestrator.md:130 and core/skills/plan-subagent-identification/SKILL.md:64", "description": "Canonical todo field order documentation in both files still lists complexity, diverging from CLAUDE.md which now omits it. Residual inconsistency for Phase 12 sweep.", "evidence": "grep complexity in those two files returns L130 and L64 respectively; CLAUDE.md L173 canonical order omits complexity"},
+    {"severity": "info", "location": "phase-goals-agent.md vs runtime tool set", "description": "Confirmed live during Phase 11 gate: editing the agent definition's tools field does NOT propagate to runtime tool availability. S5 PRIMARY path is upstream-blocked. FALLBACK path via run-gate.md CONTINGENCY block is the supported contract.", "evidence": "This verdict file written by main thread (not agent), confirming Write tool absent at runtime"}
+  ],
+  "loops_to_revert": [],
+  "failure_notes": [],
+  "evaluated_by": "phase-goals-agent (verdict text); persisted by main thread per run-gate.md CONTINGENCY block (S5 PRIMARY runtime-propagation confirmed upstream-blocked)"
+}

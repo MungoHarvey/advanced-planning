@@ -1,0 +1,104 @@
+{
+  "phase": "phase-11",
+  "attempt": 1,
+  "timestamp": "2026-05-21T11:58:26Z",
+  "agent": "code-review-agent",
+  "verdict": "pass",
+  "confidence": 95,
+  "phase_title": "Friction Remediation and v0.x Pre-Release",
+  "criteria_outcomes": [
+    {
+      "criterion": "core/constraints.json exists; platforms/python/ast_check.py exists with load_allowed_imports() + check_file() + CLI mode; CI workflow shells out to python -m platforms.python.ast_check; round-trip test confirms JSON and reader produce identical sets; pytest passes",
+      "status": "met",
+      "evidence": "core/constraints.json: schema_version, 12 allowed_imports, __future__ in explicitly_excluded. ast_check.py: load_allowed_imports(), check_file(), CLI main(). ci.yml line 85 shells out to ast_check. test_ast_check.py has round-trip test. AST check: NONE 8 files 0 violations. pytest: 189 passed."
+    },
+    {
+      "criterion": "Zero complexity: matches under .advanced-plans/phases/** and core/schemas/; CLAUDE.md Model Tiers table no longer contains a Haiku row; CHANGELOG.md documents the schema break",
+      "status": "met",
+      "evidence": "grep complexity: .advanced-plans/phases/ core/schemas/ CLAUDE.md: only prose text, no YAML field assignments on todos. CLAUDE.md Model Tiers: no Haiku row (grep empty). CHANGELOG.md [0.11.0] Changed (BREAKING) documents removal. NOTE: README.md line 311 still has Haiku row -- outside criterion scope; flagged as Important finding."
+    },
+    {
+      "criterion": "core/skills/schema-design/SKILL.md and core/skills/permission-config/SKILL.md exist with all mandatory sections; install script copies them to .claude/skills/",
+      "status": "met",
+      "evidence": "Both SKILL.md files: frontmatter (name, description) + sections When to Use, Process, Output Format. install.sh and install.ps1 iterate core/skills/ subdirs and include schema-design and permission-config automatically."
+    },
+    {
+      "criterion": "Worker preflight check: a fixture with a non-existent declared skill produces a visible warning and proceeds; tests cover this",
+      "status": "met",
+      "evidence": "ralph-loop-worker.md Preflight skill check section documents WARN format and Do NOT halt. core/agents/worker.md line 79 has same WARN text. S8/S9 test suites (16 tests) all pass."
+    },
+    {
+      "criterion": "PRIMARY: phase-goals-agent writes its own verdict file in the Loop 046 E2E dry-run; /run-gate no longer documents the text-only workaround. FALLBACK (if Write tool does not propagate at runtime): /run-gate formally documents the main-thread persist-on-behalf contract and the friction entry is marked partially-resolved with upstream-blocked status.",
+      "status": "met",
+      "evidence": "FALLBACK path taken per Loop 046 handoff. phase-goals-agent.md tools: Read, Glob, Grep, Write. run-gate.md Notes: PRIMARY state-bus contract block + CONTINGENCY block documenting main-thread fallback as upstream-blocked. Criterion met per FALLBACK clause."
+    },
+    {
+      "criterion": "Zero agent: ralph-loop-worker on todos under .advanced-plans/phases/**; plan-subagent-identification documents NA as default and explicitly reserves ralph-loop-worker as the loop executor (never a per-todo agent)",
+      "status": "met",
+      "evidence": "grep agent: ralph-loop-worker .advanced-plans/phases/ returns only prose content/outcome text (no YAML assignments). plan-subagent-identification SKILL.md: Default = agent: NA; Reserved Values: ralph-loop-worker MUST NOT appear on individual todos."
+    },
+    {
+      "criterion": "Migration-consistency audit complete: docs/path-conventions.md exists with the canonical path map; all command, agent, skill, and doc files case-by-case reviewed; any stale directives identified by the audit rewritten to .advanced-plans/",
+      "status": "met",
+      "evidence": "docs/path-conventions.md: Source Repo Layout, Installed-Project Layout, Where to Find What table, Deprecated Path Tokens table (plans/, .claude/plans/, .claude/state/, plans/gate-verdicts/, /new-loop). Loop 044 handoff confirms audit complete."
+    },
+    {
+      "criterion": "/next-loop resume-detection: regression fixture (loop-ready newer than loop-complete + dirty tree) triggers resume-review invocation before orchestrator spawn (mandatory IRON RULE regression test)",
+      "status": "met",
+      "evidence": "next-loop.md Step 3a: mtime comparison + DIRTY check + pause-for-operator before Step 4. state_manager.py detect_mid_loop_death(). test_next_loop_resume.py: 7 tests passing including IRON RULE regression test_detects_mid_loop_death_ready_newer_and_dirty."
+    },
+    {
+      "criterion": "Orchestrator stale-state cleanup: simulated cross-phase loop-ready.json is archived (not consumed) on next orchestrator startup",
+      "status": "met",
+      "evidence": "ralph-orchestrator.md Step 0: reads current_phase, archives to .advanced-plans/state/archive if phase mismatch. archive_cross_phase_state() in state_manager.py. test_orchestrator_state_cleanup.py: 9 tests passing."
+    },
+    {
+      "criterion": "Dogfood self-install: running install on this repo preserves existing .advanced-plans/ byte-unchanged AND populates .claude/ runtime dirs; /loop-status exits cleanly from the source repo",
+      "status": "met",
+      "evidence": "install.sh: self-install detection via git rev-parse (lines 182-186); SELF_INSTALL=true creates symlinks; idempotent scaffold guard (lines 210-213). install.ps1 parallel. CONTRIBUTING.md Dev-Mode Self-Install section. test_install_idempotency.py: 5 tests passing."
+    },
+    {
+      "criterion": "VERSION file exists (0.11.0); CHANGELOG.md covers v0.6-v0.11 with one heading per PLANS-INDEX phase and matching loop counts; annotated tag v0.11.0 cut on gate pass; remote pushed; GitHub Release created off the tag with body sourced from CHANGELOG",
+      "status": "met",
+      "evidence": "VERSION: 0.11.0. CHANGELOG.md: [0.11.0] through [0.6.0] with loop counts 5/5/5/1/4/4. README.md: v0.11.0 reference and Releases subsection. Tag cut and GitHub Release are post-gate (todo 046-8 pending) per plan instruction; pre-gate criterion is met."
+    },
+    {
+      "criterion": "All existing tests still pass (154 pre-Phase-11); new tests added per S1, S4, S6, S8, S9, S10 succeed; AST zero-dep check NONE",
+      "status": "met",
+      "evidence": "pytest: 189 passed (154 + 35 new: test_ast_check.py 14, test_next_loop_resume.py 7, test_orchestrator_state_cleanup.py 9, test_install_idempotency.py 5). AST check: NONE 8 files 0 violations."
+    },
+    {
+      "criterion": "LOCKED files (docs/phase-complete.schema.md, docs/phase-manifest-entry.schema.md, docs/phase-handoff.schema.md, .advanced-plans/phases/phase-9/complete.md) byte-unchanged",
+      "status": "met",
+      "evidence": "git diff 1bb073c -- docs/phase-complete.schema.md docs/phase-manifest-entry.schema.md docs/phase-handoff.schema.md .advanced-plans/phases/phase-9/complete.md produced empty output."
+    }
+  ],
+  "findings": [
+    {
+      "severity": "important",
+      "location": "README.md:311",
+      "description": "README.md Model Tiers table still contains the Haiku row. CLAUDE.md was correctly cleaned but README.md was not swept during criterion 2 work. Misleads users reading the README.",
+      "evidence": "grep Haiku README.md: line 311. grep Haiku CLAUDE.md: empty."
+    },
+    {
+      "severity": "important",
+      "location": "platforms/claude-code/agents/ralph-orchestrator.md:130 and core/skills/plan-subagent-identification/SKILL.md:64",
+      "description": "Both files still list complexity in the canonical todo field order (id->content->skill->agent->outcome->status->complexity->priority). CLAUDE.md line 173 now omits complexity. These normative files diverge from CLAUDE.md.",
+      "evidence": "grep complexity ralph-orchestrator.md: line 130. grep complexity plan-subagent-identification/SKILL.md: line 64."
+    },
+    {
+      "severity": "info",
+      "location": "platforms/claude-code/README.md:11,247 and core/agents/worker.md:3,276,286,292 and core/agents/README.md:57,59",
+      "description": "Multiple README and core agent files still reference Haiku and complexity: low. Outside criterion 2 scope but residual inconsistency for a future cleanup sweep.",
+      "evidence": "grep -rn Haiku platforms/claude-code/ core/agents/ returns multiple matches."
+    },
+    {
+      "severity": "info",
+      "location": ".advanced-plans/phases/phase-11/plan.md Key Deliverables table",
+      "description": "Plan listed core/agents/ralph-loop-worker.md as a deliverable. Actual core agent is core/agents/worker.md; platform-specific is platforms/claude-code/agents/ralph-loop-worker.md. Both have preflight protocol. Plan naming inaccuracy, no functional gap.",
+      "evidence": "ls core/agents/ shows worker.md not ralph-loop-worker.md. platforms/claude-code/agents/ralph-loop-worker.md has Preflight section."
+    }
+  ],
+  "loops_to_revert": [],
+  "failure_notes": []
+}
