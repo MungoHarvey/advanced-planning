@@ -379,9 +379,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "install.sh + install.ps1 updated with idempotent skip-data-scaffold and self-install detection (symlinks/junctions for source repo); CONTRIBUTING.md created with Dev-Mode section + CLAUDE.md cross-reference; platforms/python/tests/test_install_idempotency.py added (5 tests covering existing-data preservation + fresh-scaffold creation + stdout messaging); CRLF-in-install.sh + cp1252-subprocess fixes applied on main-thread recovery after worker died on API ConnectionRefused mid-loop; 189 tests pass, AST NONE."
   failed: ""
-  needed: ""
+  needed: "Execute Loop 046: Verification Plan E2Es (S5 phase-goals-agent Write tool, S8 resume detection, S10 self-install on this repo); VERSION + CHANGELOG.md; README install link; final verification gate; v0.11.0 tag (POST-gate only)."
 
 todos:
   - id: "loop-045-1"
@@ -389,28 +389,28 @@ todos:
     skill: "permission-config"
     agent: "NA"
     outcome: "install.sh script with idempotent guards; dry-run on a temp dir with existing .advanced-plans/ preserves it; dry-run on source repo creates .claude/ symlinks pointing at platforms/claude-code/"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-045-2"
     content: "Mirror the changes to setup/claude-code/install.ps1: same idempotent guards; symlink via New-Item -ItemType Junction (Windows-safe equivalent)"
     skill: "permission-config"
     agent: "NA"
     outcome: "install.ps1 parallels install.sh behaviour; dry-run on Windows preserves existing .advanced-plans/ and creates junctions"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-045-3"
     content: "Write CONTRIBUTING.md (new) with a Dev-Mode section documenting: how to self-install in the source repo; what gets symlinked vs copied; expected behaviour with existing .advanced-plans/; quick verification step (running /loop-status)"
     skill: "docs-rewrite"
     agent: "NA"
     outcome: "CONTRIBUTING.md exists with the dev-mode section; CLAUDE.md Architecture section cross-references it"
-    status: pending
+    status: completed
     priority: medium
   - id: "loop-045-4"
     content: "Unit test for the install idempotency: temp dir fixture with a pre-existing .advanced-plans/ tree; run install; assert .advanced-plans/ content byte-unchanged and .claude/ populated"
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Test exists; passes; covers both Unix and (skip if not on Windows) PowerShell paths"
-    status: pending
+    status: completed
     priority: high
 
 prompt: |

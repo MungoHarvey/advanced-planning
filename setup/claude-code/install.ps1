@@ -23,6 +23,9 @@ param(
     [switch]$Symlink
 )
 
+# $SelfInstall is set automatically when the project resolves to this repo root.
+$SelfInstall = $false
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
@@ -148,12 +151,27 @@ if ($Global) {
 # ---------------------------------------------------------------------------
 $ClaudeDir = Join-Path $Project ".claude"
 
+# Self-install detection: if --project resolves to the same git toplevel as
+# the repo root, use junctions for runtime dirs so source edits surface immediately.
+try {
+    $projectGitTop = & git -C $Project rev-parse --show-toplevel 2>$null
+    $repoGitTop    = & git -C $RepoRoot rev-parse --show-toplevel 2>$null
+    if ($projectGitTop -and $repoGitTop -and ($projectGitTop -eq $repoGitTop)) {
+        $SelfInstall = $true
+        Say "Self-install detected: project is the source repo root"
+        Say "Runtime dirs will be junctions so source edits surface immediately"
+    }
+} catch {
+    # git not available or not a repo — continue without self-install detection
+}
+
 Say "Installing Advanced Planning System"
 Say "  repo:    $RepoRoot"
 Say "  project: $Project"
 Say "  target:  $ClaudeDir"
-if ($DryRun)   { Say "  mode:    DRY RUN (no files written)" }
-if ($Symlink)  { Say "  skills:  junction (symlink)" }
+if ($DryRun)        { Say "  mode:    DRY RUN (no files written)" }
+if ($SelfInstall)   { Say "  mode:    SELF-INSTALL (junctions for runtime dirs)" }
+elseif ($Symlink)   { Say "  skills:  junction (symlink)" }
 Say ""
 
 # Create target directories
@@ -161,92 +179,150 @@ Do-MkDir (Join-Path $ClaudeDir "commands")
 Do-MkDir (Join-Path $ClaudeDir "agents")
 Do-MkDir (Join-Path $ClaudeDir "schemas")
 
-# Create the .advanced-plans/ data home in the target project
+# ---------------------------------------------------------------------------
+# .advanced-plans/ scaffold -- idempotent skip if data already exists
+# ---------------------------------------------------------------------------
 $ApDir = Join-Path $Project ".advanced-plans"
-Do-MkDir (Join-Path $ApDir "phases")
-Do-MkDir (Join-Path $ApDir "specs")
-Do-MkDir (Join-Path $ApDir "state")
-Do-MkDir (Join-Path $ApDir "logs")
+if (Test-Path $ApDir) {
+    Say "Preserving existing planning data at $ApDir -- skipping scaffold"
+} else {
+    Say "Creating .advanced-plans\ scaffold..."
+    Do-MkDir (Join-Path $ApDir "phases")
+    Do-MkDir (Join-Path $ApDir "specs")
+    Do-MkDir (Join-Path $ApDir "state")
+    Do-MkDir (Join-Path $ApDir "logs")
 
-# Idempotent migration: move legacy layouts into .advanced-plans/ if present
-if (-not $DryRun) {
-    $legacyPlans = Join-Path $Project "plans"
-    if ((Test-Path $legacyPlans) -and -not (Test-Path (Join-Path $ApDir "PLANS-INDEX.md"))) {
-        Say "Migrating legacy plans/ -> .advanced-plans/ ..."
-        Copy-Item -Path (Join-Path $legacyPlans "*") -Destination $ApDir -Recurse -Force -ErrorAction SilentlyContinue
+    # Idempotent migration: move legacy layouts into .advanced-plans\ if present
+    if (-not $DryRun) {
+        $legacyPlans = Join-Path $Project "plans"
+        if ((Test-Path $legacyPlans) -and -not (Test-Path (Join-Path $ApDir "PLANS-INDEX.md"))) {
+            Say "Migrating legacy plans\ -> .advanced-plans\ ..."
+            Copy-Item -Path (Join-Path $legacyPlans "*") -Destination $ApDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        $legacyState = Join-Path $ClaudeDir "state"
+        if (Test-Path $legacyState) {
+            Say "Migrating legacy .claude\state\ -> .advanced-plans\state\ ..."
+            Copy-Item -Path (Join-Path $legacyState "*") -Destination (Join-Path $ApDir "state") -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        $legacyLogs = Join-Path $ClaudeDir "logs"
+        if (Test-Path $legacyLogs) {
+            Say "Migrating legacy .claude\logs\ -> .advanced-plans\logs\ ..."
+            Copy-Item -Path (Join-Path $legacyLogs "*") -Destination (Join-Path $ApDir "logs") -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    } else {
+        Write-Host "  [dry-run] migrate plans\ and .claude\state|logs\ -> .advanced-plans\ if present"
     }
-    $legacyState = Join-Path $ClaudeDir "state"
-    if (Test-Path $legacyState) {
-        Say "Migrating legacy .claude/state/ -> .advanced-plans/state/ ..."
-        Copy-Item -Path (Join-Path $legacyState "*") -Destination (Join-Path $ApDir "state") -Recurse -Force -ErrorAction SilentlyContinue
-    }
-    $legacyLogs = Join-Path $ClaudeDir "logs"
-    if (Test-Path $legacyLogs) {
-        Say "Migrating legacy .claude/logs/ -> .advanced-plans/logs/ ..."
-        Copy-Item -Path (Join-Path $legacyLogs "*") -Destination (Join-Path $ApDir "logs") -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+# ---------------------------------------------------------------------------
+# Runtime dirs: self-install uses junctions; normal install copies
+# ---------------------------------------------------------------------------
+if ($SelfInstall) {
+    Say "Installing runtime dirs as junctions (self-install mode)..."
+    $commandsSrc = Join-Path $RepoRoot "platforms\claude-code\commands"
+    $skillsSrc   = Join-Path $RepoRoot "core\skills"
+    $schemasSrc  = Join-Path $RepoRoot "core\schemas"
+
+    if ($DryRun) {
+        Write-Host "  [dry-run] New-Item Junction $($ClaudeDir)\commands -> $commandsSrc"
+        Write-Host "  [dry-run] New-Item Junction $($ClaudeDir)\skills -> $skillsSrc"
+        Write-Host "  [dry-run] New-Item Junction $($ClaudeDir)\schemas -> $schemasSrc"
+        Write-Host "  [dry-run] symlink agents from core\agents and platforms\claude-code\agents"
+    } else {
+        # Remove existing dirs/junctions before creating new ones
+        foreach ($dirName in @("commands", "skills", "schemas")) {
+            $target = Join-Path $ClaudeDir $dirName
+            if (Test-Path $target) { Remove-Item $target -Recurse -Force }
+        }
+        Do-Junction (Join-Path $ClaudeDir "commands") $commandsSrc
+        Say "  + commands -> platforms\claude-code\commands"
+        Do-Junction (Join-Path $ClaudeDir "skills") $skillsSrc
+        Say "  + skills -> core\skills"
+        Do-Junction (Join-Path $ClaudeDir "schemas") $schemasSrc
+        Say "  + schemas -> core\schemas"
+
+        # Agents: individual symlinks from both core\agents and platforms\claude-code\agents
+        $agentsDir = Join-Path $ClaudeDir "agents"
+        if (Test-Path $agentsDir) { Remove-Item $agentsDir -Recurse -Force }
+        New-Item -ItemType Directory -Path $agentsDir -Force | Out-Null
+        $coreAgents = Get-ChildItem -Path (Join-Path $RepoRoot "core\agents") -Filter "*.md" -File
+        foreach ($agent in $coreAgents) {
+            New-Item -ItemType SymbolicLink -Path (Join-Path $agentsDir $agent.Name) -Target $agent.FullName -ErrorAction SilentlyContinue | Out-Null
+            # Fallback to copy if SymbolicLink fails (insufficient privileges)
+            if (-not (Test-Path (Join-Path $agentsDir $agent.Name))) {
+                Copy-Item $agent.FullName (Join-Path $agentsDir $agent.Name)
+            }
+            Say "  + agents\$($agent.Name) -> core\agents"
+        }
+        $platformAgents = Get-ChildItem -Path (Join-Path $RepoRoot "platforms\claude-code\agents") -Filter "*.md" -File
+        foreach ($agent in $platformAgents) {
+            New-Item -ItemType SymbolicLink -Path (Join-Path $agentsDir $agent.Name) -Target $agent.FullName -ErrorAction SilentlyContinue | Out-Null
+            if (-not (Test-Path (Join-Path $agentsDir $agent.Name))) {
+                Copy-Item $agent.FullName (Join-Path $agentsDir $agent.Name)
+            }
+            Say "  + agents\$($agent.Name) -> platforms\claude-code\agents"
+        }
     }
 } else {
-    Write-Host "  [dry-run] migrate plans/ and .claude/state|logs/ -> .advanced-plans/ if present"
-}
-
-# ---------------------------------------------------------------------------
-# Slash commands
-# ---------------------------------------------------------------------------
-Say "Installing slash commands..."
-$cmds = Get-ChildItem -Path (Join-Path $RepoRoot "platforms\claude-code\commands") -Filter "*.md" -File
-foreach ($cmd in $cmds) {
-    Do-Copy $cmd.FullName (Join-Path $ClaudeDir "commands")
-    Say "  + commands\$($cmd.Name)"
-}
-
-# ---------------------------------------------------------------------------
-# Agent definitions
-# ---------------------------------------------------------------------------
-Say "Installing agent definitions..."
-$agents = Get-ChildItem -Path (Join-Path $RepoRoot "core\agents") -Filter "*.md" -File
-foreach ($agent in $agents) {
-    Do-Copy $agent.FullName (Join-Path $ClaudeDir "agents")
-    Say "  + agents\$($agent.Name)"
-}
-
-# Platform-specific agent definitions
-$platformAgents = Get-ChildItem -Path (Join-Path $RepoRoot "platforms\claude-code\agents") -Filter "*.md" -File
-foreach ($agent in $platformAgents) {
-    Do-Copy $agent.FullName (Join-Path $ClaudeDir "agents")
-    Say "  + agents\$($agent.Name)"
-}
-
-# ---------------------------------------------------------------------------
-# Skills (copy or junction)
-# All subdirectories of core\skills\ are included automatically.
-# Current skills: companion-detection, phase-plan-creator, plan-skill-identification,
-#   plan-subagent-identification, plan-todos, ralph-loop-planner, progress-report,
-#   schema-design, permission-config
-# ---------------------------------------------------------------------------
-Say "Installing core skills..."
-$skillsSrc  = Join-Path $RepoRoot "core\skills"
-$skillsDest = Join-Path $ClaudeDir "skills"
-
-if ($Symlink) {
-    Do-Junction $skillsDest $skillsSrc
-    Say "  + skills\ -> $skillsSrc (junction)"
-} else {
-    Do-MkDir $skillsDest
-    $skillDirs = Get-ChildItem -Path $skillsSrc -Directory
-    foreach ($skillDir in $skillDirs) {
-        Do-Copy $skillDir.FullName $skillsDest
-        Say "  + skills\$($skillDir.Name)\"
+    # ---------------------------------------------------------------------------
+    # Slash commands
+    # ---------------------------------------------------------------------------
+    Say "Installing slash commands..."
+    $cmds = Get-ChildItem -Path (Join-Path $RepoRoot "platforms\claude-code\commands") -Filter "*.md" -File
+    foreach ($cmd in $cmds) {
+        Do-Copy $cmd.FullName (Join-Path $ClaudeDir "commands")
+        Say "  + commands\$($cmd.Name)"
     }
-}
 
-# ---------------------------------------------------------------------------
-# Schemas
-# ---------------------------------------------------------------------------
-Say "Installing schemas..."
-$schemas = Get-ChildItem -Path (Join-Path $RepoRoot "core\schemas") -File
-foreach ($schema in $schemas) {
-    Do-Copy $schema.FullName (Join-Path $ClaudeDir "schemas")
-    Say "  + schemas\$($schema.Name)"
+    # ---------------------------------------------------------------------------
+    # Agent definitions
+    # ---------------------------------------------------------------------------
+    Say "Installing agent definitions..."
+    $agents = Get-ChildItem -Path (Join-Path $RepoRoot "core\agents") -Filter "*.md" -File
+    foreach ($agent in $agents) {
+        Do-Copy $agent.FullName (Join-Path $ClaudeDir "agents")
+        Say "  + agents\$($agent.Name)"
+    }
+
+    # Platform-specific agent definitions
+    $platformAgents = Get-ChildItem -Path (Join-Path $RepoRoot "platforms\claude-code\agents") -Filter "*.md" -File
+    foreach ($agent in $platformAgents) {
+        Do-Copy $agent.FullName (Join-Path $ClaudeDir "agents")
+        Say "  + agents\$($agent.Name)"
+    }
+
+    # ---------------------------------------------------------------------------
+    # Skills (copy or junction)
+    # All subdirectories of core\skills\ are included automatically.
+    # Current skills: companion-detection, phase-plan-creator, plan-skill-identification,
+    #   plan-subagent-identification, plan-todos, ralph-loop-planner, progress-report,
+    #   schema-design, permission-config
+    # ---------------------------------------------------------------------------
+    Say "Installing core skills..."
+    $skillsSrc  = Join-Path $RepoRoot "core\skills"
+    $skillsDest = Join-Path $ClaudeDir "skills"
+
+    if ($Symlink) {
+        Do-Junction $skillsDest $skillsSrc
+        Say "  + skills\ -> $skillsSrc (junction)"
+    } else {
+        Do-MkDir $skillsDest
+        $skillDirs = Get-ChildItem -Path $skillsSrc -Directory
+        foreach ($skillDir in $skillDirs) {
+            Do-Copy $skillDir.FullName $skillsDest
+            Say "  + skills\$($skillDir.Name)\"
+        }
+    }
+
+    # ---------------------------------------------------------------------------
+    # Schemas
+    # ---------------------------------------------------------------------------
+    Say "Installing schemas..."
+    $schemas = Get-ChildItem -Path (Join-Path $RepoRoot "core\schemas") -File
+    foreach ($schema in $schemas) {
+        Do-Copy $schema.FullName (Join-Path $ClaudeDir "schemas")
+        Say "  + schemas\$($schema.Name)"
+    }
 }
 
 # ---------------------------------------------------------------------------

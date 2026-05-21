@@ -30,6 +30,8 @@ powershell setup/claude-code/install.ps1 -Project /path/to/your/project  # Windo
 
 ## Architecture
 
+> **Development workflow**: see `CONTRIBUTING.md` for dev-mode self-install (symlinks/junctions), quick verification steps, and how to run tests.
+
 **Core** (`core/`) is platform-agnostic. **Adapters** (`platforms/`) wrap it for specific environments. Adapters reference the core but never duplicate it.
 
 - `core/schemas/` — Markdown schema definitions for phase-plan, ralph-loop, todo, handoff

@@ -66,9 +66,67 @@ python -m pytest platforms/python/tests/ -v
 
 No external dependencies — standard library only. Python 3.10+ required.
 
-**Claude Code adapter** — follow `setup/claude-code/README.md`.
+**Claude Code adapter** -- follow `setup/claude-code/README.md`.
 
-**Cowork adapter** — follow `setup/cowork/README.md`.
+**Cowork adapter** -- follow `setup/cowork/README.md`.
+
+---
+
+## Dev-Mode Self-Install
+
+To work on the framework and test changes live inside this repo, run the
+installer against the repo root:
+
+```sh
+# Unix / Git Bash
+sh setup/claude-code/install.sh --project .
+
+# Windows PowerShell
+.\setup\claude-code\install.ps1 -Project .
+```
+
+The installer detects that `--project` resolves to this repo's git root
+(self-install mode) and creates **symlinks** (Unix) or **junctions** (Windows)
+for the four runtime directories instead of copying files:
+
+| Target path | Points at source |
+|-------------|-----------------|
+| `.claude/commands/` | `platforms/claude-code/commands/` |
+| `.claude/skills/` | `core/skills/` |
+| `.claude/schemas/` | `core/schemas/` |
+| `.claude/agents/*.md` | `core/agents/` and `platforms/claude-code/agents/` |
+
+Because these are live links, any edit you make to a source file is
+immediately visible to Claude Code without re-running the installer.
+`settings.json` is written as a real file (not a symlink) because it is
+project-specific.
+
+### Existing `.advanced-plans/` data is always preserved
+
+The installer never overwrites an existing `.advanced-plans/` tree. If the
+directory already exists, the scaffold step is skipped entirely and planning
+data is left byte-for-byte unchanged. This applies in both normal and
+self-install mode.
+
+### Quick verification
+
+After a self-install, open Claude Code in this directory and run:
+
+```
+/loop-status
+```
+
+You should see a clean status report with no errors. If the command is not
+found, check that `.claude/commands/` is a symlink pointing at
+`platforms/claude-code/commands/`.
+
+To verify a command or agent edit is live without reinstalling, open a new
+Claude Code session -- the symlinked file is read fresh each time.
+
+### Reference
+
+- `docs/path-conventions.md` -- canonical path map; which tokens are deprecated
+- `CLAUDE.md` -- architecture, command surface, model tiers, code conventions
 
 ---
 
