@@ -62,12 +62,16 @@ For each todo with status: pending, in order:
        Read the SKILL.md at: [skills_directory]/[skill]/SKILL.md
        Load its full contents into the working context
 
-     If array of strings:
-       For each skill name in the array, in order:
+     If array of strings (YAML flow style is canonical: ["a", "b"]):
+       Array entries must be unique; duplicates are a planning error — log a WARN
+       and de-duplicate before loading.
+       For each skill name in the array, in declared order:
          Read the SKILL.md at: [skills_directory]/[skill-name]/SKILL.md
          Load its contents into the working context
        All loaded skills are active simultaneously for this todo.
-       When skills overlap, the more specific skill takes precedence.
+       Precedence on conflict: later entries override earlier (CSS-cascade
+       semantics). The planner is responsible for ordering broad/structural
+       skills first and the most specific override last.
 
      Path resolution (checked in order; first match wins):
        1. Source tree:    core/skills/[skill-name]/SKILL.md

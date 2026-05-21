@@ -37,11 +37,12 @@ Provide:
    - Read `content` and `outcome`
    - Match against skill descriptions using the three-level cascade (see below)
    - Determine how many skills apply:
-     - **No skill needed** → set `skill: NA` (straightforward file I/O, git ops, simple tasks)
+     - **No skill needed** → set `skill: "NA"` (straightforward file I/O, git ops, simple tasks)
      - **One skill fits** → set `skill: "skill-name"` (single string)
-     - **Multiple skills needed** → set `skill: ["skill-1", "skill-2"]` (YAML array)
+     - **Multiple skills needed** → set `skill: ["skill-1", "skill-2"]` (YAML flow-style array — canonical form)
    - Multiple skills are appropriate when a task genuinely spans domains (e.g. schema design + documentation, or data processing + statistical analysis)
    - Do NOT assign multiple skills just because they are vaguely related — each must contribute specific, distinct instructions the worker needs
+   - **Array contents must be unique** (no duplicates) and **ordered by precedence**: lowest-precedence skill first, highest-precedence last. On conflicting instructions, later entries override earlier ones (mirrors CSS cascade)
 
 4. **Update `skill:` field in-place** for each todo, maintaining canonical order:
    ```
@@ -75,8 +76,11 @@ precise tier. The phase and loop level skills inform which specialist sub-skills
 - Use the skill's exact `name` from its SKILL.md frontmatter
 - Assign `NA` for tasks that are straightforward file I/O, git operations, simple scripting, or general reference writing
 - **Single skill**: when one skill clearly covers the task, assign it as a string: `skill: "skill-name"`
-- **Multiple skills**: when a task genuinely requires expertise from two or more distinct domains, assign as an array: `skill: ["skill-1", "skill-2"]`. The worker loads each in order. Use this sparingly — only when each skill contributes distinct instructions.
-- **Ordering**: when assigning multiple skills, put the primary/structural skill first and supplementary skills after
+- **Multiple skills**: when a task genuinely requires expertise from two or more distinct domains, assign as a YAML flow-style array: `skill: ["skill-1", "skill-2"]`. The worker loads each in order before the todo. Use this only when each skill contributes distinct instructions.
+- **YAML style**: flow style (`skill: ["a", "b"]`) is canonical — keeps each todo readable on one logical line. Block style (`- "a"\n  - "b"`) is permitted by the schema but should be avoided for new todos.
+- **Ordering & precedence**: lowest-precedence skill first, highest last. When two skills contain conflicting instructions for the same situation, the **later entry wins** (CSS-cascade semantics). Put the broad/structural skill first, the most specific override last.
+- **No duplicates**: each skill name MUST appear at most once in the array. Duplicates are a planning error.
+- **No hard cap**: any number of skills is permitted, but if you find yourself reaching for 3+ skills on one todo, first consider whether the todo should be split.
 - If a task clearly needs a skill that does not exist yet, flag it as `MISSING: [description]` rather than leaving `NA` — this surfaces skill gaps for the project owner to address
 - Do not assign skills to the handoff update task or git checkpoint tasks — these are `NA`
 
@@ -95,12 +99,10 @@ todos:
     status: pending
     priority: high
 
-  # Multiple skills — task spans two domains
+  # Multiple skills — task spans two domains (flow style is canonical)
   - id: "loop-002-2"
     content: "Create gate-verdict.schema.json with field documentation and worked examples"
-    skill:
-      - "schema-design"
-      - "documentation"
+    skill: ["schema-design", "documentation"]
     agent: "NA"
     outcome: "gate-verdict.schema.json validates as draft-07; inline field docs present"
     status: pending

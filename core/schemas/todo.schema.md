@@ -38,7 +38,7 @@ todos:
 |-------|------|----------|--------|-------|
 | `id` | string | Yes | `loop-{NNN}-{N}` | Globally unique; matches native TodoWrite ID |
 | `content` | string | Yes | Verb-first imperative | One atomic action; no compound tasks |
-| `skill` | string or array | Yes | skill-name, `[skill-1, skill-2]`, or `NA` | Single skill name, array of skill names for multi-skill tasks, or `NA`. All names must reference existing skills in the skills directory. Worker loads each in order before executing the todo. |
+| `skill` | string or array | Yes | `skill-name`, `["skill-1", "skill-2"]`, or `"NA"` | Single skill name, YAML flow-style array of skill names for multi-skill tasks, or `"NA"`. All names must reference existing skills in the skills directory. Array entries must be unique. Worker loads each in declared order before executing the todo; on conflicting instructions, later entries override earlier (CSS-cascade semantics). |
 | `agent` | string | Yes | agent-id or `NA` | Planning-time categorisation: references an agent role, or `NA` for coordination tasks. In platforms where the worker cannot spawn subagents, this field is metadata — the worker executes all todos inline |
 | `outcome` | string | Yes | Observable condition | What must exist or pass — not effort description |
 | `status` | enum | Yes | See Status Values | Updated in-place during execution; `frozen` is set by versioning system only |
@@ -130,9 +130,9 @@ Skills are identified at three levels during planning. The `skill:` field in a t
 The todo's `skill:` field holds the **todo-level** assignment. It can be:
 - `"NA"` — no specialist skill needed
 - `"skill-name"` — a single skill loaded before execution
-- `["skill-1", "skill-2"]` — multiple skills loaded sequentially before execution
+- `["skill-1", "skill-2"]` — multiple skills loaded sequentially before execution (YAML flow style is canonical; entries must be unique; later entries override earlier on conflict)
 
-At execution time, the worker agent loads each assigned `SKILL.md` in order before executing the todo. Multiple skills are useful when a task spans domains (e.g. schema design + documentation). See `core/agents/worker.md` for the skill injection protocol.
+At execution time, the worker agent loads each assigned `SKILL.md` in declared order before executing the todo. Multiple skills are useful when a task spans domains (e.g. schema design + documentation). See `core/agents/worker.md` for the skill injection protocol.
 
 ---
 

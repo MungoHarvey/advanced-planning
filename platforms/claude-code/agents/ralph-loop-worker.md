@@ -120,7 +120,7 @@ None:     skill: "NA"                 → no skill loaded
 2. Global fallback: ~/.claude/skills/[skill-name]/SKILL.md
 ```
 
-**How to load**: Read the full SKILL.md file. Follow its **Process** section for the approach, and its **Output Format** section for deliverable structure. When multiple skills are loaded, all are active simultaneously — the more task-specific skill takes precedence where instructions overlap. After the todo completes, discard all skill context.
+**How to load**: Read the full SKILL.md file. Follow its **Process** section for the approach, and its **Output Format** section for deliverable structure. When multiple skills are loaded (array form, canonical flow style `["a", "b"]`), all are active simultaneously. Precedence on conflict: **later entries override earlier** (CSS-cascade semantics) — the planner orders broad/structural skills first, most-specific override last. Array entries must be unique; if a duplicate is encountered, log a WARN and de-duplicate. After the todo completes, discard all skill context.
 
 ### Using plan-todos for Vague Tasks
 
