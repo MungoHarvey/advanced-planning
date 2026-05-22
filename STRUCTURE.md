@@ -124,19 +124,23 @@ planning-system/
 │       ├── README.md
 │       └── plans/                      ← These phase plans and ralph loops
 │
-└── plans/                              ← Active plans for THIS project's development
-    ├── PLANS-INDEX.md                  ← Master tracker: all phases, loops, status
-    ├── master-plan.md                  ← Programme overview
-    ├── phase-1.md                      ← Core Architecture Design
-    ├── phase-1-ralph-loops.md          ← Loops 001–004
-    ├── phase-2.md                      ← Claude Code Adapter
-    ├── phase-2-ralph-loops.md          ← Loops 005–007
-    ├── phase-3.md                      ← Cowork Adapter
-    ├── phase-3-ralph-loops.md          ← Loops 008–009
-    ├── phase-4.md                      ← Generic + Release
-    ├── phase-4-ralph-loops.md          ← Loops 010–012
-    ├── phase-5.md                      ← Gate Review System
-    ├── phase-5-ralph-loops.md          ← Loops for phase 5
+└── .advanced-plans/                    ← Active plans for THIS project's development (v0.11.0+)
+    ├── PLANNING.md                     ← Master tracker: all phases, loops, status
+    ├── phases/
+    │   ├── phase-1/
+    │   │   ├── plan.md                 ← Phase plan
+    │   │   └── loops.md                ← Ralph loops for phase 1
+    │   ├── phase-2/
+    │   │   ├── plan.md
+    │   │   └── loops.md
+    │   └── phase-N/                    ← One directory per phase
+    │       ├── plan.md
+    │       └── loops.md
+    ├── state/                          ← Filesystem state bus (runtime)
+    │   ├── loop-ready.json
+    │   ├── loop-complete.json
+    │   └── history.jsonl               ← Append-only audit log
+    ├── specs/                          ← Design docs copied in from external sources
     └── gate-verdicts/                  ← Gate review outputs per attempt
 ```
 
@@ -150,18 +154,18 @@ planning-system/
 | Ralph loops (single file) | `phase-{N}-ralph-loops.md` | `phase-1-ralph-loops.md` |
 | Versioned loop files | `phase-{N}-ralph-loops-v{attempt}.md` | `phase-5-ralph-loops-v2.md` |
 | Ralph loops (individual) | `ralph-loop-{NNN}.md` | `ralph-loop-001.md` |
-| Plans index | `PLANS-INDEX.md` | Always at `plans/PLANS-INDEX.md` |
+| Plans index | `PLANNING.md` | Always at `.advanced-plans/PLANNING.md` |
 | Master plan | `master-plan.md` | One per programme |
 | State files | `loop-ready.json`, `loop-complete.json` | In `.claude/state/` at runtime |
 | Execution log | `execution.log` | In `.claude/logs/` at runtime |
-| Gate verdicts | `[phase]-attempt-[N]-[agent-name].json` | In `plans/gate-verdicts/` |
+| Gate verdicts | `[phase]-attempt-[N]-[agent-name].json` | In `.advanced-plans/gate-verdicts/` |
 
 ## Runtime Directory (created by adapters, not in repo)
 
 ```
 .claude/                                ← Created in target project by install.sh
 ├── CLAUDE.md                           ← Project conventions + ## Planning State
-├── plans/                              ← Phase plans + ralph loops (runtime)
+├── .advanced-plans/                    ← Phase plans + ralph loops (v0.11.0+; lives at project root, not inside .claude/)
 ├── skills/                             ← Symlinks → core/skills/
 ├── commands/                           ← Copied from adapter
 ├── agents/                             ← Copied from adapter
