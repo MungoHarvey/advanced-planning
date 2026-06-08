@@ -14,9 +14,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "gate-verdict.schema.json extended with optional backend enum field; legacy phase-7/gate-verdicts/ deleted; codex_gate.py created (4 functions, stdlib only, AST NONE); test_codex_gate.py written with all 20 paths including 2 CRITICAL regressions; 209/209 tests pass."
   failed: ""
-  needed: ""
+  needed: "loop-048: write core/agents/codex-reviewer.md contract; loop-049: wire Codex into run-gate.md."
 
 todos:
   - id: "loop-047-1"
@@ -24,35 +24,35 @@ todos:
     skill: "schema-design"
     agent: "NA"
     outcome: "core/state/gate-verdict.schema.json has an optional `backend` property with enum [\"codex\",\"subagent\"]; file still parses (json.loads succeeds); additionalProperties stays false"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-047-2"
     content: "Delete the legacy nested .advanced-plans/phases/phase-7/gate-verdicts/ directory"
     skill: "NA"
     agent: "NA"
     outcome: "No .advanced-plans/phases/phase-7/gate-verdicts/ directory exists; the only verdict directory is the flat .advanced-plans/gate-verdicts/"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-047-3"
     content: "Create platforms/python/codex_gate.py with extract_verdict_json, validate_verdict, extract_and_validate, aggregate_verdicts (stdlib only)"
     skill: "test-driven-development"
     agent: "NA"
     outcome: "platforms/python/codex_gate.py defines all four functions; `python -m platforms.python.ast_check` reports NONE (imports within the allow-set: json, re, pathlib)"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-047-4"
     content: "Write platforms/python/tests/test_codex_gate.py covering all 20 eng-review paths including the 2 CRITICAL aggregation regressions"
     skill: "test-driven-development"
     agent: "NA"
     outcome: "test_codex_gate.py covers: 5 extraction cases, 6 validation cases (incl. extra-field tolerance), 3 extract_and_validate cases (incl. identity-overfit reject), 6 aggregate_verdicts cases (incl. all-pass and any-fail CRITICAL regressions); pytest passes"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-047-5"
     content: "Run full pytest suite and the AST zero-dep check"
     skill: "NA"
     agent: "NA"
     outcome: "All tests pass (pre-existing + new); `python -m platforms.python.ast_check` reports NONE"
-    status: pending
+    status: completed
     priority: high
 
 prompt: |

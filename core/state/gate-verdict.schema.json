@@ -95,6 +95,11 @@
     "phase_title": {
       "type": "string",
       "description": "Display title of the phase from the phase plan. Convenience field for the compactor."
+    },
+    "backend": {
+      "type": "string",
+      "enum": ["codex", "subagent"],
+      "description": "Execution backend that produced this verdict. 'codex' = OpenAI Codex CLI subprocess; 'subagent' = in-house Claude subagent. Optional; omit for legacy verdicts."
     }
   },
   "additionalProperties": false
