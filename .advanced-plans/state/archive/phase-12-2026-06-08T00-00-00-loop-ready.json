@@ -1,0 +1,14 @@
+{
+  "phase": "phase-12",
+  "loop_name": "ralph-loop-050",
+  "loop_file": ".advanced-plans/phases/phase-12/loops.md",
+  "task_name": "Verification + v0.12.0 Release",
+  "todos_count": 5,
+  "prepared_at": "2026-06-08T00:00:00Z",
+  "status": "ready",
+  "handoff_injected": {
+    "done": "run-gate.md wired: codex preflight (no gstack), code-review then codex||phase-goals parallel join, codex_gate.extract_and_validate + aggregate_verdicts, codex.json/.raw.txt write, conflict UX (AskUserQuestion, no auto-revert), gate_codex_skipped degrade event, background-join + sequential-blind fallback documented.",
+    "failed": "",
+    "needed": "loop-050: degrade E2E (shadow codex off PATH) + codex-present E2E; gstack-coupling grep; bump VERSION 0.12.0 + CHANGELOG [0.12.0] + CLAUDE.md decision-log; full pytest + AST NONE; confirm LOCKED files byte-unchanged."
+  }
+}
