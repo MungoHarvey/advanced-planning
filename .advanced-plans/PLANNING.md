@@ -4,10 +4,10 @@ status: in_progress
 last_updated: 2026-06-08
 
 current_phase: 12
-current_loop: ralph-loop-050
+current_loop: null
 gate_status: not_started
 released: v0.11.0
-next_action: "Phase 12 (Codex Cross-Model Gate Reviewer) plan drafted at .advanced-plans/phases/phase-12/plan.md (4 loops 047-050). Run /decompose-phase 12 to generate loops.md, then /next-loop to execute."
+next_action: "Phase 12 loops 047-050 all complete (codex gate reviewer implemented, v0.12.0 staged, 215 tests pass). Run /run-gate to review Phase 12 (note: codex unauthed here, gate will degrade to the two in-house agents)."
 
 active_branches:
   - branch: main
