@@ -4,10 +4,10 @@ status: in_progress
 last_updated: 2026-06-08
 
 current_phase: 13
-current_loop: ralph-loop-054
+current_loop: null
 gate_status: not_started
 released: v0.11.0
-next_action: "Phase 13 (Self-Correcting Gate) plan drafted, 4 loops 051-054. Decomposing into loops.md, then /next-loop --auto."
+next_action: "Phase 13 loops 051-054 complete (self-correcting gate implemented, v0.13.0 staged, 296 tests pass). Run /run-gate to review Phase 13."
 
 active_branches:
   - branch: main
