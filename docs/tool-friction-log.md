@@ -540,3 +540,5 @@ entries from here.
   command surface.
 
 - 2026-06-08 /next-loop: double complete-commit per loop — loop prompt on-completion commit AND /next-loop Step 9 main-thread commit both fire (e.g. 047 -> fac46a9 + 87fd2ce). Harmless but noisy; pick one owner.
+
+- 2026-06-08 /brainstorming: default spec save path .claude/plans/ is gitignored in the framework self-host repo (.claude/* excluded). Design specs land untracked. Mirror to .advanced-plans/specs/ for version control.
