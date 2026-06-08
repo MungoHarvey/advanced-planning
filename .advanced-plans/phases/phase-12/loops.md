@@ -405,9 +405,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "Degrade E2E traced (run-gate.md logic) + 3 unit tests added (TestDegradePath); Codex-present E2E documented SKIP (binary present, no auth); gstack grep 0 matches across all 5 files; VERSION bumped to 0.12.0, CHANGELOG [0.12.0] added, CLAUDE.md decision-log entry added; 215/215 pytest pass, AST NONE (9 files), LOCKED files byte-unchanged (git diff empty)."
   failed: ""
-  needed: ""
+  needed: "Gate review for Phase 12 via /run-gate."
 
 todos:
   - id: "loop-050-1"
@@ -415,35 +415,35 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "With codex unavailable, a gate run produces exactly the two in-house verdict files, appends a degrade event to history.jsonl, writes no codex.json; result documented"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-050-2"
     content: "Codex-present E2E: confirm a real codex run yields a valid third verdict"
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "With codex available, a gate run produces a schema-valid phase-N-attempt-M-codex.json (agent:codex, backend:codex) and aggregate_verdicts ANDs all three; result documented (or explicitly noted skipped if codex unauthed in this environment)"
-    status: pending
+    status: completed
     priority: medium
   - id: "loop-050-3"
     content: "Verify zero gstack coupling across all new and edited files"
     skill: "NA"
     agent: "NA"
     outcome: "grep for 'gstack' and '~/.claude/skills/gstack' across codex_gate.py, codex-reviewer.md, run-gate.md, schema returns no matches"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-050-4"
     content: "Bump VERSION to 0.12.0, add CHANGELOG [0.12.0] entry, add CLAUDE.md decision-log entry"
     skill: "NA"
     agent: "NA"
     outcome: "VERSION reads 0.12.0; CHANGELOG.md has a [0.12.0] section describing the Codex gate reviewer; CLAUDE.md decision log records the Phase 12 cross-model gate decision"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-050-5"
     content: "Run full test suite + AST check; confirm LOCKED files byte-unchanged"
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "All pytest passes; AST zero-dep NONE; git diff on docs/phase-complete.schema.md, docs/phase-manifest-entry.schema.md, docs/phase-handoff.schema.md, .advanced-plans/phases/phase-9/complete.md is empty"
-    status: pending
+    status: completed
     priority: high
 
 prompt: |

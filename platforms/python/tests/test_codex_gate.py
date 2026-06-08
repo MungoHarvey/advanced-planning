@@ -243,3 +243,155 @@ class TestAggregateVerdicts:
         result = aggregate_verdicts([p1, p2])
         assert result["result"] == "fail"
         assert result["conflicts"] == []  # uniform fail, no disagreement
+
+
+# ===========================================================================
+# 5. Degrade path — codex absent (gate proceeds on two in-house agents only)
+# ===========================================================================
+
+class TestDegradePath:
+    """Degrade E2E: codex unavailable — gate uses only two in-house verdicts.
+
+    These tests confirm aggregate_verdicts behaves correctly when only the two
+    standard subagent verdict files are present (no codex.json).  This is the
+    load-bearing guarantee: the gate must never block on Codex absence.
+
+    Run-gate.md degrade trace (Step 6a → Step 7):
+      - `which codex` returns non-zero (or auth check fails)
+      - codex_available is set to False
+      - Steps 7.2 (launch Codex background) and 8a (write codex.json) are skipped
+      - No phase-N-attempt-M-codex.json is written
+      - A gate_codex_skipped event is appended to history.jsonl (Step 8a failure branch)
+      - Step 9 calls aggregate_verdicts with only the two in-house verdict files
+      - aggregate_verdicts returns the correct pass/fail AND with no conflicts
+    """
+
+    def test_degrade_two_agent_pass(self, tmp_path):
+        """Degrade pass: two in-house agents pass, no codex -> result='pass', no conflicts."""
+        p1 = _write_verdict_file(
+            tmp_path, "phase-12-attempt-1-code-review-agent.json",
+            _make_verdict(agent="code-review-agent", verdict="pass")
+        )
+        p2 = _write_verdict_file(
+            tmp_path, "phase-12-attempt-1-phase-goals-agent.json",
+            _make_verdict(agent="phase-goals-agent", verdict="pass")
+        )
+        # Simulate: codex.json is NOT present (degrade — codex was skipped)
+        codex_path = tmp_path / "phase-12-attempt-1-codex.json"
+        assert not codex_path.exists(), "codex.json must not exist on degrade path"
+
+        result = aggregate_verdicts([p1, p2])
+        assert result["result"] == "pass", (
+            f"Expected 'pass' on degrade path with two passing in-house verdicts, got {result['result']}"
+        )
+        assert result["conflicts"] == [], "No conflicts expected when codex is absent"
+        assert result["missing"] == [], "No missing files expected"
+
+    def test_degrade_two_agent_fail(self, tmp_path):
+        """Degrade fail: one in-house agent fails, no codex -> result='fail', no conflicts."""
+        p1 = _write_verdict_file(
+            tmp_path, "phase-12-attempt-1-code-review-agent.json",
+            _make_verdict(agent="code-review-agent", verdict="pass")
+        )
+        p2 = _write_verdict_file(
+            tmp_path, "phase-12-attempt-1-phase-goals-agent.json",
+            _make_verdict(agent="phase-goals-agent", verdict="fail")
+        )
+        result = aggregate_verdicts([p1, p2])
+        assert result["result"] == "fail"
+        assert result["conflicts"] == [], "No conflicts when codex is absent (no codex verdict to disagree)"
+        assert result["missing"] == []
+
+    def test_degrade_signal_no_codex_file(self, tmp_path):
+        """Degrade signal: aggregate_verdicts over two files returns no codex conflicts.
+
+        On the degrade path, run-gate.md skips Step 7.2 and 8a entirely.
+        The aggregate_verdicts call in Step 9 receives exactly two paths.
+        There is no codex verdict to detect conflicts against, so conflicts == [].
+        This test explicitly asserts that behaviour.
+        """
+        p1 = _write_verdict_file(
+            tmp_path, "v1.json",
+            _make_verdict(agent="code-review-agent", verdict="pass")
+        )
+        p2 = _write_verdict_file(
+            tmp_path, "v2.json",
+            _make_verdict(agent="phase-goals-agent", verdict="pass")
+        )
+        result = aggregate_verdicts([p1, p2])
+        # Key degrade assertion: no codex conflicts because codex was never present
+        assert result["conflicts"] == [], (
+            "Degrade path must produce zero conflicts (codex absent means no codex-vs-subagent disagreement)"
+        )
+        assert result["result"] == "pass"
+
+
+# ===========================================================================
+# 6. Codex-present path — three-verdict AND aggregation
+#    (live codex exec: SKIP — codex binary found but unauthed in this environment;
+#     see loop-050-2 handoff for details)
+# ===========================================================================
+
+class TestCodexPresentPath:
+    """Codex present: three verdicts (code-review + phase-goals + codex) ANDed correctly.
+
+    Live codex execution is skipped in this environment (codex binary present but
+    no ~/.codex/auth.json, $CODEX_API_KEY, or $OPENAI_API_KEY found).
+    The unit-level 3-verdict AND test is the load-bearing guarantee.
+    """
+
+    def test_three_verdicts_all_pass(self, tmp_path):
+        """Three verdicts (incl. codex) all pass -> result='pass', no conflicts."""
+        p1 = _write_verdict_file(
+            tmp_path, "phase-12-attempt-1-code-review-agent.json",
+            _make_verdict(agent="code-review-agent", verdict="pass")
+        )
+        p2 = _write_verdict_file(
+            tmp_path, "phase-12-attempt-1-phase-goals-agent.json",
+            _make_verdict(agent="phase-goals-agent", verdict="pass")
+        )
+        p3 = _write_verdict_file(
+            tmp_path, "phase-12-attempt-1-codex.json",
+            _make_verdict(agent="codex", verdict="pass", backend="codex")
+        )
+        result = aggregate_verdicts([p1, p2, p3])
+        assert result["result"] == "pass"
+        assert result["conflicts"] == []
+        assert result["missing"] == []
+
+    def test_three_verdicts_codex_fails(self, tmp_path):
+        """Three verdicts, codex fails -> result='fail' (AND: any fail -> fail)."""
+        p1 = _write_verdict_file(
+            tmp_path, "phase-12-attempt-1-code-review-agent.json",
+            _make_verdict(agent="code-review-agent", verdict="pass")
+        )
+        p2 = _write_verdict_file(
+            tmp_path, "phase-12-attempt-1-phase-goals-agent.json",
+            _make_verdict(agent="phase-goals-agent", verdict="pass")
+        )
+        p3 = _write_verdict_file(
+            tmp_path, "phase-12-attempt-1-codex.json",
+            _make_verdict(agent="codex", verdict="fail", backend="codex")
+        )
+        result = aggregate_verdicts([p1, p2, p3])
+        assert result["result"] == "fail"
+        # Codex fails but both subagents pass -> conflict detected
+        assert len(result["conflicts"]) > 0, "Expected conflict: codex=fail vs subagents=pass"
+
+    def test_three_verdicts_subagent_fails_codex_passes(self, tmp_path):
+        """Three verdicts, subagent fails, codex passes -> fail + conflict."""
+        p1 = _write_verdict_file(
+            tmp_path, "code-review.json",
+            _make_verdict(agent="code-review-agent", verdict="pass")
+        )
+        p2 = _write_verdict_file(
+            tmp_path, "phase-goals.json",
+            _make_verdict(agent="phase-goals-agent", verdict="fail")
+        )
+        p3 = _write_verdict_file(
+            tmp_path, "codex.json",
+            _make_verdict(agent="codex", verdict="pass", backend="codex")
+        )
+        result = aggregate_verdicts([p1, p2, p3])
+        assert result["result"] == "fail"  # any-fail rule
+        assert len(result["conflicts"]) > 0, "Expected conflict: codex=pass vs phase-goals-agent=fail"

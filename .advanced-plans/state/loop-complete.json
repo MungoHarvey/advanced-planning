@@ -1,13 +1,13 @@
 {
-  "loop_name": "ralph-loop-049",
+  "loop_name": "ralph-loop-050",
   "loop_file": ".advanced-plans/phases/phase-12/loops.md",
   "status": "completed",
   "todos_done": 5,
   "todos_failed": 0,
   "completed_at": "2026-06-08T00:00:00Z",
   "handoff": {
-    "done": "platforms/claude-code/commands/run-gate.md rewritten: Codex preflight (which codex + auth.json/$CODEX_API_KEY/$OPENAI_API_KEY, no gstack); code-review-agent foreground first, then codex(background)+phase-goals(foreground) concurrent, joined; codex_gate.extract_and_validate wired (codex.json on success, codex.raw.txt + gate_codex_skipped event on skip); aggregate_verdicts replaces prose aggregation; conflict UX via AskUserQuestion on fail or disagreement, no auto-revert; sequential-blind fallback documented; zero gstack matches confirmed.",
+    "done": "Degrade E2E traced (run-gate.md logic) + 3 unit tests added (TestDegradePath); Codex-present E2E documented SKIP (binary present, no auth); gstack grep 0 matches across all 5 files; VERSION bumped to 0.12.0, CHANGELOG [0.12.0] added, CLAUDE.md decision-log entry added; 215/215 pytest pass, AST NONE (9 files), LOCKED files byte-unchanged (git diff empty).",
     "failed": "",
-    "needed": "loop-050: verification E2E (degrade + present paths), gstack coupling grep, VERSION/CHANGELOG/CLAUDE.md bump, pytest + AST NONE, LOCKED files check."
+    "needed": "Gate review for Phase 12 via /run-gate."
   }
 }

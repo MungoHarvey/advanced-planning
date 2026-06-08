@@ -11,6 +11,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.12.0] - 2026-06-08
+
+Phase 12 — Codex Cross-Model Second-Opinion Gate Reviewer (Loops 047–050, 4 loops).
+Gate pending at time of this entry.
+
+### Added
+
+- `platforms/python/codex_gate.py` — zero-dependency (stdlib: `json`, `re`, `pathlib`)
+  helper with four public functions: `extract_verdict_json`, `validate_verdict`,
+  `extract_and_validate`, and `aggregate_verdicts`. Handles fenced-block extraction,
+  lenient structural validation, identity-overfit detection, and multi-verdict AND
+  aggregation with conflict detection.
+- `platforms/python/tests/test_codex_gate.py` — 26 tests covering all original 20 paths
+  (extraction × 5, validation × 6, extract-and-validate × 3, aggregation × 6) plus 6
+  new tests for the degrade path (codex absent) and three-verdict AND (codex present).
+- `core/agents/codex-reviewer.md` — platform-agnostic Codex reviewer contract:
+  untrusted-artefact rule, isolation rule (no `gate-verdicts/` reads), fenced-json-only
+  output, `agent: "codex"` identity, per-criterion file/line evidence requirement.
+- Codex integration wired into `platforms/claude-code/commands/run-gate.md`:
+  - Preflight: `which codex` + local auth check (`~/.codex/auth.json` /
+    `$CODEX_API_KEY` / `$OPENAI_API_KEY`); no gstack coupling.
+  - Execution ordering: `code-review-agent` foreground → `codex(background)` +
+    `phase-goals-agent(foreground)` concurrent → join.
+  - Verdict write: main thread calls `codex_gate.extract_and_validate`, writes
+    `phase-N-attempt-M-codex.json` (`agent:codex`, `backend:codex`) on success or
+    `codex.raw.txt` on skip.
+  - Aggregation: Step 9 replaced by `aggregate_verdicts` call (no hand-derived prose).
+  - Conflict UX: `AskUserQuestion` on fail or codex-vs-subagent disagreement; no
+    auto-revert.
+  - Degrade: `gate_codex_skipped` event appended to `history.jsonl`; gate never blocks
+    on Codex absence (proceeds on two in-house agents).
+  - Background-join primary path + sequential-blind fallback documented.
+
+### Changed
+
+- `core/state/gate-verdict.schema.json` — optional `backend` field added (enum:
+  `["codex", "subagent"]`); `additionalProperties` remains `false`; all existing
+  schema-valid verdicts remain valid.
+
+---
+
 ## [0.11.0] - 2026-05-21
 
 Phase 11 — Friction Remediation & v0.x Pre-Release (Loops 042–046, 5 loops).
@@ -161,10 +202,11 @@ Gate PASSED attempt 1, both agents. Completed 2026-05-13.
 
 ---
 
+[0.12.0]: https://github.com/advanced-planning/advanced-planning/releases/tag/v0.12.0
 [0.11.0]: https://github.com/advanced-planning/advanced-planning/releases/tag/v0.11.0
 [0.10.0]: https://github.com/advanced-planning/advanced-planning/releases/tag/v0.10.0
 [0.9.0]: https://github.com/advanced-planning/advanced-planning/releases/tag/v0.9.0
 [0.8.0]: https://github.com/advanced-planning/advanced-planning/releases/tag/v0.8.0
 [0.7.0]: https://github.com/advanced-planning/advanced-planning/releases/tag/v0.7.0
 [0.6.0]: https://github.com/advanced-planning/advanced-planning/releases/tag/v0.6.0
-[Unreleased]: https://github.com/advanced-planning/advanced-planning/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/advanced-planning/advanced-planning/compare/v0.12.0...HEAD

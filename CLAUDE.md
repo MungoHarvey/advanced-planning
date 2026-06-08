@@ -84,6 +84,14 @@ Changes to either schema require an explicit decision logged in this file.
   compactions, and a `PreCompact` freshness hook. `complete.md` and both compaction schemas
   remain LOCKED and unchanged. Programmatic `/compact` invocation confirmed impossible;
   consent + ready-to-run handoff is the maximum. `/clear`-based flow rejected.
+- Phase 12 (2026-06-08): Codex cross-model second-opinion gate reviewer added (augment
+  mode, "B+" approach). Codex runs as a read-only background subprocess parallel to
+  `phase-goals-agent`; the main thread writes its verdict on its behalf via
+  `codex_gate.extract_and_validate`. Gate degrades gracefully when Codex is unavailable
+  (preflight fails or stdout unparseable): two in-house agents proceed, a
+  `gate_codex_skipped` event is appended to `history.jsonl`, and no `codex.json` is
+  written. `core/state/gate-verdict.schema.json` gained an optional `backend` field
+  (enum: `["codex", "subagent"]`) — backward-compatible; existing verdicts remain valid.
 
 ## Platform Adapters
 
