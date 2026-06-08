@@ -538,3 +538,5 @@ entries from here.
   from `.claude/commands/` -> `platforms/claude-code/commands/` should be
   established and documented so framework developers can exercise the live
   command surface.
+
+- 2026-06-08 /next-loop: double complete-commit per loop — loop prompt on-completion commit AND /next-loop Step 9 main-thread commit both fire (e.g. 047 -> fac46a9 + 87fd2ce). Harmless but noisy; pick one owner.

@@ -1,14 +1,14 @@
 {
   "phase": "phase-12",
-  "loop_name": "ralph-loop-048",
+  "loop_name": "ralph-loop-049",
   "loop_file": ".advanced-plans/phases/phase-12/loops.md",
-  "task_name": "Codex Reviewer Contract",
-  "todos_count": 2,
+  "task_name": "run-gate Wiring — Parallel + Conflict UX",
+  "todos_count": 5,
   "prepared_at": "2026-06-08T00:00:00Z",
   "status": "ready",
   "handoff_injected": {
-    "done": "gate-verdict.schema.json extended with optional backend enum field; legacy phase-7/gate-verdicts/ deleted; codex_gate.py created (4 functions, stdlib only, AST NONE); test_codex_gate.py written with all 20 paths including 2 CRITICAL regressions; 209/209 tests pass.",
+    "done": "core/agents/codex-reviewer.md written: untrusted-artefact rule, per-criterion file/line evidence requirement, fenced-json-only output, isolation rule (no gate-verdicts/), agent:codex; core-purity verified (0 matches).",
     "failed": "",
-    "needed": "loop-048: write core/agents/codex-reviewer.md contract; loop-049: wire Codex into run-gate.md."
+    "needed": "loop-049: wire Codex into run-gate.md (preflight, parallel code-review then codex||phase-goals, codex_gate write + aggregate_verdicts, conflict UX, history.jsonl degrade event)."
   }
 }
