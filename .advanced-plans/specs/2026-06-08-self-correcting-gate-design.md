@@ -236,3 +236,18 @@ New python module covered by existing pytest/AST CI.
 1. `phase-plan-creator` → Phase 13.
 2. `/decompose-phase 13` → `/next-loop --auto` (which, once installed, exercises the
    self-heal on the phase that builds it).
+
+## GSTACK REVIEW REPORT
+
+| Review | Trigger | Why | Runs | Status | Findings |
+|--------|---------|-----|------|--------|----------|
+| CEO Review | /plan-ceo-review | Scope & strategy | 0 | n/a | tuning, not a product change |
+| Codex Review | /codex review | Independent 2nd opinion | 1 | issues_found | 12 raised; 8 new (gate-gaming, git-state, composition) all folded in |
+| Eng Review | /plan-eng-review | Architecture & tests (required) | 1 | clean | 4 issues resolved (scope 10->7, sentinel seq, history cycle counter, two-input triage); 0 unresolved |
+| Design Review | /plan-design-review | UI/UX gaps | 0 | n/a | no UI |
+| DX Review | /plan-devex-review | Developer experience gaps | 0 | n/a | internal tuning |
+
+- **CODEX:** found the headline gap eng-review missed — remediation could game the gate by editing criteria/tests; folded in diff-allowlist + frozen-criteria + full criteria_outcomes.
+- **CROSS-MODEL:** no tension; codex was purely additive. All 12 points accepted/addressed (8 folded as requirements, 3 staleness fixes applied, 1 latent Phase-12 bug noted for separate fix).
+- **UNRESOLVED:** 0
+- **VERDICT:** ENG CLEARED + CODEX addressed. Ready for phase planning (Phase 13).
