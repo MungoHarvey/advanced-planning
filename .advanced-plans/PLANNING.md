@@ -3,11 +3,11 @@ programme: "Advanced Planning Framework"
 status: in_progress
 last_updated: 2026-06-08
 
-current_phase: 12
-current_loop: null
+current_phase: 13
+current_loop: ralph-loop-051
 gate_status: not_started
 released: v0.11.0
-next_action: "Phase 12 loops 047-050 all complete (codex gate reviewer implemented, v0.12.0 staged, 215 tests pass). Run /run-gate to review Phase 12 (note: codex unauthed here, gate will degrade to the two in-house agents)."
+next_action: "Phase 13 (Self-Correcting Gate) plan drafted, 4 loops 051-054. Decomposing into loops.md, then /next-loop --auto."
 
 active_branches:
   - branch: main
