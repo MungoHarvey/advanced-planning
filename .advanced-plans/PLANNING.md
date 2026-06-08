@@ -1,13 +1,13 @@
 ---
 programme: "Advanced Planning Framework"
 status: in_progress
-last_updated: 2026-05-19
+last_updated: 2026-06-08
 
-current_phase: 11
-current_loop: ralph-loop-046
-gate_status: passed
+current_phase: 12
+current_loop: null
+gate_status: not_started
 released: v0.11.0
-next_action: "Phase 11 SHIPPED at v0.11.0 (pre-release). Options: /new-phase for Phase 12 (workflow seams + Phase 11 warnings sweep) or /run-closeout if pausing here."
+next_action: "Phase 12 (Codex Cross-Model Gate Reviewer) plan drafted at .advanced-plans/phases/phase-12/plan.md (4 loops 047-050). Run /decompose-phase 12 to generate loops.md, then /next-loop to execute."
 
 active_branches:
   - branch: main
