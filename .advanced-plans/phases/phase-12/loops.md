@@ -155,9 +155,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "core/agents/codex-reviewer.md written: untrusted-artefact rule, isolation rule (no gate-verdicts/ reads), fenced-json-only output (agent:codex, backend:codex), per-criterion file/line evidence requirement, platform adapter notes; core purity verified (zero .claude/ or gstack matches)."
   failed: ""
-  needed: ""
+  needed: "loop-049: wire Codex into run-gate.md (preflight, parallel execution, verdict write via codex_gate, conflict UX)."
 
 todos:
   - id: "loop-048-1"
@@ -165,14 +165,14 @@ todos:
     skill: "schema-design"
     agent: "NA"
     outcome: "core/agents/codex-reviewer.md exists with mandatory role sections and states: untrusted-artefact rule, per-criterion file/line evidence requirement, fenced-json-only output, isolation rule (must not read gate-verdicts/), agent==\"codex\""
-    status: pending
+    status: completed
     priority: high
   - id: "loop-048-2"
     content: "Verify core purity of the new contract doc"
     skill: "NA"
     agent: "NA"
     outcome: "grep finds no .claude/ or other platform-specific paths in core/agents/codex-reviewer.md"
-    status: pending
+    status: completed
     priority: high
 
 prompt: |
