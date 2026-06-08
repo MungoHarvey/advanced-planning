@@ -1,13 +1,13 @@
 {
-  "loop_name": "ralph-loop-051",
+  "loop_name": "ralph-loop-052",
   "loop_file": ".advanced-plans/phases/phase-13/loops.md",
   "status": "completed",
-  "todos_done": 6,
+  "todos_done": 2,
   "todos_failed": 0,
-  "completed_at": "2026-06-08T12:30:00Z",
+  "completed_at": "2026-06-08T00:00:00Z",
   "handoff": {
-    "done": "remediate.py triage_findings (19 tests, AST NONE); inject_failure_context retargeted to retry-context.json sidecar (7 tests including CRITICAL regressions); gate-failure-context.schema.json updated; all 234 tests pass.",
+    "done": "core/agents/gate-reviewer.md gains a Re-Gate Isolation Rule section: gate agents must not read retry-context.*, gate-verdicts/, or prior verdicts; must use criteria-frozen.md (or phase plan fallback) as the criterion set; must emit criteria_outcomes for ALL criteria on every re-gate; core-pure (no .claude/ paths); CC agents inherit via their existing protocol reference.",
     "failed": "",
-    "needed": "ralph-loop-052 (gate-reviewer.md isolation rule) and ralph-loop-053 (remediation controller) can now proceed."
+    "needed": "ralph-loop-053 (remediation controller) can proceed."
   }
 }

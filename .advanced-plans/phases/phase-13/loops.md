@@ -147,9 +147,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "core/agents/gate-reviewer.md gains a Re-Gate Isolation Rule section: gate agents must not read retry-context.*, gate-verdicts/, or prior verdicts; must use criteria-frozen.md (or phase plan fallback) as the criterion set; must emit criteria_outcomes for ALL criteria on every re-gate; core-pure (no .claude/ paths); CC agents inherit via their existing protocol reference."
   failed: ""
-  needed: ""
+  needed: "ralph-loop-053 (remediation controller) can proceed."
 
 todos:
   - id: "loop-052-1"
@@ -157,14 +157,14 @@ todos:
     skill: "schema-design"
     agent: "NA"
     outcome: "gate-reviewer.md states: gate agents never read retry-context.*, gate-verdicts/, or prior verdicts; on a re-gate they evaluate the frozen criteria and MUST emit criteria_outcomes for ALL criteria (blind to failure context, not to the contract)"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-052-2"
     content: "Verify core purity and CC-agent inheritance"
     skill: "NA"
     agent: "NA"
     outcome: "grep finds no .claude/ paths in core/agents/gate-reviewer.md; both platforms/claude-code/agents/{code-review,phase-goals}-agent.md still reference the core protocol so they inherit the rule (no per-agent duplication)"
-    status: pending
+    status: completed
     priority: high
 
 prompt: |

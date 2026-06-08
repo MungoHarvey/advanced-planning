@@ -95,6 +95,68 @@ Return to the main thread.
 
 ---
 
+## Re-Gate Isolation Rule
+
+A **re-gate** is any gate review that runs after a remediation cycle (i.e. a gate review
+triggered by the main thread following a `gate_remediation` event in the history log).
+
+The principle is: **blind to the failure context, not to the contract.**
+
+### What the re-gate reviewer must NOT read
+
+When performing a re-gate, the gate reviewer must not read any of the following:
+
+- `phases/phase-N/retry-context.json` or any file matching `retry-context.*`
+- The `gate-verdicts/` directory (prior-attempt verdicts of any kind)
+- Any other artefact whose purpose is to record what failed in a previous attempt
+
+Reading failure context before forming an independent verdict is prohibited. The reviewer
+must reach its verdict solely from the current state of the phase outputs.
+
+**Rationale**: if the reviewer knows which criteria previously failed, it may apply
+differential scrutiny - examining failed criteria more rigorously than passing ones. This
+bias undermines the gate as an independent quality check and creates a path for a
+remediation to pass a gate it should fail.
+
+### What the re-gate reviewer MUST use as its criterion set
+
+Determine the authoritative criterion set as follows:
+
+1. If `phases/phase-N/criteria-frozen.md` exists, use it as the sole source of success
+   criteria. This file is written by the main thread before the first remediation cycle
+   and is immutable for the lifetime of the remediation loop.
+2. If `criteria-frozen.md` is absent (first-attempt gate, or a phase that pre-dates the
+   remediation controller), fall back to the `## Success Criteria` section of the phase
+   plan file.
+
+**Never** derive criteria from prior verdict files, retry context, or handoff summaries.
+The contract is the frozen criteria (or the original phase plan) - nothing else.
+
+### Full criteria_outcomes coverage required
+
+On a re-gate, the `criteria_outcomes` array in the verdict JSON **must** contain one entry
+for **every** criterion in the authoritative criterion set - not only the criteria that
+previously failed.
+
+Rationale: a remediation may inadvertently regress a previously-passing criterion. The
+gate is the only checkpoint that can detect such a regression. Omitting passing criteria
+from `criteria_outcomes` makes the verdict incomplete and prevents the main thread from
+detecting regressions.
+
+This requirement also applies to first-attempt gates whenever `criteria_outcomes` is
+populated (see the gate-verdict schema for the field definition).
+
+### Summary
+
+| Aspect | Requirement |
+|--------|-------------|
+| Prior verdicts | Must NOT read |
+| Retry context (`retry-context.*`) | Must NOT read |
+| Criterion source | `criteria-frozen.md` if present; else phase plan `## Success Criteria` |
+| `criteria_outcomes` coverage | One entry per criterion - ALL criteria, every re-gate |
+
+---
+
 ## Inputs
 
 | Input | Location | Used For |
@@ -102,7 +164,7 @@ Return to the main thread.
 | Phase plan file | `.advanced-plans/` directory | Success criteria and output expectations |
 | Loop files for the phase | `.advanced-plans/` directory | Understanding what was produced |
 | Phase output artefacts | Various locations per phase | Evaluating against success criteria |
-| Prior verdict (on retry) | `gate-verdicts/` directory | Understanding what failed previously |
+| Frozen criteria file (re-gate only) | `phases/phase-N/criteria-frozen.md` | Authoritative criterion set; present only when a remediation cycle was run |
 
 ---
 
