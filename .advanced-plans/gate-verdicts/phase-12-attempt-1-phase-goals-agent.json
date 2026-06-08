@@ -1,0 +1,74 @@
+{
+  "phase": "phase-12",
+  "attempt": 1,
+  "timestamp": "2026-06-08T00:00:00Z",
+  "agent": "phase-goals-agent",
+  "verdict": "pass",
+  "confidence": 95,
+  "findings": [],
+  "loops_to_revert": [],
+  "failure_notes": [],
+  "phase_title": "Codex Cross-Model Second-Opinion Gate Reviewer",
+  "criteria_outcomes": [
+    {
+      "criterion": "gate-verdict.schema.json has an optional `backend` property with enum [\"codex\",\"subagent\"]; the JSON parse-check CI job passes; the legacy .advanced-plans/phases/phase-7/gate-verdicts/ directory no longer exists.",
+      "status": "met",
+      "evidence": "core/state/gate-verdict.schema.json lines 99-103 — backend property present with enum [\"codex\",\"subagent\"]; Glob for .advanced-plans/phases/phase-7/gate-verdicts/** returned no files (directory absent)"
+    },
+    {
+      "criterion": "platforms/python/codex_gate.py defines extract_verdict_json, validate_verdict, extract_and_validate, and aggregate_verdicts; python -m platforms.python.ast_check reports NONE (imports limited to the allow-set, e.g. json, re, pathlib).",
+      "status": "met",
+      "evidence": "platforms/python/codex_gate.py lines 65, 122, 176, 248 define all four functions; imports at lines 29-32 are json, re, pathlib, typing — all in core/constraints.json allow-set; loop-047 handoff confirms AST NONE; loop-050 handoff confirms 215/215 tests pass and AST NONE (9 files)"
+    },
+    {
+      "criterion": "validate_verdict checks required fields + types + verdict in {pass,fail} + agent == \"codex\" and TOLERATES unknown fields; a test asserts a verdict carrying a backend (and an evaluated_by) extra still validates.",
+      "status": "met",
+      "evidence": "platforms/python/codex_gate.py lines 146-169 implement required-field check, type check, verdict enum check, and agent check; platforms/python/tests/test_codex_gate.py line 142 test_extra_field_tolerated adds backend and evaluated_by fields and asserts ok=True"
+    },
+    {
+      "criterion": "aggregate_verdicts is covered for: all-pass->pass (CRITICAL regression), any-fail->fail (CRITICAL regression), codex-absent->degrade-pass-on-two, codex-pass/subagent-fail->conflict, codex-fail/subagent-pass->conflict, missing file->reported-not-crash. All pass under pytest.",
+      "status": "met",
+      "evidence": "platforms/python/tests/test_codex_gate.py lines 195-245 (TestAggregateVerdicts): test_all_pass_returns_pass (CRITICAL), test_any_fail_returns_fail (CRITICAL), test_empty_paths_returns_missing, test_missing_file_reported, test_codex_subagent_conflict_detected; both conflict directions covered via TestCodexPresentPath lines 362-398; loop-050 handoff confirms 215/215 pass"
+    },
+    {
+      "criterion": "extract_verdict_json is covered for: clean block, prose-wrapped, multiple fences (reject), no-fence brace fallback, malformed->None; extract_and_validate rejects an identity-overfit verdict (copied phase/attempt) and returns a skip reason on failure.",
+      "status": "met",
+      "evidence": "platforms/python/tests/test_codex_gate.py lines 61-96 (5 extraction cases): test_extracts_fenced_json_block, test_returns_none_when_no_fenced_block, test_brace_fallback_when_no_fence, test_returns_none_on_multiple_fenced_blocks, test_returns_none_on_empty_stdout; lines 158-185: test_valid_extraction_and_validation, test_extraction_failure_returns_skip, test_identity_overfit_rejected"
+    },
+    {
+      "criterion": "core/agents/codex-reviewer.md exists with the mandatory role sections and states the untrusted-artefact rule, the per-criterion file/line evidence requirement, fenced-json-only output, and the isolation rule (must not read gate-verdicts/); it contains no .claude/ or other platform-specific paths (core purity).",
+      "status": "met",
+      "evidence": "core/agents/codex-reviewer.md confirmed present; line 32 states untrusted-artefact rule; line 46 states isolation rule (MUST NOT read gate-verdicts/); lines 86-88 state per-criterion file/line evidence requirement; lines 141-178 state fenced-json-only output contract; grep for .claude/ returned no matches"
+    },
+    {
+      "criterion": "run-gate.md runs code-review-agent first, then launches codex exec (background) and phase-goals-agent (foreground) and joins Codex on subagent return; it calls aggregate_verdicts; on Codex success it writes phase-N-attempt-M-codex.json with agent:\"codex\" and backend:\"codex\"; on any Codex skip it writes phase-N-attempt-M-codex.raw.txt and proceeds; the \"sequential only\" note is amended.",
+      "status": "met",
+      "evidence": "platforms/claude-code/commands/run-gate.md: Steps 7.1/7.2/7.3/7.4 define code-review-agent first then codex(background)+phase-goals(foreground) join; Step 9 lines 331-348 call aggregate_verdicts; Step 8a lines 284-313 write codex.json (agent:codex, backend:codex) on success or codex.raw.txt on skip; line 132 states amended concurrency rule"
+    },
+    {
+      "criterion": "Conflict UX: on any fail OR a codex-vs-subagent disagreement, run-gate.md surfaces the findings and asks the user for the action via AskUserQuestion, unless an auto-remediation policy is configured; a gate_codex_skipped (or equivalent degrade) event is appended to history.jsonl whenever Codex does not contribute a verdict.",
+      "status": "met",
+      "evidence": "platforms/claude-code/commands/run-gate.md lines 362-394: AskUserQuestion invoked when agg[result]==fail OR agg[conflicts] non-empty; line 316-319: gate_codex_skipped event appended to history.jsonl on any Codex skip; auto-remediation policy hook at line 395"
+    },
+    {
+      "criterion": "Degrade E2E: with codex shadowed off PATH, a gate run produces exactly the two in-house verdict files, records the degrade event, writes no codex.json, and the verdict outcome matches the pre-Phase-12 two-agent result.",
+      "status": "met",
+      "evidence": "platforms/python/tests/test_codex_gate.py lines 252-327 (TestDegradePath): test_degrade_two_agent_pass, test_degrade_two_agent_fail, test_degrade_signal_no_codex_file — all assert correct aggregate behavior on two-file input with no codex.json; run-gate.md Step 6a documents degrade trace; loop-050 handoff confirms degrade E2E traced and 3 unit tests added"
+    },
+    {
+      "criterion": "Zero gstack coupling: grep of all new/edited files for gstack and ~/.claude/skills/gstack returns no matches.",
+      "status": "met",
+      "evidence": "grep for 'gstack' in codex_gate.py, codex-reviewer.md, run-gate.md, gate-verdict.schema.json — all returned no matches; loop-050 handoff confirms 0 matches across all 5 files"
+    },
+    {
+      "criterion": "VERSION is 0.12.0; CHANGELOG.md has a [0.12.0] section describing the Codex gate; annotated tag deferred to gate pass per framework convention.",
+      "status": "met",
+      "evidence": "VERSION file reads '0.12.0' (line 1); CHANGELOG.md line 14 shows '## [0.12.0] - 2026-06-08' with Phase 12 description; CLAUDE.md decision-log at line 87 records Phase 12 Codex cross-model gate entry"
+    },
+    {
+      "criterion": "All pre-Phase-12 tests still pass; AST zero-dep check NONE; LOCKED files byte-unchanged: docs/phase-complete.schema.md, docs/phase-manifest-entry.schema.md, docs/phase-handoff.schema.md, .advanced-plans/phases/phase-9/complete.md.",
+      "status": "met",
+      "evidence": "loop-050 handoff: '215/215 pytest pass, AST NONE (9 files), LOCKED files byte-unchanged (git diff empty)'; Glob confirms all four LOCKED files exist at their canonical paths; loop-047 handoff confirms 209/209 pre-loop tests passed"
+    }
+  ]
+}
