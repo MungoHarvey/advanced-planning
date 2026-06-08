@@ -3,6 +3,7 @@
   "description": "Canonical zero-dependency allow-set for platforms/python/ source modules. This is the single source of truth for CI AST checking and documentation.",
   "allowed_imports": [
     "ast",
+    "hashlib",
     "json",
     "pathlib",
     "re",

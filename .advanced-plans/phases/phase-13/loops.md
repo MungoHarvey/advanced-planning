@@ -239,9 +239,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "next-phase.md --auto gate-fail branch replaced with bounded triage->safety->fix->re-gate controller (Steps 7-AUTO-a through 7-AUTO-j); remediation_controller.py with 8 zero-dep predicate helpers added; 58 tests covering all 7 required escalation paths pass; AST NONE; 292 tests total pass; hashlib added to allow-set."
   failed: ""
-  needed: ""
+  needed: "ralph-loop-054: E2E verification traces + zero gstack coupling + VERSION 0.13.0 + CHANGELOG + final gate."
 
 todos:
   - id: "loop-053-1"
@@ -249,35 +249,35 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "next-phase.md gate-fail branch (under --auto) computes cycles from history.jsonl gate_fail events, escalates at cycles>=2 to versioned-retry+STOP from the pre-remediation snapshot, else runs triage_findings and dispatches structural (re-run loops_to_revert) / localized (analysis-worker focused fix); sentinel is bracketed (up for gate, removed before fix) with an explicit assert-sentinel-absent before any fix"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-053-2"
     content: "Add the Remediation Safety spine (diff allowlist + frozen criteria + full criteria_outcomes)"
     skill: "NA"
     agent: "NA"
     outcome: "next-phase.md: before cycle 1 writes phase-N/criteria-frozen.md (+hash); validates remediation `git diff --name-only` is a subset of the source allowlist (never plan.md/loops.md/criteria/tests/schemas/reviewer docs/verdicts) and escalates on any out-of-bounds path; asserts the live criteria hash matches before each re-gate; rejects a re-gate verdict missing any frozen criterion -> escalate"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-053-3"
     content: "Add the Git-State Policy"
     skill: "NA"
     agent: "NA"
     outcome: "next-phase.md: remediation commit stages only allowlisted source paths (no git add -A); no-change detection compares allowlisted source only (excludes retry-context/history/verdicts); records pre-remediation SHA; dirty-tree preflight escalates rather than committing unrelated changes"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-053-4"
     content: "Add Composition Rules + new history events"
     skill: "NA"
     agent: "NA"
     outcome: "next-phase.md: --force/--skip-gate skip remediation (documented precedence); a failing re-run loop hits the existing loop-fail STOP; contradictory findings escalate with a remediation_conflict note; gate_remediation event appended per cycle; passed_after_remediation flag set on a gate_pass that followed >=1 cycle"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-053-5"
     content: "Add controller predicate/trace tests"
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Tests/traces cover: cycle bound from history events; sentinel-absent assertion; diff-allowlist rejection->escalate; transient-excluded no-change->escalate; criteria-hash mismatch->escalate; re-gate verdict missing a criterion->escalate; --auto OFF -> byte-for-byte today's behavior"
-    status: pending
+    status: completed
     priority: high
 
 prompt: |

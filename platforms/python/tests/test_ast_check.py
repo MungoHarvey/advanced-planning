@@ -59,9 +59,10 @@ class TestLoadAllowedImports:
         assert len(result) > 0
 
     def test_canonical_entries_present(self):
-        """The entries declared in CLAUDE.md Key Constraints must all be present."""
+        """The entries declared in core/constraints.json must all be present."""
         expected = {
             "ast",
+            "hashlib",
             "json",
             "pathlib",
             "re",

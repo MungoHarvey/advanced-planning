@@ -263,7 +263,327 @@ Print:
 Phase [N+1] loops complete. Running gate review...
 ```
 
-### 7. Gate FAIL — create versioned retry files
+### 7. Gate FAIL — remediation controller (--auto) or versioned retry (default)
+
+#### 7.0. Precedence of flags (evaluated before anything else)
+
+- `--force` was already handled in Step 5 (gate forced to pass). If execution reaches
+  Step 7, `--force` is NOT set.
+- `--skip-gate` bypasses the gate entirely and never reaches Step 7.
+- Therefore: **`--auto --force`** = gate fail is impossible to reach here (Step 5 exits
+  early); **`--auto --skip-gate`** = gate never runs, Step 7 is never reached.
+- Without `--auto`, Step 7 runs the versioned-retry + STOP path (Steps 7a–7j below)
+  unconditionally. This is byte-for-byte the same behavior as before this command was
+  updated.
+
+---
+
+#### 7-AUTO. Bounded remediation controller (--auto only)
+
+This section runs ONLY when `AUTO_PHASE_MODE = true`. If `AUTO_PHASE_MODE = false`,
+skip directly to **Step 7a** (versioned-retry + STOP path).
+
+**7-AUTO-a. Count remediation cycles from history.jsonl**
+
+Count the number of `gate_fail` events for `phase-[N]` already appended to
+`.advanced-plans/state/history.jsonl` (the current failing event was appended in Step 4,
+so this count includes it):
+
+```bash
+grep -c '"event":"gate_fail".*"phase":"phase-[N]"' .advanced-plans/state/history.jsonl 2>/dev/null || echo 0
+```
+
+Set `cycles = <that count>`.
+
+If `cycles >= 2`:
+- Print:
+  ```
+  Phase [N] gate FAILED (attempt [attempt]) — cycle bound reached (cycles=[cycles]).
+  Escalating to versioned retry from pre-remediation snapshot.
+  ```
+- Use the pre-remediation SHA recorded in Step 7-AUTO-c (if set) as the baseline for
+  `create_retry_version`; if no pre-remediation SHA is recorded (first failure reached the
+  bound without a prior cycle), use the current HEAD.
+- Proceed to **Step 7a** (versioned-retry + STOP).
+
+**7-AUTO-b. First-cycle setup (if cycles == 1)**
+
+On the first remediation cycle (`cycles == 1`):
+
+1. Record the pre-remediation commit SHA:
+   ```bash
+   git rev-parse HEAD
+   ```
+   Store as `PRE_REMEDIATION_SHA`. This is the baseline for escalation versioning.
+
+2. Preserve the ref for inspection:
+   ```bash
+   git tag phase-[N]-remediation-attempts 2>/dev/null || true
+   ```
+   (Non-fatal if tag already exists.)
+
+3. **Dirty-tree preflight.** Check for uncommitted changes unrelated to this loop:
+   ```bash
+   git diff --name-only HEAD
+   ```
+   If any untracked/modified files exist that are NOT part of the expected loop outputs,
+   print:
+   ```
+   ESCALATE: dirty working tree before remediation — unrelated changes detected.
+   Commit or stash them before /next-phase --auto.
+   ```
+   Then proceed to **Step 7a** (versioned-retry + STOP from `PRE_REMEDIATION_SHA`).
+
+4. **Freeze the phase success criteria.** Extract the `## Success Criteria` block from
+   `.advanced-plans/phases/phase-[N]/plan.md` and write it to
+   `.advanced-plans/phases/phase-[N]/criteria-frozen.md`. Record its SHA-256 hash as
+   `CRITERIA_HASH`:
+   ```bash
+   python3 -c "import hashlib, pathlib; f=pathlib.Path('.advanced-plans/phases/phase-[N]/criteria-frozen.md'); print(hashlib.sha256(f.read_bytes()).hexdigest())"
+   ```
+   Store as `CRITERIA_HASH`.
+
+**7-AUTO-c. Triage findings**
+
+Import and call `triage_findings` from `platforms/python/remediate.py`:
+
+```python
+import sys; sys.path.insert(0, '.')
+from platforms.python.remediate import triage_findings
+result = triage_findings(verdict)
+# result keys: structural, localized, unfixable, conflict
+```
+
+Where `verdict` is the failing agent's verdict dict read in Step 7b.
+
+If `result["unfixable"]` is non-empty:
+- Print:
+  ```
+  ESCALATE: unfixable finding(s) detected — no actionable location and no structural revert covers them.
+  ```
+- Proceed to **Step 7a** (versioned-retry + STOP).
+
+If `result["conflict"]` is non-empty:
+- Print:
+  ```
+  ESCALATE: contradictory findings (remediation_conflict) — same location targeted by multiple
+  incompatible findings. Human review required.
+  ```
+- Proceed to **Step 7a** (versioned-retry + STOP).
+
+**7-AUTO-d. Assert sentinel is absent**
+
+Before dispatching any fix, the `gate-review-mode` sentinel MUST be removed
+(Step 3e already removes it after the gate; this is a defense-in-depth ASSERT):
+
+```bash
+if [ -f .advanced-plans/state/gate-review-mode ]; then
+  echo "ESCALATE: gate-review-mode sentinel still present — cannot dispatch fix (PreToolUse hook would block source edits with exit 2). Remove .advanced-plans/state/gate-review-mode first."
+  exit 1
+fi
+```
+
+If the sentinel exists: escalate (proceed to **Step 7a**, do NOT continue).
+
+**7-AUTO-e. Write failure context sidecar**
+
+Write the failure context to the worker-only sidecar
+(`.advanced-plans/phases/phase-[N]/retry-context.json`). Call
+`inject_failure_context` from `platforms/python/versioning.py`:
+
+```python
+from platforms.python.versioning import inject_failure_context
+import pathlib
+inject_failure_context(
+    pathlib.Path(".advanced-plans/phases/phase-[N]/loops.md"),
+    verdict=verdict_dict,  # the failing verdict
+)
+```
+
+This writes `.advanced-plans/phases/phase-[N]/retry-context.json`. It does NOT modify
+`loops.md` frontmatter.
+
+**7-AUTO-f. Dispatch remediation**
+
+Dispatch based on triage result. Both paths may be active if both `structural` and
+`localized` are non-empty (overlap is harmless — the re-run will also fix the localized
+issue incidentally).
+
+**Structural path** (if `result["structural"]` is non-empty):
+
+For each loop id in `result["structural"]`:
+
+1. Set `current_loop = <loop_id>`
+2. Git checkpoint:
+   ```bash
+   git add -A && git commit -m "checkpoint: before remediation re-run [loop_id]"
+   ```
+3. Spawn `ralph-orchestrator` to prepare the loop:
+   - It reads `retry-context.json` for context.
+   - It writes `.advanced-plans/state/loop-ready.json`.
+4. Spawn `ralph-loop-worker` to execute the loop.
+   - Worker reads `retry-context.json` directly.
+5. Read `.advanced-plans/state/loop-complete.json`.
+6. If loop `status: failed`: this is a **loop-fail STOP** (not a remediation cycle).
+   Print:
+   ```
+   Loop [loop_id] FAILED during structural remediation — not a remediation cycle.
+   STOP: manual review required.
+   ```
+   Exit auto mode immediately (do NOT increment cycle count or re-gate).
+
+**Localized path** (if `result["localized"]` is non-empty):
+
+Spawn `analysis-worker` with a focused-fix prompt:
+
+```
+You are analysis-worker performing a focused remediation fix.
+
+Phase: [N]
+Retry context: .advanced-plans/phases/phase-[N]/retry-context.json
+Frozen criteria: .advanced-plans/phases/phase-[N]/criteria-frozen.md
+
+Critical findings requiring a fix:
+[list each localized finding: location, description, evidence]
+
+Instructions:
+- Read the retry context and the frozen criteria.
+- Fix ONLY the specific file/line identified in each finding's location field.
+- Do NOT modify: .advanced-plans/phases/**/plan.md, **/loops.md,
+  core/schemas/**, core/state/**, platforms/python/tests/** (unless the test
+  itself is the source of the bug and is NOT an assertion of a failed criterion),
+  gate-agent docs, gate-verdict* files, or criteria-frozen.md.
+- After editing, return a summary of changed files.
+```
+
+Wait for the agent to return.
+
+**7-AUTO-g. Validate the diff allowlist**
+
+After all fix dispatches complete, validate that only allowlisted source files were touched.
+
+Define the allowlist (files the remediation cycle may modify):
+- Any file under `platforms/` (excluding `platforms/python/tests/**` that assert
+  the failed criteria)
+- Any file under `core/skills/` or `core/agents/`
+- Any file under `.claude/` (skills, commands, agents)
+- `.advanced-plans/phases/phase-[N]/retry-context.json` (written by Step 7-AUTO-e)
+
+Define the NEVER-TOUCH list (any match → escalate immediately, do not re-gate):
+- `.advanced-plans/phases/**/plan.md`
+- `.advanced-plans/phases/**/loops*.md` (including versioned files)
+- `.advanced-plans/phases/**/criteria-frozen.md`
+- `core/schemas/**`
+- `core/state/**`
+- `platforms/python/tests/**` test files that contain assertions for the failed criteria
+- `core/agents/gate-reviewer.md`
+- `platforms/claude-code/agents/**` gate agent docs
+- `.advanced-plans/gate-verdicts/**`
+- `.advanced-plans/state/history.jsonl`
+- `.advanced-plans/state/loop-ready.json`
+- `.advanced-plans/state/loop-complete.json`
+- `.advanced-plans/state/gate-review-mode`
+
+Get the diff of files changed since `PRE_REMEDIATION_SHA`:
+
+```bash
+git diff --name-only [PRE_REMEDIATION_SHA]..HEAD
+```
+
+For each changed file:
+- If it matches the NEVER-TOUCH list: print:
+  ```
+  ESCALATE: remediation touched a forbidden path: [path]
+  This is a gate-gaming attempt or a configuration error.
+  ```
+  Then proceed to **Step 7a** (versioned-retry + STOP from `PRE_REMEDIATION_SHA`).
+
+**No-change detection (allowlisted source only):**
+
+If the diff of allowlisted source paths (excluding transient files:
+`retry-context.json`, `history.jsonl`, `gate-verdicts/`, `loop-ready.json`,
+`loop-complete.json`, `gate-review-mode`) is empty:
+- Print:
+  ```
+  ESCALATE: remediation produced no change to allowlisted source files.
+  The fix had no effect — cannot re-gate.
+  ```
+- Proceed to **Step 7a** (versioned-retry + STOP from `PRE_REMEDIATION_SHA`).
+
+**7-AUTO-h. Commit the remediation**
+
+Stage ONLY the allowlisted source paths that were actually changed. NEVER use `git add -A`.
+
+```bash
+git add [space-separated list of allowlisted changed source files only]
+git commit -m "remediate: phase-[N] cycle [cycles] — [brief summary of changes]"
+```
+
+Append the `gate_remediation` event to `history.jsonl`:
+
+```bash
+echo '{"event":"gate_remediation","phase":"phase-[N]","cycle":[cycles],"timestamp":"[ISO timestamp]","structural_count":[len(result.structural)],"localized_count":[len(result.localized)]}' >> .advanced-plans/state/history.jsonl
+```
+
+**7-AUTO-i. Assert frozen criteria still match**
+
+Before spawning the re-gate, verify the frozen criteria have not changed:
+
+```bash
+python3 -c "
+import hashlib, pathlib
+f = pathlib.Path('.advanced-plans/phases/phase-[N]/criteria-frozen.md')
+h = hashlib.sha256(f.read_bytes()).hexdigest()
+expected = '[CRITERIA_HASH]'
+if h != expected:
+    raise SystemExit('ESCALATE: criteria-frozen.md hash mismatch — criteria have been altered. Aborting re-gate.')
+print('criteria hash OK:', h)
+"
+```
+
+If the hash does not match: proceed to **Step 7a** (versioned-retry + STOP from
+`PRE_REMEDIATION_SHA`).
+
+**7-AUTO-j. Re-gate (fresh agents, frozen criteria)**
+
+Run a new gate review — this is the same as Step 3, with the following differences:
+- The sentinel is raised NOW (just for this gate spawn) and removed immediately after.
+- The gate agent prompt includes a reference to `criteria-frozen.md` as the authoritative
+  criteria source (per the Re-Gate Isolation Rule in `core/agents/gate-reviewer.md`).
+- Increment `attempt` by 1 for this re-gate.
+
+After each gate agent returns its verdict, before aggregating:
+- Validate that the verdict contains a `criteria_outcomes` field with an entry for EVERY
+  criterion listed in `criteria-frozen.md`.
+- If any criterion is missing from `criteria_outcomes`: print:
+  ```
+  ESCALATE: re-gate verdict from [agent-name] is missing criteria_outcomes for criterion: [criterion].
+  A fresh agent must evaluate ALL frozen criteria.
+  ```
+  Then proceed to **Step 7a** (versioned-retry + STOP from `PRE_REMEDIATION_SHA`).
+
+Aggregate verdicts as in Step 3f.
+
+If `GATE_RESULT = pass`:
+- Append `gate_pass` event with `passed_after_remediation: true` to `history.jsonl`:
+  ```bash
+  echo '{"event":"gate_pass","phase":"phase-[N]","attempt":[attempt],"timestamp":"[ISO timestamp]","agents":["code-review-agent","phase-goals-agent"],"passed_after_remediation":true,"cycles":[cycles],"verdict_files":[...]}' >> .advanced-plans/state/history.jsonl
+  ```
+- Print:
+  ```
+  Phase [N] gate PASSED after [cycles] remediation cycle(s).
+  Note: passed_after_remediation=true recorded in history.
+  ```
+- Proceed to **Step 6** (gate pass path).
+
+If `GATE_RESULT = fail`:
+- Append `gate_fail` event to `history.jsonl` (Step 4 logic applies — cycles increments on
+  the next pass through Step 7-AUTO-a).
+- Return to **Step 7-AUTO-a** (loop — check cycle bound again).
+
+---
+
+#### Versioned-retry + STOP (non-auto default, and escalation path)
 
 **7a. Determine next attempt number**
 
@@ -359,14 +679,34 @@ Run /next-loop to begin Phase [N] retry (attempt [next_attempt]).
 - Versioned retry files preserve all completed work; only `loops_to_revert` are reset
 - The `do_not_repeat` field in `gate_failure_context` is carried forward through all retries
 - After all phases complete, run `/run-closeout` to produce the programme narrative
+- **Remediation safety:** a remediation cycle may only touch allowlisted source files.
+  Any path matching the NEVER-TOUCH list causes immediate escalation to versioned-retry+STOP.
+  The phase success criteria are frozen before the first cycle and hash-verified before
+  each re-gate; any drift → escalate. Re-gate agents must emit `criteria_outcomes` for ALL
+  frozen criteria; a missing criterion → escalate.
+- **Git state:** the remediation commit stages only the allowlisted source paths that changed.
+  `git add -A` is NEVER used in a remediation commit. Transient files (retry-context.json,
+  history.jsonl, verdicts, sentinels) are excluded from no-change detection.
+- **passed_after_remediation:** a `gate_pass` event following ≥1 remediation cycle carries
+  `passed_after_remediation: true`. Under v1 the phase still advances; enforcement (requiring
+  human sign-off before building further) is a follow-on.
 
 ### Auto mode stop conditions
 
 | Condition | Behaviour |
 |-----------|-----------|
-| Gate FAIL | Create versioned retry, STOP (manual review required) |
-| Loop FAIL during execution | STOP with loop failure details |
+| Gate FAIL, cycles < 2, `--auto` | Triage → fix → re-gate (bounded remediation loop) |
+| Gate FAIL, cycles >= 2, `--auto` | Versioned retry from pre-remediation snapshot, STOP |
+| Gate FAIL, no `--auto` | Versioned retry + STOP (byte-for-byte today's behavior) |
+| Unfixable or contradictory findings | ESCALATE → versioned retry + STOP immediately |
+| Sentinel present before fix dispatch | ESCALATE → versioned retry + STOP |
+| Diff touches forbidden path | ESCALATE → versioned retry + STOP |
+| No change to allowlisted source after fix | ESCALATE → versioned retry + STOP |
+| Criteria hash mismatch before re-gate | ESCALATE → versioned retry + STOP |
+| Re-gate verdict missing a criterion | ESCALATE → versioned retry + STOP |
+| Loop FAIL during structural remediation | Loop-fail STOP (not a remediation cycle) |
+| Loop FAIL during normal execution | STOP with loop failure details |
 | All planned phases complete | STOP with "Programme complete" message |
 | No master plan / no next phase description | STOP, prompt user to run `/decompose-phase` manually |
-| `--skip-gate` combined with `--auto` | Gates skipped, phases advance without review |
-| `--force` combined with `--auto` | Gate failures logged but do not stop progression |
+| `--skip-gate` combined with `--auto` | Gates skipped, no remediation, phases advance without review |
+| `--force` combined with `--auto` | Gate fail forced to pass in Step 5; Step 7 never reached |

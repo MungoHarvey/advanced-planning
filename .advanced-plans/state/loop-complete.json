@@ -1,13 +1,13 @@
 {
-  "loop_name": "ralph-loop-052",
+  "loop_name": "ralph-loop-053",
   "loop_file": ".advanced-plans/phases/phase-13/loops.md",
   "status": "completed",
-  "todos_done": 2,
+  "todos_done": 5,
   "todos_failed": 0,
   "completed_at": "2026-06-08T00:00:00Z",
   "handoff": {
-    "done": "core/agents/gate-reviewer.md gains a Re-Gate Isolation Rule section: gate agents must not read retry-context.*, gate-verdicts/, or prior verdicts; must use criteria-frozen.md (or phase plan fallback) as the criterion set; must emit criteria_outcomes for ALL criteria on every re-gate; core-pure (no .claude/ paths); CC agents inherit via their existing protocol reference.",
+    "done": "next-phase.md --auto gate-fail branch replaced with bounded triage->safety->fix->re-gate controller (Steps 7-AUTO-a through 7-AUTO-j); remediation_controller.py with 8 zero-dep predicate helpers added; 58 tests covering all 7 required escalation paths pass; AST NONE; 292 tests total pass; hashlib added to allow-set.",
     "failed": "",
-    "needed": "ralph-loop-053 (remediation controller) can proceed."
+    "needed": "ralph-loop-054: E2E verification traces + zero gstack coupling + VERSION 0.13.0 + CHANGELOG + final gate."
   }
 }
