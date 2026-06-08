@@ -1,14 +1,14 @@
 {
   "phase": "phase-13",
-  "loop_name": "ralph-loop-052",
+  "loop_name": "ralph-loop-053",
   "loop_file": ".advanced-plans/phases/phase-13/loops.md",
-  "task_name": "Gate Isolation Contract",
-  "todos_count": 2,
+  "task_name": "Remediation Controller",
+  "todos_count": 5,
   "prepared_at": "2026-06-08T00:00:00Z",
   "status": "ready",
   "handoff_injected": {
-    "done": "remediate.py triage_findings (19 tests, AST NONE); inject_failure_context retargeted to retry-context.json sidecar (7 tests incl CRITICAL regressions); gate-failure-context.schema.json updated; 234 tests pass.",
+    "done": "core/agents/gate-reviewer.md gained the Re-Gate Isolation Rule (blind to retry-context/verdicts, evaluate frozen criteria, emit criteria_outcomes for ALL criteria); CC gate agents inherit by reference; core-pure.",
     "failed": "",
-    "needed": "ralph-loop-052 (gate-reviewer.md isolation rule) and 053 (remediation controller) can now proceed."
+    "needed": "ralph-loop-053: wire the bounded remediation controller into next-phase.md --auto using remediate.triage_findings + the isolation rule + the retry-context sidecar."
   }
 }
