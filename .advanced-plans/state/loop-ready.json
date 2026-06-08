@@ -1,14 +1,14 @@
 {
   "phase": "phase-13",
-  "loop_name": "ralph-loop-051",
+  "loop_name": "ralph-loop-052",
   "loop_file": ".advanced-plans/phases/phase-13/loops.md",
-  "task_name": "Triage Core + Channel Move",
-  "todos_count": 6,
-  "prepared_at": "2026-06-08T12:00:00Z",
+  "task_name": "Gate Isolation Contract",
+  "todos_count": 2,
+  "prepared_at": "2026-06-08T00:00:00Z",
   "status": "ready",
   "handoff_injected": {
-    "done": "",
+    "done": "remediate.py triage_findings (19 tests, AST NONE); inject_failure_context retargeted to retry-context.json sidecar (7 tests incl CRITICAL regressions); gate-failure-context.schema.json updated; 234 tests pass.",
     "failed": "",
-    "needed": ""
+    "needed": "ralph-loop-052 (gate-reviewer.md isolation rule) and 053 (remediation controller) can now proceed."
   }
 }
