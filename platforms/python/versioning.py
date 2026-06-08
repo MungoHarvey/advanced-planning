@@ -2,9 +2,9 @@
 versioning.py — Versioned retry and failure context utilities for the planning system
 ======================================================================================
 
-Provides functions for creating versioned retry loop files, injecting gate failure
-context into frontmatter, querying the active loop file for a phase, and freezing
-loop files when a phase fails gate review.
+Provides functions for creating versioned retry loop files, writing gate failure
+context to the worker-only retry sidecar, querying the active loop file for a
+phase, and freezing loop files when a phase fails gate review.
 
 These utilities are called by /next-phase when a gate review returns ``fail``.
 
@@ -24,6 +24,7 @@ Typical usage::
     freeze_loop_file(plans / "phase-2-ralph-loops.md")
 """
 
+import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -98,17 +99,23 @@ def create_retry_version(loop_file: Path | str, *, attempt_number: int) -> Path:
 # ── inject_failure_context ─────────────────────────────────────────────────────
 
 def inject_failure_context(loop_file: Path | str, *, verdict: dict[str, Any]) -> Path:
-    """Inject a ``gate_failure_context`` YAML block into a loop file's frontmatter.
+    """Write gate failure context to the worker-only ``retry-context.json`` sidecar.
 
-    Builds a ``gate_failure_context:`` YAML block from the provided verdict dict
-    and inserts it immediately after the frontmatter opening delimiter. Works with
-    both ``---`` (standard YAML) and `` ```yaml `` (fenced code block) delimiters
-    used in the planning system's plan files.
+    Writes the failure context as a JSON file at
+    ``<loop_file_parent>/retry-context.json`` — the phase directory for the
+    given loop file.  This is the worker-only sidecar channel: re-gate agents
+    never read it (blindness by omission), while re-run workers and focused-fix
+    agents read it directly.
+
+    The function does **not** modify ``loop_file`` or any other Markdown file.
 
     Parameters
     ----------
     loop_file:
-        Path to the loop file to modify in-place.
+        Path to the loop file whose **parent directory** is the phase directory
+        where ``retry-context.json`` will be written (e.g.
+        ``.advanced-plans/phases/phase-2/loops.md`` → writes to
+        ``.advanced-plans/phases/phase-2/retry-context.json``).
     verdict:
         Dict matching the gate-failure-context schema. Expected keys:
         ``attempt`` (int), ``verdict_file`` (str), ``summary`` (str),
@@ -118,63 +125,28 @@ def inject_failure_context(loop_file: Path | str, *, verdict: dict[str, Any]) ->
     Returns
     -------
     Path
-        Absolute path to the modified file.
+        Absolute path to the written ``retry-context.json`` file.
 
     Raises
     ------
     FileNotFoundError
         If ``loop_file`` does not exist.
-    ValueError
-        If no recognisable frontmatter delimiter is found.
     """
     path = Path(loop_file)
     if not path.exists():
         raise FileNotFoundError(f"Loop file not found: {path}")
 
-    content = path.read_text(encoding="utf-8")
+    context = {
+        "attempt": verdict.get("attempt", 1),
+        "verdict_file": verdict.get("verdict_file", ""),
+        "summary": verdict.get("summary", ""),
+        "loops_reverted": verdict.get("loops_reverted", []),
+        "do_not_repeat": verdict.get("do_not_repeat", []),
+    }
 
-    # Build the gate_failure_context YAML block
-    block_lines = ["gate_failure_context:"]
-    block_lines.append(f"  attempt: {verdict.get('attempt', 1)}")
-    block_lines.append(f"  verdict_file: \"{verdict.get('verdict_file', '')}\"")
-    block_lines.append(f"  summary: \"{verdict.get('summary', '')}\"")
-
-    loops_reverted = verdict.get("loops_reverted", [])
-    if loops_reverted:
-        block_lines.append("  loops_reverted:")
-        for item in loops_reverted:
-            block_lines.append(f"    - loop: \"{item.get('loop', '')}\"")
-            block_lines.append(f"      reason: \"{item.get('reason', '')}\"")
-    else:
-        block_lines.append("  loops_reverted: []")
-
-    do_not_repeat = verdict.get("do_not_repeat", [])
-    if do_not_repeat:
-        block_lines.append("  do_not_repeat:")
-        for item in do_not_repeat:
-            block_lines.append(f"    - \"{item}\"")
-    else:
-        block_lines.append("  do_not_repeat: []")
-
-    block_text = "\n".join(block_lines) + "\n"
-
-    # Insert after the frontmatter opening delimiter.
-    # Priority: ```yaml fence (used by plan files), then --- (standard YAML).
-    yaml_fence_re = re.compile(r"(```yaml\n)")
-    dashes_re = re.compile(r"(---\n)")
-
-    if yaml_fence_re.search(content):
-        new_content = yaml_fence_re.sub(r"\1" + block_text, content, count=1)
-    elif dashes_re.search(content):
-        new_content = dashes_re.sub(r"\1" + block_text, content, count=1)
-    else:
-        raise ValueError(
-            f"No recognisable frontmatter delimiter found in {path}. "
-            "Expected '```yaml' or '---'."
-        )
-
-    path.write_text(new_content, encoding="utf-8")
-    return path.resolve()
+    sidecar = path.parent / "retry-context.json"
+    sidecar.write_text(json.dumps(context, indent=2), encoding="utf-8")
+    return sidecar.resolve()
 
 
 # ── get_active_version ─────────────────────────────────────────────────────────

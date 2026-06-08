@@ -166,41 +166,42 @@ class TestCreateRetryVersion:
 # ── TestInjectFailureContext ───────────────────────────────────────────────────
 
 class TestInjectFailureContext:
-    def test_injects_block_into_yaml_fence(self, tmp_path):
+    """inject_failure_context writes retry-context.json sidecar (not loops.md frontmatter).
+
+    CRITICAL regression: the function MUST write retry-context.json AND MUST NOT
+    modify the loops.md (or any other Markdown) file.
+    """
+
+    # ── Sidecar is written ────────────────────────────────────────────────────
+
+    def test_writes_retry_context_json_in_phase_dir(self, tmp_path):
         source = tmp_path / "loops-v2.md"
         source.write_text(_SAMPLE_LOOP_CONTENT, encoding="utf-8")
 
         inject_failure_context(source, verdict=_SAMPLE_VERDICT)
 
-        result = source.read_text(encoding="utf-8")
-        assert "gate_failure_context:" in result
+        sidecar = tmp_path / "retry-context.json"
+        assert sidecar.exists(), "retry-context.json must be written in the phase directory"
 
-    def test_verdict_fields_present(self, tmp_path):
-        source = tmp_path / "loop.md"
+    def test_sidecar_contains_verdict_fields(self, tmp_path):
+        import json as _json
+        source = tmp_path / "loops.md"
         source.write_text(_SAMPLE_LOOP_CONTENT, encoding="utf-8")
 
         inject_failure_context(source, verdict=_SAMPLE_VERDICT)
 
-        result = source.read_text(encoding="utf-8")
-        assert 'verdict_file:' in result
-        assert 'summary:' in result
-        assert 'loops_reverted:' in result
-        assert 'do_not_repeat:' in result
-        assert 'phase-1-attempt-1.json' in result
-        assert 'ralph-loop-001' in result
+        sidecar = tmp_path / "retry-context.json"
+        data = _json.loads(sidecar.read_text(encoding="utf-8"))
+        assert data["attempt"] == 1
+        assert data["verdict_file"] == "gate-verdicts/phase-1-attempt-1.json"
+        assert "schema definitions" in data["summary"]
+        assert len(data["loops_reverted"]) == 1
+        assert data["loops_reverted"][0]["loop"] == "ralph-loop-001"
+        assert len(data["do_not_repeat"]) == 2
 
-    def test_preserves_existing_content(self, tmp_path):
-        source = tmp_path / "loop.md"
-        source.write_text(_SAMPLE_LOOP_CONTENT, encoding="utf-8")
-
-        inject_failure_context(source, verdict=_SAMPLE_VERDICT)
-
-        result = source.read_text(encoding="utf-8")
-        # Original name field should still be present
-        assert 'name: "ralph-loop-001"' in result
-
-    def test_handles_empty_findings(self, tmp_path):
-        source = tmp_path / "loop.md"
+    def test_sidecar_handles_empty_findings(self, tmp_path):
+        import json as _json
+        source = tmp_path / "loops.md"
         source.write_text(_SAMPLE_LOOP_CONTENT, encoding="utf-8")
 
         verdict_empty = {
@@ -212,29 +213,49 @@ class TestInjectFailureContext:
         }
         inject_failure_context(source, verdict=verdict_empty)
 
-        result = source.read_text(encoding="utf-8")
-        assert "gate_failure_context:" in result
-        assert "loops_reverted: []" in result
-        assert "do_not_repeat: []" in result
+        sidecar = tmp_path / "retry-context.json"
+        data = _json.loads(sidecar.read_text(encoding="utf-8"))
+        assert data["loops_reverted"] == []
+        assert data["do_not_repeat"] == []
 
-    def test_handles_dashes_delimiter(self, tmp_path):
-        # Plan file using --- instead of ```yaml
-        content = "---\nname: \"ralph-loop-001\"\n---\nSome content.\n"
-        source = tmp_path / "loop.md"
-        source.write_text(content, encoding="utf-8")
-
-        inject_failure_context(source, verdict=_SAMPLE_VERDICT)
-
-        result = source.read_text(encoding="utf-8")
-        assert "gate_failure_context:" in result
-
-    def test_returns_absolute_path(self, tmp_path):
-        source = tmp_path / "loop.md"
+    def test_returns_absolute_path_to_sidecar(self, tmp_path):
+        source = tmp_path / "loops.md"
         source.write_text(_SAMPLE_LOOP_CONTENT, encoding="utf-8")
 
         result = inject_failure_context(source, verdict=_SAMPLE_VERDICT)
 
         assert result.is_absolute()
+        assert result.name == "retry-context.json"
+
+    # ── CRITICAL regression: loops.md is NOT modified ─────────────────────────
+
+    def test_loop_file_not_modified(self, tmp_path):
+        """REGRESSION: loops.md frontmatter must NOT receive gate_failure_context."""
+        source = tmp_path / "loops.md"
+        source.write_text(_SAMPLE_LOOP_CONTENT, encoding="utf-8")
+        original_content = _SAMPLE_LOOP_CONTENT
+
+        inject_failure_context(source, verdict=_SAMPLE_VERDICT)
+
+        result = source.read_text(encoding="utf-8")
+        assert result == original_content, (
+            "inject_failure_context must not modify the loop file; "
+            "failure context now goes to retry-context.json sidecar only"
+        )
+
+    def test_gate_failure_context_not_in_loop_file(self, tmp_path):
+        """REGRESSION: gate_failure_context YAML block must not appear in loops.md."""
+        source = tmp_path / "loops-v2.md"
+        source.write_text(_SAMPLE_LOOP_CONTENT, encoding="utf-8")
+
+        inject_failure_context(source, verdict=_SAMPLE_VERDICT)
+
+        result = source.read_text(encoding="utf-8")
+        assert "gate_failure_context:" not in result, (
+            "gate_failure_context YAML must not be injected into loops.md frontmatter"
+        )
+
+    # ── Error handling ────────────────────────────────────────────────────────
 
     def test_raises_file_not_found_for_missing_file(self, tmp_path):
         missing = tmp_path / "nonexistent.md"

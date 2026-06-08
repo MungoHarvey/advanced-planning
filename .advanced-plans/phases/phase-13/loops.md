@@ -14,9 +14,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "remediate.py triage_findings (19 tests, AST NONE); inject_failure_context retargeted to retry-context.json sidecar (7 tests including CRITICAL regressions); gate-failure-context.schema.json updated; all 234 tests pass."
   failed: ""
-  needed: ""
+  needed: "ralph-loop-052 (gate-reviewer.md isolation rule) and ralph-loop-053 (remediation controller) can now proceed."
 
 todos:
   - id: "loop-051-1"
@@ -24,42 +24,42 @@ todos:
     skill: "test-driven-development"
     agent: "NA"
     outcome: "remediate.py defines triage_findings(verdict) -> {structural, localized, unfixable}; routes loops_to_revert->structural, severity=='critical' finding with actionable file/line->localized, else->unfixable; ignores warning/info; AST check NONE"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-051-2"
     content: "Write platforms/python/tests/test_remediate.py covering all triage routes"
     skill: "test-driven-development"
     agent: "NA"
     outcome: "test_remediate.py covers structural, localized, unfixable, warning/info-ignored, empty verdict, multi-agent union, contradictory-location conflict; pytest passes"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-051-3"
     content: "Retarget inject_failure_context in versioning.py to write phase-N/retry-context.json (not loops.md frontmatter)"
     skill: "NA"
     agent: "NA"
     outcome: "inject_failure_context writes .advanced-plans/phases/phase-N/retry-context.json and does NOT inject gate_failure_context into loops.md frontmatter; conforms to gate-failure-context fields"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-051-4"
     content: "Update test_versioning.py for the retarget (CRITICAL regression)"
     skill: "test-driven-development"
     agent: "NA"
     outcome: "test_versioning.py asserts retry-context.json is written AND loops.md frontmatter no longer receives gate_failure_context; all versioning tests pass"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-051-5"
     content: "Update gate-failure-context.schema.json description to reference the sidecar"
     skill: "schema-design"
     agent: "NA"
     outcome: "core/state/gate-failure-context.schema.json description says the context is written to the worker-only retry-context.json sidecar, not loop frontmatter; file still parses"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-051-6"
     content: "Run full pytest + AST zero-dep check"
     skill: "NA"
     agent: "NA"
     outcome: "All tests pass; python -m platforms.python.ast_check platforms/python/ --exclude tests/ --exclude examples/ reports NONE"
-    status: pending
+    status: completed
     priority: high
 
 prompt: |

@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "gate-failure-context",
-  "description": "Injected into versioned retry loop files when a gate fails. Provides the retry attempt with the context it needs to avoid repeating the same mistakes. Written into ralph loop frontmatter as gate_failure_context.",
+  "description": "Written to the worker-only retry-context.json sidecar (.advanced-plans/phases/phase-N/retry-context.json) when a gate fails. Provides the retry attempt with the context it needs to avoid repeating the same mistakes. Re-gate agents never read this file (blindness by omission); re-run workers and focused-fix agents read it directly.",
   "type": "object",
   "required": ["attempt", "verdict_file", "summary", "loops_reverted", "do_not_repeat"],
   "properties": {
