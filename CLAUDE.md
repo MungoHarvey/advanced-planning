@@ -92,6 +92,15 @@ Changes to either schema require an explicit decision logged in this file.
   `gate_codex_skipped` event is appended to `history.jsonl`, and no `codex.json` is
   written. `core/state/gate-verdict.schema.json` gained an optional `backend` field
   (enum: `["codex", "subagent"]`) — backward-compatible; existing verdicts remain valid.
+- Phase 13 (2026-06-08): Self-correcting gate added to `/next-phase --auto`. Gate fail
+  under `--auto` now triggers a bounded triage→fix→re-gate loop (capped at 2 cycles from
+  the pre-remediation snapshot; escalates to versioned-retry+STOP on bound or unfixable
+  findings). Anti-gate-gaming safety spine: diff allowlist with NEVER-TOUCH list, frozen
+  criteria (`criteria-frozen.md`) SHA-256 hash-verified before each re-gate, full
+  `criteria_outcomes` required from every re-gate verdict. `gate_failure_context` now
+  rides the worker-only `retry-context.json` sidecar rather than `loops.md` frontmatter,
+  keeping re-gate agents blind to failure context. `hashlib` added to the stdlib allow-set
+  in `core/constraints.json` (used by `remediation_controller.compute_criteria_hash`).
 
 ## Platform Adapters
 

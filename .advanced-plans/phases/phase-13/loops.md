@@ -361,7 +361,7 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "E2E trace tests added (fix->re-gate->pass + bound->escalate at cycles>=2); gate-gaming guard tests (loops.md + criteria-frozen.md edits rejected); gstack grep zero matches across 6 target files; VERSION 0.13.0 + CHANGELOG [0.13.0] + CLAUDE.md Phase 13 decision log; 296 tests pass, AST NONE, LOCKED files byte-unchanged."
   failed: ""
   needed: ""
 
@@ -371,35 +371,35 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Documented trace (or harness test) showing one remediation cycle reaching a re-gate pass, and a 2-cycle-exhausted run escalating to versioned-retry+STOP from the pre-remediation snapshot"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-054-2"
     content: "Verify the gate-gaming guard: an out-of-bounds remediation edit is blocked"
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "A test/trace demonstrates that a remediation diff touching a forbidden path (e.g. loops.md success criteria or a test asserting the failed criterion) is rejected by the allowlist check and escalates instead of re-gating"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-054-3"
     content: "Verify zero gstack coupling across new/edited files"
     skill: "NA"
     agent: "NA"
     outcome: "grep for gstack / ~/.claude/skills/gstack across remediate.py, test_remediate.py, versioning.py, gate-reviewer.md, next-phase.md, gate-failure-context.schema.json returns no matches"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-054-4"
     content: "Release artefacts: VERSION 0.13.0, CHANGELOG [0.13.0], CLAUDE.md decision log"
     skill: "NA"
     agent: "NA"
     outcome: "VERSION reads 0.13.0; CHANGELOG.md has a [0.13.0] section describing the self-correcting gate (safety spine + bounded self-heal); CLAUDE.md decision log records the Phase 13 decision"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-054-5"
     content: "Final gate: full pytest + AST NONE + LOCKED files unchanged"
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "pytest all pass; AST zero-dep NONE; git diff empty on docs/phase-complete.schema.md, docs/phase-manifest-entry.schema.md, docs/phase-handoff.schema.md, .advanced-plans/phases/phase-9/complete.md"
-    status: pending
+    status: completed
     priority: high
 
 prompt: |

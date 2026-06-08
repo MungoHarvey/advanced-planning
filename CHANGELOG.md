@@ -11,6 +11,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.13.0] - 2026-06-08
+
+Phase 13 — Self-Correcting Gate (Loops 051–054, 4 loops).
+Gate pending at time of this entry.
+
+### Added
+
+- `platforms/python/remediate.py` — zero-dependency triage helper (`triage_findings`)
+  classifying gate-verdict findings into `structural`, `localized`, `unfixable`, and
+  `conflict` buckets, keying on `severity == "critical"` and actionable location strings.
+- `platforms/python/remediation_controller.py` — eight zero-dependency predicate helpers
+  encoding the bounded remediation controller's guard rails: `count_gate_fail_cycles`,
+  `is_path_never_touch`, `is_path_in_allowlist`, `validate_diff_allowlist`,
+  `is_transient_path`, `has_allowlisted_source_changes`, `compute_criteria_hash`,
+  `validate_criteria_hash`, `validate_regateverdict_criteria_outcomes`, `has_sentinel`.
+- `platforms/python/tests/test_remediate.py` — 19 tests covering all triage routes.
+- `platforms/python/tests/test_remediation_controller.py` — 62 tests covering all 7 required
+  escalation paths, two E2E controller traces (fix→re-gate→pass; bound→escalate at cycles≥2),
+  and two gate-gaming guard traces (loops.md edit rejected; criteria-frozen.md edit rejected).
+- **Bounded self-heal in `/next-phase --auto` (Step 7-AUTO, next-phase.md):**
+  - Cycle counter from `history.jsonl` `gate_fail` events; escalate at `cycles >= 2` to
+    versioned-retry+STOP from the pre-remediation snapshot (`PRE_REMEDIATION_SHA`).
+  - Triage dispatch: structural findings re-run the affected loops; localized findings
+    spawn `analysis-worker` with a focused-fix prompt.
+  - **Anti-gate-gaming safety spine:**
+    - Diff allowlist: remediation diffs are validated against a NEVER-TOUCH list
+      (plan.md, loops\*.md, criteria-frozen.md, core/schemas/, core/state/,
+      gate-reviewer docs, gate-verdicts/, history.jsonl, sentinels); any match → escalate.
+    - Frozen criteria: `## Success Criteria` from `plan.md` frozen to
+      `criteria-frozen.md` before cycle 1 and SHA-256 hash-verified before each re-gate;
+      any drift → escalate.
+    - Full `criteria_outcomes`: re-gate verdicts must contain an entry for every frozen
+      criterion; any missing criterion → escalate.
+  - Git-state policy: remediation commit stages only allowlisted source paths (no
+    `git add -A`); no-change detection excludes transient files; dirty-tree preflight
+    escalates on unrelated uncommitted changes.
+  - Composition rules: `--force`/`--skip-gate` bypass remediation (precedence documented
+    in Step 7.0); a failing structural re-run loop hits the existing loop-fail STOP;
+    contradictory findings escalate with `remediation_conflict`.
+  - New history events: `gate_remediation` (per cycle) and `passed_after_remediation: true`
+    flag on a `gate_pass` following ≥1 cycle.
+- **Re-Gate Isolation Rule in `core/agents/gate-reviewer.md`:** gate agents must not read
+  `retry-context.*`, `gate-verdicts/`, or prior verdicts on a re-gate; must evaluate
+  `criteria-frozen.md` (or phase-plan fallback); must emit `criteria_outcomes` for ALL
+  criteria. CC agents inherit via their existing protocol reference.
+- `gate_failure_context` now rides the `retry-context.json` sidecar
+  (`.advanced-plans/phases/phase-N/retry-context.json`) rather than being injected into
+  `loops.md` frontmatter, so re-gate agents remain blind to failure context.
+
+### Changed
+
+- `platforms/python/versioning.py` — `inject_failure_context` retargeted to write
+  `phase-N/retry-context.json` sidecar; no longer injects into `loops.md` frontmatter.
+- `core/state/gate-failure-context.schema.json` — description updated to reference the
+  worker-only `retry-context.json` sidecar.
+- `core/constraints.json` — `hashlib` added to the stdlib allow-set (used by
+  `remediation_controller.compute_criteria_hash`).
+
+---
+
 ## [0.12.0] - 2026-06-08
 
 Phase 12 — Codex Cross-Model Second-Opinion Gate Reviewer (Loops 047–050, 4 loops).

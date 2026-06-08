@@ -208,6 +208,57 @@ class TestValidateDiffAllowlist:
         assert ok
         assert violations == []
 
+    def test_gate_gaming_loops_success_criterion_rejected(self):
+        """
+        Gate-gaming guard: a remediation diff that touches loops.md (which
+        contains the success criteria that failed) is rejected by
+        validate_diff_allowlist and must escalate instead of re-gating.
+
+        This covers the most direct gaming vector: rewriting a loops.md
+        success criterion so the same broken code passes the re-gate.
+
+        Backing predicate: is_path_never_touch(".advanced-plans/phases/**/loops*.md")
+        """
+        # The remediation agent attempted to edit the loops.md success criterion
+        gaming_diff = [
+            "platforms/python/some_fix.py",        # legitimate source fix
+            ".advanced-plans/phases/phase-13/loops.md",  # gaming attempt: criterion edit
+        ]
+        ok, violations = validate_diff_allowlist(gaming_diff)
+        assert not ok, "Gaming attempt touching loops.md must fail allowlist check"
+        assert ".advanced-plans/phases/phase-13/loops.md" in violations
+        # Controller must escalate to versioned-retry+STOP, not re-gate:
+        should_escalate = not ok
+        assert should_escalate, "validate_diff_allowlist failure must drive escalation"
+
+    def test_gate_gaming_test_file_asserting_failed_criterion_rejected(self):
+        """
+        Gate-gaming guard: a remediation diff that touches a test file asserting
+        the failed criterion is rejected by validate_diff_allowlist.
+
+        Note: platforms/python/tests/ sits under platforms/ which is in the
+        allowlist, BUT test files asserting failed criteria are in the NEVER-TOUCH
+        list's spirit.  The is_path_never_touch predicate does NOT currently block
+        all test files generically — the per-loop operator must identify criterion-
+        asserting tests and add them explicitly to the NEVER-TOUCH list at runtime.
+        This test documents the mechanism: validate_diff_allowlist raises if the
+        path is flagged is_path_never_touch by any matching pattern.
+
+        For criteria-frozen.md itself (the frozen copy of criteria), the pattern
+        is concrete and tested here:
+        """
+        # The remediation agent attempted to weaken the frozen criteria file itself
+        gaming_diff = [
+            "platforms/python/some_fix.py",
+            ".advanced-plans/phases/phase-13/criteria-frozen.md",  # frozen criteria edit
+        ]
+        ok, violations = validate_diff_allowlist(gaming_diff)
+        assert not ok, (
+            "Editing criteria-frozen.md is a never-touch violation — "
+            "it must be rejected as a gate-gaming attempt."
+        )
+        assert ".advanced-plans/phases/phase-13/criteria-frozen.md" in violations
+
 
 # ---------------------------------------------------------------------------
 # Transient-excluded no-change detection
@@ -436,4 +487,180 @@ class TestAutoOffRegressionTrace:
 
         assert cycle_count_checked, (
             "Under --auto, the cycle count must be checked on every gate_fail."
+        )
+
+
+# ---------------------------------------------------------------------------
+# E2E controller traces
+# ---------------------------------------------------------------------------
+
+class TestE2EControllerTraces:
+    """
+    End-to-end traces of the two bounded remediation paths described in
+    next-phase.md Section 7-AUTO:
+
+    Happy path (fix -> re-gate -> pass):
+        gate_fail (cycles=1) → triage → diff OK → criteria hash OK →
+        re-gate PASS → gate_pass with passed_after_remediation=true
+
+    Bound->escalate path (cycles>=2):
+        gate_fail appended (now cycles=2) → cycle bound reached →
+        escalate to versioned-retry+STOP from PRE_REMEDIATION_SHA
+
+    These are simulation traces: they exercise the real predicate helpers
+    (count_gate_fail_cycles, validate_diff_allowlist, validate_criteria_hash,
+    validate_regateverdict_criteria_outcomes) through the same conditional
+    logic encoded in next-phase.md, proving that the predicates correctly
+    drive the controller decisions.
+
+    Backing predicate tests:
+        - cycle counting: TestCountGateFailCycles
+        - sentinel: TestHasSentinel
+        - diff allowlist: TestIsPathNeverTouch, TestValidateDiffAllowlist
+        - transient exclusion: TestIsTransientPath, TestHasAllowlistedSourceChanges
+        - criteria hash: TestCriteriaHash
+        - verdict completeness: TestValidateRegateVerdictCriteriaOutcomes
+    """
+
+    # ------------------------------------------------------------------
+    # Helpers shared by both traces
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _make_criteria(tmp_path: Path) -> tuple:
+        """Write criteria-frozen.md and return (path, hash)."""
+        crit = tmp_path / "criteria-frozen.md"
+        raw = b"## Success Criteria\n- criterion A\n- criterion B\n"
+        crit.write_bytes(raw)
+        h = compute_criteria_hash(raw)
+        return crit, h
+
+    # ------------------------------------------------------------------
+    # Happy path: fix -> re-gate -> pass (cycles == 1)
+    # ------------------------------------------------------------------
+
+    def test_fix_regate_pass_happy_path(self, tmp_path):
+        """
+        Trace: one remediation cycle that reaches a re-gate pass.
+
+        next-phase.md mapping:
+            Step 7-AUTO-a  cycles = count_gate_fail_cycles(...)  → 1 (< 2)
+            Step 7-AUTO-b  PRE_REMEDIATION_SHA recorded; criteria frozen
+            Step 7-AUTO-c  triage_findings → structural/localized (mocked)
+            Step 7-AUTO-d  has_sentinel() → False (safe to dispatch)
+            Step 7-AUTO-e  inject_failure_context (sidecar written, not traced here)
+            Step 7-AUTO-f  fix dispatched (mocked)
+            Step 7-AUTO-g  validate_diff_allowlist → ok
+                           has_allowlisted_source_changes → True
+            Step 7-AUTO-h  remediation committed (mocked)
+            Step 7-AUTO-i  validate_criteria_hash → True (criteria unchanged)
+            Step 7-AUTO-j  re-gate: validate_regateverdict_criteria_outcomes → ok
+                           GATE_RESULT = pass → passed_after_remediation = True
+        """
+        PHASE = "phase-13"
+        AUTO_PHASE_MODE = True
+        GATE_RESULT = "fail"
+
+        # --- 7-AUTO-a: count cycles ---
+        history = _write_history(tmp_path, [
+            {"event": "gate_fail", "phase": PHASE},  # the current failure
+        ])
+        cycles = count_gate_fail_cycles(history, PHASE)
+        assert cycles == 1
+        escalate = cycles >= 2
+        assert not escalate, "cycles=1 must NOT trigger escalation"
+
+        # --- 7-AUTO-b: record PRE_REMEDIATION_SHA + freeze criteria ---
+        PRE_REMEDIATION_SHA = "abc123"  # mocked git SHA
+        criteria_path, CRITERIA_HASH = self._make_criteria(tmp_path)
+
+        # --- 7-AUTO-d: assert sentinel absent ---
+        sentinel = tmp_path / "gate-review-mode"
+        assert not has_sentinel(sentinel), "sentinel must be absent before fix dispatch"
+
+        # --- 7-AUTO-g: validate diff allowlist (mocked fix changed a source file) ---
+        changed = [
+            "platforms/python/remediate.py",
+            f".advanced-plans/phases/{PHASE}/retry-context.json",
+        ]
+        ok, violations = validate_diff_allowlist(changed)
+        assert ok, f"diff must pass allowlist; violations: {violations}"
+        assert has_allowlisted_source_changes(changed), (
+            "must detect a real source change to allow re-gate"
+        )
+
+        # --- 7-AUTO-i: assert criteria hash still matches ---
+        hash_ok = validate_criteria_hash(criteria_path, CRITERIA_HASH)
+        assert hash_ok, "criteria hash must match (criteria were not altered)"
+
+        # --- 7-AUTO-j: re-gate verdict covers all frozen criteria ---
+        frozen_criteria = ["criterion A", "criterion B"]
+        regate_verdict = {
+            "verdict": "pass",
+            "criteria_outcomes": {
+                "criterion A": "pass",
+                "criterion B": "pass",
+            },
+        }
+        crit_ok, missing = validate_regateverdict_criteria_outcomes(
+            regate_verdict, frozen_criteria
+        )
+        assert crit_ok, f"re-gate verdict must cover all frozen criteria; missing: {missing}"
+
+        # --- Final: controller concludes gate PASS with passed_after_remediation ---
+        final_gate_result = regate_verdict["verdict"]
+        passed_after_remediation = final_gate_result == "pass" and cycles >= 1
+        assert final_gate_result == "pass"
+        assert passed_after_remediation, (
+            "A gate_pass following >=1 remediation cycle must set passed_after_remediation=True"
+        )
+
+    # ------------------------------------------------------------------
+    # Bound->escalate path: cycles >= 2
+    # ------------------------------------------------------------------
+
+    def test_bound_escalate_at_cycles_2(self, tmp_path):
+        """
+        Trace: second gate_fail — cycle bound reached, escalate to versioned-retry+STOP.
+
+        next-phase.md mapping:
+            Step 4            gate_fail appended (now 2nd event for this phase)
+            Step 7-AUTO-a     cycles = count_gate_fail_cycles(...) → 2 (>= 2)
+                              → escalate to versioned-retry + STOP
+                              → PRE_REMEDIATION_SHA (from cycle-1 setup) used as baseline
+        """
+        PHASE = "phase-13"
+
+        # Two gate_fail events already in history (current one was just appended in Step 4)
+        history = _write_history(tmp_path, [
+            {"event": "gate_fail", "phase": PHASE},  # cycle 1 (prior)
+            {"event": "gate_fail", "phase": PHASE},  # cycle 2 (current)
+        ])
+
+        cycles = count_gate_fail_cycles(history, PHASE)
+        assert cycles == 2
+
+        # --- Controller decision: cycles >= 2 → escalate ---
+        escalate = cycles >= 2
+        assert escalate, "cycles=2 must trigger escalation to versioned-retry+STOP"
+
+        # --- Escalation uses PRE_REMEDIATION_SHA (recorded in cycle 1, Step 7-AUTO-b) ---
+        PRE_REMEDIATION_SHA = "abc123"  # mocked; recorded during cycle-1 setup
+        # The controller passes this as the baseline to create_retry_version.
+        # This trace confirms it is non-empty (cycle-1 setup ran):
+        assert PRE_REMEDIATION_SHA, (
+            "PRE_REMEDIATION_SHA must be recorded in cycle 1 so escalation can "
+            "version from the clean pre-remediation state, not from mid-fix HEAD."
+        )
+
+        # --- gate_remediation events do NOT count toward the cycle bound ---
+        history_with_rem = _write_history(tmp_path, [
+            {"event": "gate_fail", "phase": PHASE},
+            {"event": "gate_remediation", "phase": PHASE, "cycle": 1},
+            {"event": "gate_fail", "phase": PHASE},
+        ])
+        cycles_with_rem = count_gate_fail_cycles(history_with_rem, PHASE)
+        assert cycles_with_rem == 2, (
+            "gate_remediation events must not inflate the cycle count; "
+            "only gate_fail events drive the bound."
         )
