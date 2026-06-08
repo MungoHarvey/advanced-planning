@@ -1,13 +1,13 @@
 {
-  "loop_name": "ralph-loop-048",
+  "loop_name": "ralph-loop-049",
   "loop_file": ".advanced-plans/phases/phase-12/loops.md",
   "status": "completed",
-  "todos_done": 2,
+  "todos_done": 5,
   "todos_failed": 0,
   "completed_at": "2026-06-08T00:00:00Z",
   "handoff": {
-    "done": "core/agents/codex-reviewer.md written: untrusted-artefact rule, isolation rule (no gate-verdicts/ reads), fenced-json-only output (agent:codex, backend:codex), per-criterion file/line evidence requirement, platform adapter notes; core purity verified (zero .claude/ or gstack matches).",
+    "done": "platforms/claude-code/commands/run-gate.md rewritten: Codex preflight (which codex + auth.json/$CODEX_API_KEY/$OPENAI_API_KEY, no gstack); code-review-agent foreground first, then codex(background)+phase-goals(foreground) concurrent, joined; codex_gate.extract_and_validate wired (codex.json on success, codex.raw.txt + gate_codex_skipped event on skip); aggregate_verdicts replaces prose aggregation; conflict UX via AskUserQuestion on fail or disagreement, no auto-revert; sequential-blind fallback documented; zero gstack matches confirmed.",
     "failed": "",
-    "needed": "loop-049: wire Codex into run-gate.md (preflight, parallel execution, verdict write via codex_gate, conflict UX)."
+    "needed": "loop-050: verification E2E (degrade + present paths), gstack coupling grep, VERSION/CHANGELOG/CLAUDE.md bump, pytest + AST NONE, LOCKED files check."
   }
 }

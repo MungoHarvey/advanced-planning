@@ -262,9 +262,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "platforms/claude-code/commands/run-gate.md rewritten: Codex preflight (which codex + auth.json/$CODEX_API_KEY/$OPENAI_API_KEY, no gstack); code-review-agent foreground first, then codex(background)+phase-goals(foreground) concurrent, joined; codex_gate.extract_and_validate wired (codex.json on success, codex.raw.txt + gate_codex_skipped event on skip); aggregate_verdicts replaces prose aggregation; conflict UX via AskUserQuestion on fail or disagreement, no auto-revert; sequential-blind fallback documented; zero gstack matches confirmed."
   failed: ""
-  needed: ""
+  needed: "loop-050: verification E2E (degrade + present paths), gstack coupling grep, VERSION/CHANGELOG/CLAUDE.md bump, pytest + AST NONE, LOCKED files check."
 
 todos:
   - id: "loop-049-1"
@@ -272,35 +272,35 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "run-gate.md has a preflight step using `which codex` + a local auth check (auth.json / $CODEX_API_KEY / $OPENAI_API_KEY); no reference to gstack-codex-probe or ~/.claude/skills/gstack"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-049-2"
     content: "Wire the execution ordering: code-review-agent first, then codex(background) parallel with phase-goals(foreground), joined on subagent return; amend the sequential-only note"
     skill: "NA"
     agent: "NA"
     outcome: "run-gate.md Step 7 documents the ordering and the join; the 'never concurrently' note is amended to: same-backend subagents stay sequential, the Codex backend writes a distinct file and runs parallel to one subagent"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-049-3"
     content: "Wire the verdict write + aggregation: main thread parses Codex stdout via codex_gate, writes codex.json on success or codex.raw.txt on skip, then calls aggregate_verdicts"
     skill: "NA"
     agent: "NA"
     outcome: "run-gate.md captures Codex stdout, calls codex_gate.extract_and_validate, writes .advanced-plans/gate-verdicts/phase-N-attempt-M-codex.json (agent:codex, backend:codex) on success or ...codex.raw.txt on skip, and replaces the Step-9 prose with a call to aggregate_verdicts"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-049-4"
     content: "Add conflict UX to Steps 9-11 and the degrade event to history.jsonl"
     skill: "NA"
     agent: "NA"
     outcome: "run-gate.md: on any fail OR a codex-vs-subagent disagreement, surfaces findings and asks the user via AskUserQuestion unless an auto-remediation policy is configured; appends a gate_codex_skipped (or equivalent degrade) event to history.jsonl whenever Codex contributes no verdict"
-    status: pending
+    status: completed
     priority: high
   - id: "loop-049-5"
     content: "Validate background-process join feasibility; if unreliable, document the codex-first sequential-blind fallback"
     skill: "NA"
     agent: "NA"
     outcome: "run-gate.md states the join mechanism; if background-join proves unreliable, the sequential-blind fallback (codex first to completion, subagent forbidden from reading gate-verdicts/) is documented as the alternative"
-    status: pending
+    status: completed
     priority: high
 
 prompt: |
