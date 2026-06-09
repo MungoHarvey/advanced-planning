@@ -1,0 +1,14 @@
+```json
+{
+  "phase": "phase-14",
+  "attempt": 1,
+  "agent": "codex",
+  "backend": "codex",
+  "verdict": "pass",
+  "confidence": 95,
+  "timestamp": "2026-06-09T14:00:00Z",
+  "findings": [],
+  "loops_to_revert": [],
+  "failure_notes": []
+}
+```

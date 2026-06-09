@@ -132,9 +132,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
-  failed: ""
-  needed: ""
+  done: "Real codex stdout fixture captured (codex-cli 0.124.0, gpt-5.5, double-block behavior documented); test_codex_gate_live.py written with 14 tests covering happy path (single-block, backend==codex, schema-valid), real fixture (double-block triggers degrade), and full degrade path (no codex.json, gate_codex_skipped event shape, two-agent aggregate pass); full suite 314 passed, AST NONE."
+  failed: "Real codex stdout (codex exec review) always emits double fenced blocks, causing extract_and_validate to return ok=False (degrade path) — documented in docs/tool-friction-log.md; no fix to codex_gate.py per hard constraint."
+  needed: "Proceed to loop-057 (Self-Heal Proof) — codex gate behavior is now fully proven and regression-tested."
 
 todos:
   - id: "loop-056-1"
@@ -142,7 +142,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "A fixture file under platforms/python/tests/ contains real codex stdout; documented how it was produced (codex invocation recorded)"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-056-2"
@@ -150,7 +150,7 @@ todos:
     skill: "test-driven-development"
     agent: "NA"
     outcome: "platforms/python/tests/test_codex_gate_live.py passes; asserts the verdict validates against gate-verdict.schema.json with backend=='codex'"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-056-3"
@@ -158,7 +158,7 @@ todos:
     skill: "test-driven-development"
     agent: "NA"
     outcome: "Test asserts the degrade branch: no codex.json written and a gate_codex_skipped event shape produced when codex preflight fails"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-056-4"
@@ -166,7 +166,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Loop handoff records codex --version output (codex-cli 0.124.0) and preflight pass; smoke steps noted for reproducibility"
-    status: pending
+    status: completed
     complexity: low
     priority: medium
 

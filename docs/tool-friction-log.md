@@ -542,3 +542,36 @@ entries from here.
 - 2026-06-08 /next-loop: double complete-commit per loop — loop prompt on-completion commit AND /next-loop Step 9 main-thread commit both fire (e.g. 047 -> fac46a9 + 87fd2ce). Harmless but noisy; pick one owner.
 
 - 2026-06-08 /brainstorming: default spec save path .claude/plans/ is gitignored in the framework self-host repo (.claude/* excluded). Design specs land untracked. Mirror to .advanced-plans/specs/ for version control.
+
+---
+
+## 2026-06-09 — Phase 14 Loop 056 (Codex Gate Proof)
+
+### [codex exec / exec review] — Non-interactive mode emits fenced JSON block TWICE
+
+- **Observed**: `codex exec review --ephemeral -m gpt-5.5 "<prompt>"` and
+  `codex exec --ephemeral --full-auto "<prompt>"` both emit the model response
+  twice in stdout: once as part of the conversation transcript (after the
+  `codex` speaker label), and once as a final standalone output. A prompt
+  asking for a single fenced JSON block produces two identical fenced JSON
+  blocks in stdout.
+- **Friction**: `extract_verdict_json` returns `None` for multiple fenced
+  blocks (the ambiguity guard). This means the real codex stdout from
+  `codex exec` always triggers the degrade path (`gate_codex_skipped`) rather
+  than a successful extraction. The run-gate design assumes codex produces a
+  single fenced block (per the codex-reviewer contract), but the CLI wrapper
+  adds a second copy unconditionally.
+- **Observed invocation**: `codex exec review --ephemeral -m gpt-5.5 "..."
+  2>&1 | tee fixture.txt` — codex-cli 0.124.0, ChatGPT account auth.
+  Real fixture saved at: `platforms/python/tests/fixtures/codex_stdout_sample.txt`
+- **Suggested fix**: (a) pre-process codex stdout before passing to
+  `extract_and_validate` — extract only the last fenced JSON block rather
+  than rejecting ambiguous output (a lenient extraction variant). (b)
+  Alternatively, use `--output-last-message <file>` flag to capture just the
+  final message, which should be a single block. (c) Minimal scoped fix:
+  add a `_extract_last_fenced_block` helper to `codex_gate.py` that returns
+  the last fenced block when multiple are present, used when the blocks are
+  structurally identical — this avoids false ambiguity rejections without
+  changing the semantics for genuinely ambiguous (different) blocks.
+  Note: this loop does NOT modify `codex_gate.py` (hard constraint); the fix
+  is deferred to a future loop.
