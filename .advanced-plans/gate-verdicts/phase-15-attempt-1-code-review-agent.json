@@ -1,0 +1,77 @@
+{
+  "phase": "phase-15",
+  "attempt": 1,
+  "timestamp": "2026-06-09T00:00:00Z",
+  "agent": "code-review-agent",
+  "verdict": "pass",
+  "confidence": 95,
+  "findings": [
+    {
+      "severity": "info",
+      "location": ".advanced-plans/PLANS-INDEX.md rows 059-063",
+      "description": "Phase 15 loop rows 059-063 still show **pending** in PLANS-INDEX.md. This is correct state (phase not yet gate-passed) and will be updated by /sync-plans or the gate-pass flow. Not a defect.",
+      "evidence": "grep confirms loops 059-063 show **pending**; loops 042-046 and 055-058 correctly show **complete** as required by success criterion 1."
+    },
+    {
+      "severity": "info",
+      "location": "platforms/python/tests/test_sync_plans_demo.py",
+      "description": "Reconciliation logic is inlined in the test rather than imported from a shared module. Intentional: /sync-plans is a markdown procedural command with no importable Python module. Well-commented and clear.",
+      "evidence": "Lines 22-148 implement the helpers inline with comments explaining they mirror the /sync-plans command steps."
+    }
+  ],
+  "loops_to_revert": [],
+  "failure_notes": [],
+  "criteria_outcomes": [
+    {
+      "criterion": "PLANS-INDEX.md shows no completed loop with a **pending** status row; grep confirms zero false pending entries for gate-passed phases.",
+      "status": "met",
+      "evidence": "Loops 042-046 and 055-058 all show **complete** in PLANS-INDEX.md. Phase-15 loops 059-063 show **pending** (correct: this phase has not yet gate-passed)."
+    },
+    {
+      "criterion": "master-plan.md carries explicit historical/superseded header or reflects true phase count.",
+      "status": "met",
+      "evidence": "master-plan.md line 3: Status: HISTORICAL / SUPERSEDED \u2014 with a note that the programme ran 14+ additional phases beyond the original 4-phase scope."
+    },
+    {
+      "criterion": "Running /next-loop across a (simulated) phase boundary archives prior stale state files; covered by a test.",
+      "status": "met",
+      "evidence": "next-loop.md Step 3a contains the archive_cross_phase_state() call; test_orchestrator_state_cleanup.py covers phase-boundary archiving; 366 tests green."
+    },
+    {
+      "criterion": "CI path-audit job passes on current tree and fails on planted non-canonical path; legitimate .claude/ references do not trip it.",
+      "status": "met",
+      "evidence": "path_audit.py reports CLEAN on current tree. test_path_audit.py covers pass + all three fail signatures + false-positive guard (12 tests green). CI job 4 added to ci.yml with exit-nonzero-on-fail semantics."
+    },
+    {
+      "criterion": "/sync-plans re-renders PLANS-INDEX entry from spec with no manual edit; demonstrated on a real phase.",
+      "status": "met",
+      "evidence": "sync-plans.md exists (source + byte-identical .claude/ copy). test_sync_plans_demo.py demonstrates seeded drift corrected; idempotency confirmed; real PLANS-INDEX.md untouched. 3 tests green."
+    },
+    {
+      "criterion": "/next-loop --full populates stub loop todos/skills/agents in a single invocation.",
+      "status": "met",
+      "evidence": "next-loop.md Step 3c documents --full with the three-skill chain (plan-todos to plan-skill-identification to plan-subagent-identification). .claude/ copy byte-identical. CLAUDE.md documents --full and --auto composability."
+    },
+    {
+      "criterion": "docs/gate-override-policy.md exists and defines permitted conditions, required record, and authorisation rule; any gate-verdict.schema.json change is backward-compatible and logged.",
+      "status": "met",
+      "evidence": "docs/gate-override-policy.md contains 6 sections covering all requirements. CLAUDE.md cross-references the policy. gate-verdict.schema.json is byte-identical to anchor sha bd9de6a (no change needed, logged in section 5 of the policy and in CLAUDE.md decision log)."
+    },
+    {
+      "criterion": "A codex version-coupling guard test exists that fails if the codex capture path output shape changes.",
+      "status": "met",
+      "evidence": "TestCaptureContractVersionGuard class added to test_codex_gate_live.py with 6 tests asserting the single-fenced-block capture contract, schema-valid verdict, backend==codex, shape guard, and degrade triggers. All 6 pass."
+    },
+    {
+      "criterion": "Full suite green (pytest 3.10-3.12), AST zero-dep NONE, all LOCKED schema docs byte-unchanged, v0.15.0 cut.",
+      "status": "met",
+      "evidence": "366 tests pass. AST check: NONE (12 files, 0 violations). docs/phase-complete.schema.md, docs/phase-manifest-entry.schema.md, docs/phase-handoff.schema.md, core/state/gate-verdict.schema.json: all byte-identical to anchor bd9de6a. codex_gate.py/remediate.py/remediation_controller.py: byte-identical to anchor. VERSION=0.15.0; CHANGELOG [0.15.0] present."
+    },
+    {
+      "criterion": "Every friction-log entry closed by this phase is struck through with a resolution note.",
+      "status": "met",
+      "evidence": "docs/tool-friction-log.md contains struck-through (~~) headers for: [Plans pipeline], [PLANS-INDEX.md], [State files], [Workflow chaining], [Path schema], [Command rot] \u2014 all resolved this phase with loop-specific resolution notes."
+    }
+  ],
+  "phase_title": "Automation-Surface Audit"
+}

@@ -1,0 +1,64 @@
+{
+  "phase": "phase-15",
+  "attempt": 1,
+  "timestamp": "2026-06-09T00:00:00Z",
+  "agent": "phase-goals-agent",
+  "verdict": "pass",
+  "confidence": 93,
+  "phase_title": "Automation-Surface Audit",
+  "findings": [],
+  "loops_to_revert": [],
+  "failure_notes": [],
+  "criteria_outcomes": [
+    {
+      "criterion": "PLANS-INDEX.md shows no completed loop with a **pending** status row; an audit/grep confirms zero false \"pending\" entries for gate-passed phases.",
+      "status": "met",
+      "evidence": ".advanced-plans/PLANS-INDEX.md lines 116-132: all loops 042-058 (gate-passed phases 11-14) show **complete**. Phase-15 loops 059-063 show **pending** which is correct for the current in-progress phase. Handoff loop-059 confirms corrections were made."
+    },
+    {
+      "criterion": "master-plan.md either reflects the true phase count or carries an explicit \"historical / superseded\" header — no longer asserts a 4-phase programme as current.",
+      "status": "met",
+      "evidence": ".advanced-plans/master-plan.md lines 1-9: carries a '> **Status: HISTORICAL / SUPERSEDED**' block stating the programme ran 14+ additional phases beyond the original 4-phase scope and redirects to PLANNING.md and PLANS-INDEX.md."
+    },
+    {
+      "criterion": "Running /next-loop across a (simulated) phase boundary archives the prior phase's stale state files to .advanced-plans/state/archive/ instead of consuming them; covered by a test.",
+      "status": "met",
+      "evidence": "platforms/claude-code/commands/next-loop.md Step 3a (lines 58-64): archive_cross_phase_state wired in. platforms/python/tests/test_orchestrator_state_cleanup.py lines 179-188: test_prior_phase_ready_moved_to_archive_not_read_as_current covers the phase-boundary scenario (loop-059 guard). Handoff loop-059: '344 tests green'."
+    },
+    {
+      "criterion": "The CI path-audit job passes on the current tree and fails on a planted non-canonical path (doubled-prefix or .claude/plans/), proving it would have caught the Phase 9 corruption; legitimate installed-runtime .claude/ references do not trip it.",
+      "status": "met",
+      "evidence": "platforms/python/path_audit.py: exists. .github/workflows/ci.yml lines 98-104: job step 'Audit for deprecated/corrupted path tokens' runs python -m platforms.python.path_audit. platforms/python/tests/test_path_audit.py: 12 tests including test_doubled_prefix_in_command_file_is_flagged, test_claude_plans_in_command_file_is_flagged, test_claude_commands_ref_is_not_flagged (false-positive guard). Handoff loop-060: 'transient-plant demo confirmed FAIL→CLEAN'."
+    },
+    {
+      "criterion": "/sync-plans re-renders the PLANS-INDEX entry (and phase-plan metadata) from a spec with no manual edit; demonstrated on a real phase.",
+      "status": "met",
+      "evidence": "platforms/claude-code/commands/sync-plans.md: exists. .claude/commands/sync-plans.md: byte-identical runtime copy. CLAUDE.md line 189: /sync-plans listed in Command Surface table. Handoff loop-061: 'drift-kill demo confirmed via 3 new pytest tests (seeded task-name + status drift reconciled, idempotency and no-op cases verified; 359 tests total green)'."
+    },
+    {
+      "criterion": "/next-loop --full populates a stub loop's todos, skills, and agents in a single invocation; output is equivalent to the four-step manual chain.",
+      "status": "met",
+      "evidence": "platforms/claude-code/commands/next-loop.md: --full flag in frontmatter argument-hint and Step 3c one-pass population documented (lines 30, 115). CLAUDE.md line 142: --full flag documented with full behaviour description including composability with --auto. Handoff loop-062: 'demo fixture shows stub→3-todos chain via plan-todos→plan-skill-identification→plan-subagent-identification'."
+    },
+    {
+      "criterion": "docs/gate-override-policy.md exists and defines when/how a gate-pass-with-dissent override is permitted and recorded; if gate-verdict.schema.json changed, the change is backward-compatible and logged in CLAUDE.md.",
+      "status": "met",
+      "evidence": "docs/gate-override-policy.md: exists (151 lines); Sections 1-4 define permitted conditions, Section 2 defines required history.jsonl record, Section 3 defines authorisation rules. Section 5 explicitly states no change to gate-verdict.schema.json was needed; override fields live on history.jsonl gate_pass event. CLAUDE.md lines 122-130: Phase 15 decision log entry records the schema non-change decision. gate-verdict.schema.json: unchanged from anchor SHA bd9de6a (no override fields added to schema)."
+    },
+    {
+      "criterion": "A codex version-coupling guard test exists that fails if the run-gate codex capture path no longer matches expected codex output shape.",
+      "status": "met",
+      "evidence": "platforms/python/tests/test_codex_gate_live.py: class TestCaptureContractVersionGuard (line 483) with 6 tests including test_single_fenced_block_satisfies_capture_contract, test_capture_contract_produces_schema_valid_verdict, test_capture_contract_verdict_has_backend_codex, test_empty_captured_file_triggers_degrade, test_contract_schema_file_is_current_and_parseable. Docstring at line 484 documents coupling to the -o capture contract. Handoff loop-063: '6 codex capture-contract version-guard tests added to test_codex_gate_live.py (366 total green)'."
+    },
+    {
+      "criterion": "Full suite green (pytest 3.10-3.12), AST zero-dep check NONE, all LOCKED schema docs byte-unchanged, v0.15.0 cut.",
+      "status": "met",
+      "evidence": "VERSION: 0.15.0. CHANGELOG.md line 14: '## [0.15.0] - 2026-06-09'. Handoff loop-063: '366 total green; AST NONE, path_audit CLEAN, LOCKED schema docs byte-unchanged'. docs/phase-complete.schema.md, docs/phase-manifest-entry.schema.md, docs/phase-handoff.schema.md all retain LOCKED status headers and are not modified by Phase 15 (no git diff from anchor SHA bd9de6a on these files per handoff confirmation)."
+    },
+    {
+      "criterion": "Every friction-log entry closed by this phase is struck through with a resolution note.",
+      "status": "met",
+      "evidence": "docs/tool-friction-log.md: '~~[PLANS-INDEX.md]~~' RESOLVED Loop 059 (line 127-138); '~~[State files]~~' RESOLVED Loop 059 (line 199-211); '~~[Plans pipeline]~~' RESOLVED Loop 061 (line 109-125); '~~[Workflow chaining]~~' RESOLVED Loop 062 (line 294-308); '~~[Path schema]~~' and '~~[Command rot]~~' RESOLVED Loop 060 (lines 413-460). All entries claimed closed by loops 059-063 carry struck-through headers with one-line resolution notes per the log's convention."
+    }
+  ]
+}
