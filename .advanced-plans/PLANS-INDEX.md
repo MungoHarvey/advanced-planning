@@ -117,6 +117,10 @@ section existed — their cold artefacts exist but manifest entries are not yet 
 | 052 | 13 | Gate Isolation Contract | `phases/phase-13/loops.md` | **complete** | — | 1 |
 | 053 | 13 | Remediation Controller | `phases/phase-13/loops.md` | **complete** | — | 1 |
 | 054 | 13 | Verification + v0.13.0 Release | `phases/phase-13/loops.md` | **complete** | — | 1 |
+| 055 | 14 | Runtime Install | `phases/phase-14/loops.md` | **pending** | — | 1 |
+| 056 | 14 | Codex Gate Proof | `phases/phase-14/loops.md` | **pending** | — | 1 |
+| 057 | 14 | Self-Heal Proof | `phases/phase-14/loops.md` | **pending** | — | 1 |
+| 058 | 14 | Witnessed Exercise + v0.14.0 Release | `phases/phase-14/loops.md` | **pending** | — | 1 |
 
 ---
 
