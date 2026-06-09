@@ -474,3 +474,169 @@ class TestDegradePathFull:
         # Confirm codex.json was never written
         codex_json = tmp_path / "phase-14-attempt-1-codex.json"
         assert not codex_json.exists(), "codex.json must not exist on degrade path"
+
+
+# ===========================================================================
+# 4. TestCaptureContractVersionGuard — run-gate codex capture contract
+# ===========================================================================
+
+class TestCaptureContractVersionGuard:
+    """Version-coupling guard: assert the run-gate codex capture contract holds.
+
+    run-gate.md (Step 8a) captures the codex last-message via:
+        codex exec review --ephemeral -m <model> -o <last-msg-file> "<prompt>"
+    and then reads that file and passes its content to extract_and_validate.
+
+    The capture CONTRACT is:
+        "The -o <file> output is a single clean fenced JSON block that
+         extract_and_validate parses to a schema-valid backend:codex verdict."
+
+    This test class documents and asserts that contract. It intentionally does
+    NOT pin an exact codex-cli version string — the contract is about output
+    SHAPE, not CLI version. If the codex CLI changes its -o output format so
+    that a single fenced JSON block no longer parses correctly, these tests fail
+    loudly, signalling that run-gate.md's codex invocation must be updated.
+
+    Relationship to other test classes:
+    - TestHappyPath tests extract_and_validate in isolation (clean block).
+    - TestRealCapturedStdout tests the real stdout fixture (double-block).
+    - THIS class tests the -o captured-file path — the shape the main thread
+      receives and parses when run-gate.md uses the -o flag.
+
+    Origin: Loop 063 (Phase 15) — codex version-coupling guard.
+    """
+
+    def test_single_fenced_block_satisfies_capture_contract(self):
+        """A single clean fenced JSON block (the -o output shape) parses to ok=True.
+
+        This is the primary contract assertion. If codex changes its -o output
+        format so that a single JSON block no longer appears, this test fails.
+        """
+        assert _SINGLE_BLOCK_FIXTURE.exists(), (
+            f"Contract fixture missing: {_SINGLE_BLOCK_FIXTURE}. "
+            "This file represents the expected -o captured last-message shape."
+        )
+        content = _SINGLE_BLOCK_FIXTURE.read_text(encoding="utf-8")
+        result = extract_and_validate(
+            content, expected_phase="phase-14", expected_attempt=1
+        )
+        assert result["ok"] is True, (
+            "CAPTURE CONTRACT BROKEN: single fenced JSON block (the -o output shape) "
+            f"no longer parses via extract_and_validate. "
+            f"Reason: {result.get('reason', 'no reason given')}. "
+            "If codex CLI changed its -o output format, update run-gate.md accordingly."
+        )
+
+    def test_capture_contract_produces_schema_valid_verdict(self):
+        """The -o captured output parses to a verdict that satisfies gate-verdict.schema.json.
+
+        Asserts that the verdict dict extracted from the captured last-message
+        passes the lightweight stdlib schema validation (required fields, enum
+        values, type checks). If a new required field is added to the schema,
+        the contract fixture must also be updated.
+        """
+        content = _SINGLE_BLOCK_FIXTURE.read_text(encoding="utf-8")
+        result = extract_and_validate(
+            content, expected_phase="phase-14", expected_attempt=1
+        )
+        assert result["ok"] is True, f"Extraction failed: {result}"
+
+        ok, reason = _validate_against_schema(result["verdict"])
+        assert ok is True, (
+            "CAPTURE CONTRACT BROKEN: extracted verdict does not satisfy "
+            f"gate-verdict.schema.json. Reason: {reason}. "
+            "Check that the codex_stdout_single_block.txt fixture matches the "
+            "current schema required fields."
+        )
+
+    def test_capture_contract_verdict_has_backend_codex(self):
+        """The captured verdict has backend == 'codex' (required by run-gate.md Step 8a).
+
+        run-gate.md Step 8a requires the parsed verdict to carry backend='codex'
+        before writing codex.json. If the codex reviewer stops emitting 'backend'
+        or changes its value, this test fails.
+        """
+        content = _SINGLE_BLOCK_FIXTURE.read_text(encoding="utf-8")
+        result = extract_and_validate(
+            content, expected_phase="phase-14", expected_attempt=1
+        )
+        assert result["ok"] is True, f"Extraction failed: {result}"
+        verdict = result["verdict"]
+        assert verdict.get("backend") == "codex", (
+            "CAPTURE CONTRACT BROKEN: parsed verdict does not have backend='codex'. "
+            f"Got backend='{verdict.get('backend')}'. "
+            "run-gate.md Step 8a requires backend='codex' to write the verdict file."
+        )
+
+    def test_capture_contract_single_block_fixture_contains_one_fenced_block(self):
+        """The -o capture fixture contains exactly one fenced json block.
+
+        The -o flag is supposed to produce a single last-message file.
+        If this fixture contains more than one block, something changed upstream
+        (either the fixture was regenerated from raw stdout rather than -o output,
+        or the codex -o behaviour changed).
+        """
+        import re
+        content = _SINGLE_BLOCK_FIXTURE.read_text(encoding="utf-8")
+        block_count = len(re.findall(r"```json", content))
+        assert block_count == 1, (
+            f"CAPTURE CONTRACT SHAPE CHANGED: expected exactly 1 fenced json block "
+            f"in the -o capture fixture, found {block_count}. "
+            "If codex -o now emits multiple blocks, update the fixture and run-gate.md."
+        )
+
+    def test_empty_captured_file_triggers_degrade(self):
+        """An empty -o captured file (codex returned nothing) triggers the degrade path.
+
+        Simulates the case where codex wrote an empty file to -o (e.g. codex
+        exited before producing output). extract_and_validate must return ok=False
+        so run-gate.md's degrade branch fires (no codex.json, gate_codex_skipped).
+        """
+        result = extract_and_validate(
+            "", expected_phase="phase-14", expected_attempt=1
+        )
+        assert result["ok"] is False, (
+            "Empty -o file should trigger degrade (ok=False), but got ok=True. "
+            "run-gate.md relies on this to detect a codex non-response."
+        )
+        assert "reason" in result
+
+    def test_plaintext_captured_file_triggers_degrade(self):
+        """A plain-text (no fenced JSON) -o file triggers the degrade path.
+
+        Simulates the case where codex wrote an error message or plain text
+        to -o instead of a fenced JSON block (e.g. auth failure, rate limit).
+        """
+        result = extract_and_validate(
+            "Error: authentication failed. Please run `codex auth`.",
+            expected_phase="phase-14",
+            expected_attempt=1,
+        )
+        assert result["ok"] is False, (
+            "Plain-text -o file should trigger degrade, but got ok=True."
+        )
+
+    def test_contract_schema_file_is_current_and_parseable(self):
+        """gate-verdict.schema.json exists, parses, and its required-field list is stable.
+
+        Documents the exact required-field set the capture contract depends on.
+        If a required field is added or removed from the schema, this test fails,
+        prompting an update to the codex_stdout_single_block.txt fixture and the
+        codex reviewer prompt in run-gate.md.
+        """
+        assert _SCHEMA_PATH.exists(), f"Schema not found: {_SCHEMA_PATH}"
+        schema = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
+
+        # Document the required fields the capture contract depends on.
+        # If this set changes, the fixture and run-gate codex prompt must be updated.
+        expected_required = {
+            "phase", "attempt", "timestamp", "agent", "verdict",
+            "confidence", "findings", "loops_to_revert", "failure_notes",
+        }
+        actual_required = set(schema.get("required", []))
+        assert actual_required == expected_required, (
+            f"CAPTURE CONTRACT SCHEMA CHANGED: gate-verdict.schema.json required "
+            f"fields changed from {sorted(expected_required)} to {sorted(actual_required)}. "
+            "Update the codex_stdout_single_block.txt fixture and the codex reviewer "
+            "prompt in run-gate.md to include/exclude the changed fields."
+        )

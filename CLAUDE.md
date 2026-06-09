@@ -67,6 +67,7 @@ At each phase boundary, `/run-gate` spawns gate agents (default: `code-review-ag
 - **Gate fail**: Any agent returns `verdict: fail`. `/next-phase` creates a versioned retry file (`.advanced-plans/phases/phase-N/loops-v2.md`) with `gate_failure_context` injected into affected loops, freezes the original file (`status: frozen`), updates `PLANS-INDEX.md`, and appends `gate_fail` and `phase_retry` events to `history.jsonl`.
 - **Versioning utilities**: `platforms/python/versioning.py` provides `create_retry_version`, `inject_failure_context`, `get_active_version`, and `freeze_loop_file` — the Python API backing `/next-phase`'s retry logic.
 - **Ralph-loop plugin compatibility**: This framework's state files live in `.advanced-plans/state/` (e.g. `loop-ready.json`, `loop-complete.json`). The ralph-loop plugin uses `.claude/ralph-loop.local.md` — no naming conflicts. Both `/next-loop --auto` and the plugin's `/ralph-loop` command can be active simultaneously.
+- **Gate-pass-with-dissent override**: When a reviewer's `fail` is a verifiable environment/isolation false-negative with no deliverable defect, the human operator may override — see `docs/gate-override-policy.md` for the full policy (permitted conditions, required `history.jsonl` record, authorisation rules, and what is never a valid override).
 
 ### Phase Compaction Schemas
 
@@ -118,6 +119,15 @@ Changes to either schema require an explicit decision logged in this file.
   throwaway git **worktree**, emitting `gate_remediation` + `passed_after_remediation`
   events, then discarded the worktree — `main` history untouched. No new gate features;
   no logic change to `remediate.py` / `remediation_controller.py`.
+- Phase 15 (2026-06-09): Automation-Surface Audit — state-archiving wired into `/next-loop`
+  Step 3a (`archive_cross_phase_state`); CI path-convention audit job added (`path_audit.py`,
+  job 4 in `ci.yml`); `/sync-plans` command added (reconciles PLANS-INDEX from phase artefacts);
+  `/next-loop --full` flag added (one-pass stub population via `plan-todos` →
+  `plan-skill-identification` → `plan-subagent-identification`); formal gate-override policy
+  written (`docs/gate-override-policy.md`, codifying the Phase 14 codex-dissent precedent).
+  Schema decision: **no change to `core/state/gate-verdict.schema.json`** — the override record
+  (`override: true`, `override_reason`) lives on the `history.jsonl` `gate_pass` event (main-thread
+  decision), not on the per-agent verdict file; existing verdicts remain fully valid.
 
 ## Platform Adapters
 

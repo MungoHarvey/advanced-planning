@@ -11,6 +11,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.15.0] - 2026-06-09
+
+Phase 15 — Automation-Surface Audit (Loops 059–063, 5 loops).
+Closes the loose Phase 14 threads (gate-override policy, codex version-coupling guard),
+wires in four automation improvements discovered during the friction-log audit, and
+cuts the release.
+
+### Added
+
+- `platforms/python/path_audit.py` — stdlib-only CI path-convention audit; scans
+  command/agent/doc files for non-canonical path tokens (doubled prefix, `.claude/plans/`,
+  `.claude/.advanced-plans`); exits non-zero with a clear report on any match.
+- `.github/workflows/ci.yml` job 4 — runs `path_audit.py` on push/PR; blocks on failure.
+- `platforms/claude-code/commands/sync-plans.md` (+ `.claude/` runtime copy) — `/sync-plans`
+  command that re-renders PLANS-INDEX.md phase and loop rows from `plan.md`/`loops.md`
+  without manual edits; idempotent and drift-killing.
+- `platforms/claude-code/commands/next-loop.md` Step 3c `--full` flag (+ `.claude/` copy) —
+  one-pass stub population: chains `plan-todos` → `plan-skill-identification` →
+  `plan-subagent-identification` before the orchestrator runs; composable with `--auto`.
+- `docs/gate-override-policy.md` — formal gate-pass-with-dissent override policy; defines
+  permitted conditions (environment/isolation false-negative, no deliverable defect, both
+  in-house agents pass), required `history.jsonl` record (`override: true` +
+  `override_reason`), authorisation rule (human operator only, never an agent), and what
+  is never a valid override.
+- `TestCaptureContractVersionGuard` in `test_codex_gate_live.py` — 6 new tests asserting
+  the run-gate codex capture contract (single fenced JSON block from `-o <file>` parses to
+  a schema-valid `backend: codex` verdict); fails loudly if codex output shape changes.
+
+### Changed
+
+- `platforms/claude-code/commands/next-loop.md` Step 3a (+ `.claude/` copy) — wired
+  `archive_cross_phase_state()` call to archive stale prior-phase `loop-ready.json` /
+  `loop-complete.json` to `.advanced-plans/state/archive/` at phase boundary.
+- `.advanced-plans/PLANS-INDEX.md` — corrected stale `**pending**` status rows for
+  completed loops 042–046 and 055–058; phase-14 entry updated from `**draft**` to
+  `**complete**`.
+- `docs/master-plan.md` — marked historical; programme ran 15+ phases beyond the original
+  4-phase scope.
+- `CLAUDE.md` — Gate Review Protocol section now cross-references
+  `docs/gate-override-policy.md`; Phase 15 decision-log entry added; `--full` flag
+  documented.
+
+---
+
 ## [0.14.0] - 2026-06-09
 
 Phase 14 — Install & Exercise Codex Gate + Self-Heal in Runtime (Loops 055–058, 4 loops).

@@ -369,7 +369,7 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "docs/gate-override-policy.md written + CLAUDE.md cross-referenced; no gate-verdict.schema.json change (override on history.jsonl gate_pass event, logged in CLAUDE.md decision log); 6 codex capture-contract version-guard tests added to test_codex_gate_live.py (366 total green); VERSION=0.15.0, CHANGELOG [0.15.0] added, Phase 15 CLAUDE.md decision log entry written; AST NONE, path_audit CLEAN, LOCKED schema docs byte-unchanged; two new Phase 15 worker-tooling friction entries added."
   failed: ""
   needed: ""
 
@@ -379,7 +379,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "docs/gate-override-policy.md exists and defines the permitted conditions, the required history.jsonl record, and the authorisation rule; cross-referenced from CLAUDE.md"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-063-2"
@@ -387,7 +387,7 @@ todos:
     skill: "schema-design"
     agent: "NA"
     outcome: "Either gate-verdict.schema.json gains an additive optional field (existing verdicts still validate) with a CLAUDE.md decision-log entry, or a note records that history.jsonl recording suffices and no schema change was made"
-    status: pending
+    status: completed
     complexity: medium
     priority: medium
   - id: "loop-063-3"
@@ -395,7 +395,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "A codex version-coupling guard test exists and passes against the captured fixture; documents the coupling it protects"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-063-4"
@@ -403,7 +403,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "VERSION=0.15.0; CHANGELOG [0.15.0] present; CLAUDE.md Phase 15 decision logged; full pytest green across 3.10-3.12; AST NONE; LOCKED docs byte-unchanged"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-063-5"
@@ -411,7 +411,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "All friction-log entries + Phase 14 Opened threads addressed this phase carry struck-through resolution notes"
-    status: pending
+    status: completed
     complexity: low
     priority: medium
 

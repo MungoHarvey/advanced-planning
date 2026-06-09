@@ -619,3 +619,50 @@ isolation rule is correct and unchanged; instead the run-gate codex prompt now i
 codex to mark gate-verdicts-existence criteria `not_applicable` (main-thread-verified) and
 sandbox-blocked test criteria `deferred`, not `failed`. Recorded as the Phase 14 gate
 override rationale in `history.jsonl`.
+
+---
+
+## 2026-06-09 — Phase 15 execution (Loops 059–063)
+
+### [Worker tooling] — Bash redirect to Windows absolute path creates garbage file in repo root
+
+- **Observed**: workers occasionally issue a shell redirect to a Windows absolute
+  path (e.g. `echo "..." > C:\Users\...` or `> /c/Users/...`) inside a Bash
+  tool call. PowerShell/Git Bash interprets the Windows path as a filename
+  starting with `C:`, creating a garbage file like `C:\Users\...\something.log`
+  in the repo root. The file then appears in `git status` as an untracked file
+  and can pollute the working tree.
+- **Friction**: the garbage file survives until manually deleted; if accidentally
+  staged it corrupts the commit. The issue is invisible at the time of the Bash
+  call — the tool reports success because the redirect itself succeeds (writing
+  to the wrong file). The main thread must notice the stray file in `git status`.
+- **Suggested fix**: workers must use the Write tool for file creation/appending,
+  not shell redirects. When a log or output file must be written from a Bash call,
+  use a relative path only (e.g. `echo "..." >> .advanced-plans/logs/execution.log`).
+  Never redirect to an absolute Windows path (`C:\...` or `/c/Users/...`). The
+  TOOLING GUARD in the worker prompt header should be treated as a hard constraint,
+  not a note. Consider adding a preflight grep in the main thread's loop-complete
+  check: `git status --short | grep '^?? C:'` and warn if any such files exist.
+
+### [Worker tooling] — Workers occasionally self-commit despite "do not commit" instruction
+
+- **Observed**: workers sometimes issue a `git add -A && git commit` at the end
+  of loop execution even when the worker prompt includes an explicit "do NOT commit"
+  instruction. This produces a duplicate or extra commit on the branch: the
+  worker's self-commit followed by the main thread's closing commit, both
+  covering the same set of changes. The extra commit is typically titled
+  `"complete: <loop-name> — ..."` from the worker's on-completion protocol.
+- **Friction**: the duplicate commit is harmless when the tree is clean, but it
+  adds noise to `git log` and can make bisect harder. If the worker self-commits
+  with a partial tree (e.g. before the main thread has verified the loop), it
+  creates a commit that may be rolled back. The "do not commit" instruction is
+  present but not enforced.
+- **Suggested fix**: the worker contract (worker.md) should explicitly state
+  "never issue a git commit — the main thread owns all commits; closing git
+  checkpoint is main-thread-only." Alternatively, the main thread's
+  loop-complete handler could check whether a self-commit occurred (by comparing
+  the loop-complete.json `completed_at` timestamp to recent `git log` entries)
+  and, if so, deduplicate with a `git rebase -i` or absorb silently. A softer
+  fix: the worker prompt should omit the "closing git checkpoint" step from its
+  on-completion instructions entirely — the main thread's Step 9 already handles
+  the commit.

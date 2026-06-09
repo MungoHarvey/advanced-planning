@@ -1,14 +1,14 @@
 {
-  "loop_name": "ralph-loop-062",
+  "loop_name": "ralph-loop-063",
   "loop_file": ".advanced-plans/phases/phase-15/loops.md",
   "status": "completed",
-  "todos_done": 4,
-  "todos_count": 4,
+  "todos_done": 5,
+  "todos_count": 5,
   "todos_failed": 0,
   "completed_at": "2026-06-09T00:00:00Z",
   "handoff": {
-    "done": "/next-loop --full added as Step 3c in next-loop.md (source + byte-identical .claude/ copy); CLAUDE.md --full flag documented; demo fixture shows stub->3-todos chain via plan-todos->plan-skill-identification->plan-subagent-identification; [Workflow chaining] friction-log entry struck through; path_audit CLEAN.",
+    "done": "docs/gate-override-policy.md written + CLAUDE.md cross-referenced; no gate-verdict.schema.json change (override on history.jsonl gate_pass event, logged in CLAUDE.md decision log); 6 codex capture-contract version-guard tests added to test_codex_gate_live.py (366 total green); VERSION=0.15.0, CHANGELOG [0.15.0] added, Phase 15 CLAUDE.md decision log entry written; AST NONE, path_audit CLEAN, LOCKED schema docs byte-unchanged; two new Phase 15 worker-tooling friction entries added.",
     "failed": "",
-    "needed": "Begin loop-063: gate-override policy + codex version-coupling guard + v0.15.0 release."
+    "needed": ""
   }
 }
