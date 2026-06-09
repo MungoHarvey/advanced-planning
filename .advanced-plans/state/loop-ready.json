@@ -1,14 +1,14 @@
 {
-  "phase": "phase-14",
-  "loop_name": "ralph-loop-057",
-  "loop_file": ".advanced-plans/phases/phase-14/loops.md",
-  "task_name": "Self-Heal Proof",
-  "todos_count": 3,
-  "prepared_at": "2026-06-09T10:30:00Z",
+  "phase": "phase-15",
+  "loop_name": "ralph-loop-059",
+  "loop_file": ".advanced-plans/phases/phase-15/loops.md",
+  "task_name": "Doc-Hygiene + Wire State-Archiving",
+  "todos_count": 5,
+  "prepared_at": "2026-06-09T13:50:00Z",
   "status": "ready",
   "handoff_injected": {
-    "done": "Codex gate proven via test_codex_gate_live.py (14 tests); real codex stdout fixture captured (codex-cli 0.124.0). Finding: real codex exec emits double-fenced blocks triggering the degrade path; logged to tool-friction-log, no code change. Full suite 314 passed, AST NONE.",
-    "failed": "none",
-    "needed": "Prove self-heal via a sandboxed synthetic-fail integration test driving remediation_controller triage to a diff-allowlist-breach escalation with no real edits or commits, confirm runtime reachability of remediate and remediation_controller from repo root, and verify the full suite passes with no regression."
+    "done": "Phase 14 closed; v0.14.0 released. Self-heal exercise ran through real remediation guards in a throwaway worktree (gate_remediation + passed_after_remediation emitted), main history pristine; codex_gate double-block parser fix applied (343 tests); gate passed attempt 1 with backend:codex verdict.",
+    "failed": "",
+    "needed": "Begin Phase 15 automation-surface audit: fix PLANS-INDEX.md stale pending rows, mark master-plan.md historical, wire archive_cross_phase_state into next-loop.md (source + .claude/ copy), add archiving test, and strike resolved friction-log entries."
   }
 }
