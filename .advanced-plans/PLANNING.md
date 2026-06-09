@@ -3,20 +3,20 @@ programme: "Advanced Planning Framework"
 status: in_progress
 last_updated: 2026-06-09
 
-current_phase: 13
+current_phase: 14
 current_loop: null
-gate_status: passed
-released: v0.11.0
-next_action: "Phase 13 gate PASSED attempt 1 (both agents pass; 296 tests, AST NONE, LOCKED unchanged). Run /next-phase to advance and cut v0.13.0. Follow-on: fix criteria_outcomes dict-vs-array bug in remediation_controller.py (gate finding, non-blocking)."
+gate_status: not_started
+released: v0.13.0
+next_action: "Phase 13 complete (gate PASSED attempt 1; v0.13.0). Phase 14 not yet defined — run /decompose-phase (or /new-phase) to plan it. Optional: cut git tag v0.13.0 and run /phase-compact for the Phase 13 cold artefact."
 
 active_branches:
   - branch: main
-    phase: 9
+    phase: 14
     session: primary
 
 phases:
-  complete: [1, 2, 3, 4, 5, 6, 7, 8, 9]
-  pending: [10]
+  complete: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+  pending: [14]
   failed: []
 
 state_files:
@@ -25,12 +25,13 @@ state_files:
   history: .advanced-plans/state/history.jsonl
 
 notes: |
-  Phase 9 — .advanced-plans/ Restructure: all 5 loops (032-036) complete.
-  035 narrowed hook allowlists + permissions to .advanced-plans/** and updated
-  Python path constants + install scripts. 036 rewrote CLAUDE.md, re-pointed all
-  core/ + platforms/ docs, updated pytest fixtures (72 passing), backfilled
-  PLANS-INDEX Phases 6-7. Grep audit clean; smoke test + git-history checks pass.
-  Phase 9 awaiting gate review (/run-gate).
+  Phase 13 — Self-Correcting Gate (loops 051-054): complete, gate PASSED attempt 1
+  (code-review-agent + phase-goals-agent both pass), released as v0.13.0. Bounded
+  triage->safety->fix->re-gate remediation loop in /next-phase --auto, with the
+  anti-gate-gaming safety spine (diff allowlist, frozen criteria, full
+  criteria_outcomes). Post-gate fix folded in: validate_regateverdict_criteria_outcomes
+  now parses the schema-compliant criteria_outcomes array (300 tests, AST NONE).
+  Phase 14 not yet planned.
 ---
 
 # PLANNING.md — Live Programme Dashboard

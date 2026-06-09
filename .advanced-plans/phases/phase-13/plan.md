@@ -1,7 +1,7 @@
 ---
 phase: 13
 name: "Self-Correcting Gate (Gate-Remediation Loop)"
-status: draft
+status: complete
 loops: [051, 052, 053, 054]
 design_spec: .advanced-plans/specs/2026-06-08-self-correcting-gate-design.md
 anchor_sha: 7936b34
