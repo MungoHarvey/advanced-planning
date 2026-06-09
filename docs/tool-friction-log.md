@@ -408,7 +408,7 @@ entries from here.
   `/run-gate` should explicitly expect phase-goals-agent to return verdict
   text and persist it main-thread-side (document this in run-gate.md).
 
-### [Path schema] — flat vs per-phase gate-verdicts location was never canonical
+### ~~[Path schema] — flat vs per-phase gate-verdicts location was never canonical~~
 
 - **Observed**: the framework shipped with two contradictory conventions for
   where gate verdict JSON lives. `run-gate.md` and `next-phase.md` step text
@@ -432,7 +432,7 @@ entries from here.
   check should assert no command or agent file references a non-canonical
   gate-verdicts path.
 
-### [Command rot] — slash-command step text carries stale hardcoded paths
+### ~~[Command rot] — slash-command step text carries stale hardcoded paths~~
 
 - **Observed**: even after the Phase 9 restructure, `/run-gate` and
   `/next-phase` command bodies still contain pre-restructure hardcoded paths in
@@ -455,6 +455,7 @@ entries from here.
   term, command files should reference path constants/a layout doc rather than
   inlining literal paths in every step, so a layout change is one edit not
   twelve.
+- **RESOLVED (Loop 060, 2026-06-09):** `path_audit.py` CI audit added — scans `platforms/claude-code/commands/**` and other scoped roots for pre-restructure path tokens; exits non-zero on any match; confirmed CLEAN on current tree.
 
 ### [Workflow gap] — auto flow stops at phase end instead of auto-running the gate
 

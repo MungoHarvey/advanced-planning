@@ -110,9 +110,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "path_audit.py (stdlib-only) written, scanning platforms/claude-code/commands+agents, core/agents+skills, .claude/commands+agents for three corruption signatures; 12 pytest tests green (356 total); CI job 4 added to ci.yml; transient-plant demo confirmed FAIL→CLEAN; friction-log [Path schema] and [Command rot] entries struck through."
   failed: ""
-  needed: ""
+  needed: "Begin loop-061: /sync-plans command (re-renders downstream artefacts from spec)."
 
 todos:
   - id: "loop-060-1"
@@ -120,7 +120,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "path_audit.py exists, exits non-zero with a clear report when a non-canonical token is present, exits zero on a clean tree; uses only pathlib/re/sys"
-    status: pending
+    status: completed
     complexity: high
     priority: high
   - id: "loop-060-2"
@@ -128,7 +128,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Tests cover pass + both fail signatures + the false-positive guard; all green under pytest"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-060-3"
@@ -136,7 +136,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "ci.yml runs the path audit on push/PR; the job is present and wired to fail the build on a non-canonical path"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-060-4"
@@ -144,7 +144,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Evidence recorded that the audit fails on the planted Phase-9-class corruption and passes once removed; working tree left clean"
-    status: pending
+    status: completed
     complexity: low
     priority: medium
   - id: "loop-060-5"
@@ -152,7 +152,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "Relevant friction-log entries struck through with resolution notes"
-    status: pending
+    status: completed
     complexity: low
     priority: low
 

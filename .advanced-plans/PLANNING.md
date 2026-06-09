@@ -4,7 +4,7 @@ status: in_progress
 last_updated: 2026-06-09
 
 current_phase: 15
-current_loop: ralph-loop-060
+current_loop: ralph-loop-061
 gate_status: pending
 released: v0.14.0
 next_action: "Phase 15 (Automation-Surface Audit) PLANNED — 5 loops (059-063), anchor bd9de6a, target v0.15.0. Scope: doc-hygiene + wire state-archiving (059); CI path-convention audit (060); /sync-plans (061); /next-loop --full (062); gate-override policy + codex version-coupling guard + release (063). Deferred: path-constants refactor, worker-layer missing-skill preflight. Next: /next-loop to begin loop-059, or /next-loop --auto to chain. NOTE: still-unpushed — operator to run `git push origin main --follow-tags` (env has no SSH key)."

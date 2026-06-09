@@ -83,3 +83,25 @@ jobs:
       - name: Verify no external dependencies
         run: |
           python -m platforms.python.ast_check platforms/python/ --exclude tests/ --exclude examples/
+
+  # ── Job 4: Path-convention audit ───────────────────────────────────────────
+  path-convention-audit:
+    name: Path Convention Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Audit for deprecated/corrupted path tokens
+        run: |
+          python -m platforms.python.path_audit
+        # Scans platforms/claude-code/commands/, platforms/claude-code/agents/,
+        # core/agents/, core/skills/, .claude/commands/, .claude/agents/ for:
+        #   - doubled prefix:  .advanced-.advanced-
+        #   - wrong nesting:   .claude/.advanced-plans
+        #   - deprecated token: .claude/plans/
+        # Exits non-zero (fails the build) if any violation is found.
