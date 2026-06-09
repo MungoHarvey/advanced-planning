@@ -1,14 +1,14 @@
 {
   "phase": "phase-14",
-  "loop_name": "ralph-loop-055",
+  "loop_name": "ralph-loop-056",
   "loop_file": ".advanced-plans/phases/phase-14/loops.md",
-  "task_name": "Runtime Install",
+  "task_name": "Codex Gate Proof",
   "todos_count": 4,
-  "prepared_at": "2026-06-09T00:00:00Z",
+  "prepared_at": "2026-06-09T10:00:00Z",
   "status": "ready",
   "handoff_injected": {
-    "done": "Phase 13 self-correcting gate shipped as v0.13.0 (bounded triage->fix->re-gate, anti-gaming spine, 296 tests passing, AST NONE); Phase 14 decomposed into loops 055-058 targeting v0.14.0.",
+    "done": "Refreshed .claude/commands/run-gate.md (92 codex refs) and next-phase.md (46 remediation refs) byte-identical from source; copied core/agents/codex-reviewer.md to .claude/agents/ byte-identical; added Runtime Drift section to CONTRIBUTING.md with explicit cp re-sync commands.",
     "failed": "none",
-    "needed": "Refresh .claude/commands/run-gate.md and next-phase.md byte-identical from source, copy core/agents/codex-reviewer.md to .claude/agents/, and add a CONTRIBUTING.md drift note with the re-sync command."
+    "needed": "Capture a real codex stdout fixture, write test_codex_gate_live.py proving extract_and_validate produces a schema-valid backend:codex verdict, add a graceful-degrade path test (no codex.json, gate_codex_skipped event), and record the codex preflight smoke result."
   }
 }
