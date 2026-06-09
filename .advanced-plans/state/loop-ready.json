@@ -1,14 +1,14 @@
 {
   "phase": "phase-15",
-  "loop_name": "ralph-loop-060",
+  "loop_name": "ralph-loop-061",
   "loop_file": ".advanced-plans/phases/phase-15/loops.md",
-  "task_name": "CI Path-Convention Audit",
-  "todos_count": 5,
-  "prepared_at": "2026-06-09T14:00:00Z",
+  "task_name": "/sync-plans Command",
+  "todos_count": 4,
+  "prepared_at": "2026-06-09T00:00:00Z",
   "status": "ready",
   "handoff_injected": {
-    "done": "PLANS-INDEX stale-pending rows corrected (042-046, 055-058, phase-14 draft→complete); master-plan.md marked historical; archive_cross_phase_state wired into next-loop.md Step 3a (source + byte-identical .claude/ copy); phase-boundary regression test added (344 tests green, AST NONE); friction-log entries struck through.",
+    "done": "path_audit.py (stdlib-only) written, scanning platforms/claude-code/commands+agents, core/agents+skills, .claude/commands+agents for three corruption signatures; 12 pytest tests green (356 total); CI job 4 added to ci.yml; transient-plant demo confirmed FAIL→CLEAN; friction-log [Path schema] and [Command rot] entries struck through.",
     "failed": "",
-    "needed": "Begin loop-060: CI path-convention audit (path_audit.py + tests + ci.yml job)."
+    "needed": "Begin loop-061: /sync-plans command (re-renders downstream artefacts from spec)."
   }
 }
