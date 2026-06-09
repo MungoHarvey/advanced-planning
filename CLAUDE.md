@@ -129,6 +129,8 @@ Changes to either schema require an explicit decision logged in this file.
 
 **`--auto` flag**: `/next-loop --auto` chains loops until the phase plan is exhausted; `/next-phase --auto` chains gate review → next-phase planning → loop execution across phase boundaries until the programme completes or a gate fails.
 
+**`--full` flag**: `/next-loop --full` enables one-pass population of stub loops — when the next pending loop's `todos[]` is empty or unpopulated, it chains `plan-todos` → `plan-skill-identification` → `plan-subagent-identification` in sequence (Step 3c) to fully populate the loop (todos, skills, agents) before the orchestrator runs. When `--full` is absent, behaviour is unchanged. `--auto` and `--full` are composable: `/next-loop --auto --full` chains loops and populates any stubs encountered.
+
 ### Runtime Directory
 
 See `docs/path-conventions.md` for the full canonical path map, deprecated tokens, and

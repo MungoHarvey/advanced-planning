@@ -1,14 +1,14 @@
 {
-  "loop_name": "ralph-loop-061",
+  "loop_name": "ralph-loop-062",
   "loop_file": ".advanced-plans/phases/phase-15/loops.md",
   "status": "completed",
   "todos_done": 4,
   "todos_count": 4,
   "todos_failed": 0,
-  "completed_at": "2026-06-09T09:04:00Z",
+  "completed_at": "2026-06-09T00:00:00Z",
   "handoff": {
-    "done": "/sync-plans command written (platforms/claude-code/commands/sync-plans.md + byte-identical .claude/ copy); CLAUDE.md Command Surface table updated; drift-kill demo confirmed via 3 new pytest tests (seeded task-name + status drift reconciled, idempotency and no-op cases verified; 359 tests total green, AST NONE); [Plans pipeline] friction-log entry struck through.",
+    "done": "/next-loop --full added as Step 3c in next-loop.md (source + byte-identical .claude/ copy); CLAUDE.md --full flag documented; demo fixture shows stub->3-todos chain via plan-todos->plan-skill-identification->plan-subagent-identification; [Workflow chaining] friction-log entry struck through; path_audit CLEAN.",
     "failed": "",
-    "needed": "Begin loop-062: /next-loop --full one-pass loop population."
+    "needed": "Begin loop-063: gate-override policy + codex version-coupling guard + v0.15.0 release."
   }
 }

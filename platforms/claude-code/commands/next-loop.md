@@ -1,7 +1,7 @@
 ---
 description: Execute the next pending ralph loop using the two-agent handoff pattern. Spawns ralph-orchestrator (Sonnet) to prepare the loop, then spawns ralph-loop-worker (Sonnet) to execute it. Run repeatedly to advance through all loops in the phase plan. Use --auto to chain loops until the phase completes.
 allowed-tools: Read, Write, Glob, Bash, Edit, TodoWrite, Agent
-argument-hint: "[--auto]"
+argument-hint: "[--auto] [--full]"
 ---
 
 # /next-loop
@@ -19,13 +19,19 @@ ls .advanced-plans/phases/phase-*/loops.md 2>/dev/null | head -5 || echo "NONE"
 
 If no loop files found: print `No phase loops found. Run /decompose-phase first.` and stop.
 
-### 2. Parse --auto flag
+### 2. Parse --auto and --full flags
 
 If `$ARGUMENTS` contains `--auto`:
 - Set `AUTO_MODE = true`
 - Print: `Autonomous mode: will chain loops until phase complete or failure.`
 
 Otherwise: `AUTO_MODE = false` (default single-loop behaviour).
+
+If `$ARGUMENTS` contains `--full`:
+- Set `FULL_MODE = true`
+- Print: `Full-population mode: will populate stub loops (todos → skills → agents) before execution.`
+
+Otherwise: `FULL_MODE = false` (default; assumes todos are already populated).
 
 ### 2b. Check if all loops are complete
 
@@ -105,6 +111,51 @@ completion the loop-complete.json is newer than loop-ready.json).
 
 Note: cross-phase stale files were already archived in Step 3a before this check runs,
 so `loop-ready.json` here (if present) belongs to the current phase.
+
+### 3c. One-pass population (--full mode only)
+
+This step runs **only when `FULL_MODE = true`**.
+
+Before spawning the orchestrator, identify the next pending loop in the current phase
+(the first loop whose `todos[]` array is empty or contains only stub entries with
+`status: pending` and no meaningful `content`). If the loop is fully populated, skip
+this step and proceed to Step 4.
+
+If the next pending loop is an **unpopulated stub** (i.e. `todos[]` is empty or all
+todos have no `skill:` / `agent:` values assigned beyond `NA` placeholders from a
+bare stub), run the three planning skills in sequence to fully populate it before
+the orchestrator reads it:
+
+1. **`plan-todos`** — derive atomic, verifiable todos from the loop's description and
+   success criteria. Write the `todos[]` array into the loop's YAML frontmatter.
+   Resolve skill path: `.claude/skills/plan-todos/SKILL.md` (project-local) or
+   `~/.claude/skills/plan-todos/SKILL.md` (global fallback).
+
+2. **`plan-skill-identification`** — read the populated `todos[]`, assign the most
+   appropriate installed skill (or `NA`) to each todo's `skill:` field in-place.
+   Resolve skill path: `.claude/skills/plan-skill-identification/SKILL.md` (project-local)
+   or `~/.claude/skills/plan-skill-identification/SKILL.md` (global fallback).
+
+3. **`plan-subagent-identification`** — read the todos with skills assigned, assign the
+   appropriate agent (or `NA`) to each todo's `agent:` field in-place.
+   Resolve skill path: `.claude/skills/plan-subagent-identification/SKILL.md`
+   (project-local) or `~/.claude/skills/plan-subagent-identification/SKILL.md`
+   (global fallback).
+
+**Each skill is loaded (SKILL.md read), applied, then discarded before the next skill
+is loaded.** Do not carry skill context across steps.
+
+After all three skills have run, the loop's `todos[]` must be fully populated (content,
+skill, agent, outcome, status, priority all set). Print:
+
+```
+--full: stub loop populated via plan-todos → plan-skill-identification → plan-subagent-identification
+  Todos populated: [count]
+```
+
+Then continue to Step 4 (the orchestrator will see the now-populated loop).
+
+If `FULL_MODE = false`: skip this step entirely. Behaviour is **unchanged**.
 
 ### 4. Spawn ralph-orchestrator
 

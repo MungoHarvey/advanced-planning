@@ -286,9 +286,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "/next-loop --full added as Step 3c in next-loop.md (source + byte-identical .claude/ copy); CLAUDE.md --full flag documented; demo fixture shows stub→3-todos chain via plan-todos→plan-skill-identification→plan-subagent-identification; [Workflow chaining] friction-log entry struck through; path_audit CLEAN."
   failed: ""
-  needed: ""
+  needed: "Begin loop-063: gate-override policy + codex version-coupling guard + v0.15.0 release."
 
 todos:
   - id: "loop-062-1"
@@ -296,7 +296,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "next-loop.md documents --full and its one-pass population behaviour; the flag is parsed alongside --auto"
-    status: pending
+    status: completed
     complexity: high
     priority: high
   - id: "loop-062-2"
@@ -304,7 +304,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: ".claude/commands/next-loop.md byte-identical to source; CLAUDE.md mentions --full"
-    status: pending
+    status: completed
     complexity: low
     priority: medium
   - id: "loop-062-3"
@@ -312,7 +312,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Evidence captured that a stub loop is fully populated by a single --full invocation, equivalent to the manual chain"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-062-4"
@@ -320,7 +320,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "The workflow-chaining friction-log entry struck through with a resolution note"
-    status: pending
+    status: completed
     complexity: low
     priority: low
 

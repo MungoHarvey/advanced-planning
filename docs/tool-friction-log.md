@@ -291,7 +291,7 @@ entries from here.
   which should be corrected (because they refer to this repo's source
   layout).
 
-### [Workflow chaining] — Stub generation and todo population are separate steps with no automation
+### ~~[Workflow chaining] — Stub generation and todo population are separate steps with no automation~~
 
 - **Observed**: the ralph-loop-planner skill says to generate stubs with
   empty `todos[]`, then run `plan-todos`, then `plan-skill-identification`,
@@ -305,6 +305,7 @@ entries from here.
   `/new-loop --full` could chain stubs → todos → skill assignment → agent
   assignment in one call. Probably a default behaviour rather than a flag
   once it's proven safe.
+- **RESOLVED (Loop 062, 2026-06-09):** `/next-loop --full` added (Step 3c); on a stub loop (empty `todos[]`), chains `plan-todos` → `plan-skill-identification` → `plan-subagent-identification` in one pass before the orchestrator runs, populating todos, skills, and agents in a single invocation; demo-verified on throwaway fixture (stub-loop-for-full-demo.md); `--full` and `--auto` are composable.
 
 ---
 
