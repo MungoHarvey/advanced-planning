@@ -29,7 +29,7 @@ Tracking document for the **Advanced Planning System — Open-Source Restructure
 | 11 | Friction Remediation & v0.x Pre-Release | [`phase-11/plan.md`](phases/phase-11/plan.md) | **complete** | 042–046 | Resolve 9 highest-impact tool-friction-log entries + bootstrap version scheme. Gate PASSED attempt 1 (code-review 95, phase-goals 93). Tag `v0.11.0` cut + pushed; GitHub Release published as pre-release. Key finding: S5 phase-goals-agent Write tool propagation confirmed upstream-blocked at runtime; FALLBACK contingency in run-gate.md is the supported workaround. Design: [`2026-05-20-phase-11-friction-remediation-design.md`](specs/2026-05-20-phase-11-friction-remediation-design.md). |
 | 12 | Codex Cross-Model Second-Opinion Gate Reviewer | [`phase-12/plan.md`](phases/phase-12/plan.md) | **complete** | 047–050 | Add OpenAI Codex as an independent cross-model second opinion on the phase-goals gate check (augment mode: gate = AND of all; degrades to today's two-agent gate when Codex absent). "B+" approach: tested zero-dep `codex_gate.py` (extract/validate/aggregate) + portable `core/agents/codex-reviewer.md` contract + run-gate parallel-independent wiring. Office-hours design + /plan-eng-review CLEARED. Gate PASSED attempt 1 (code-review 95, phase-goals 95); v0.12.0 staged. Design: [`2026-06-08-phase-12-codex-gate-reviewer-design.md`](specs/2026-06-08-phase-12-codex-gate-reviewer-design.md). |
 | 13 | Self-Correcting Gate (Gate-Remediation Loop) | [`phase-13/complete.md`](phases/phase-13/complete.md) | **complete** | 051–054 | Turn the gate-fail dead-end into a bounded, guard-railed self-heal under `/next-phase --auto`: triage findings (structural→re-run loop, localized→focused fix), remediate, re-gate with fresh blind agents, bounded 2 cycles then escalate. Safety spine (anti gate-gaming): diff allowlist + frozen criteria + full criteria_outcomes; git-state policy; composition rules. Brainstorming + /plan-eng-review CLEARED + /codex guardrails folded in. Gate PASSED attempt 1 (both agents); v0.13.0. Post-gate fix: criteria_outcomes array parsing (300 tests). Design: [`2026-06-08-self-correcting-gate-design.md`](specs/2026-06-08-self-correcting-gate-design.md). |
-| 14 | Install & Exercise Codex Gate + Self-Heal in Runtime | [`phase-14/plan.md`](phases/phase-14/plan.md) | **draft** | 055–058 | Wire the Phase 12 codex gate + Phase 13 self-heal (both built in source, never installed) into this repo's project `.claude/` runtime, then prove both via a two-track strategy: automated tests (codex extract/validate + degrade; sandboxed self-heal triage→escalation) AND a witnessed live exercise (codex fires on Phase 14's own gate; self-heal via a deliberately-induced, worktree-isolated, reverted gate fail). Refresh stale command bodies (run-gate 0→codex, next-phase 0→remediation); copy codex-reviewer to `.claude/agents/` for parity (no `platforms/` duplicate — run-gate resolves the `core/agents/` path in-repo); CONTRIBUTING drift note. Adversarial review resolved F1 (project `.claude/` is the live target) + F2 (no codex-reviewer packaging) empirically. Brainstorming + design spec approved. Target v0.14.0. Design: [`2026-06-09-phase-14-install-exercise-codex-self-heal-design.md`](specs/2026-06-09-phase-14-install-exercise-codex-self-heal-design.md). |
+| 14 | Install & Exercise Codex Gate + Self-Heal in Runtime | [`phase-14/plan.md`](phases/phase-14/plan.md) | **complete** | 055–058 | Wire the Phase 12 codex gate + Phase 13 self-heal (both built in source, never installed) into this repo's project `.claude/` runtime, then prove both via a two-track strategy: automated tests (codex extract/validate + degrade; sandboxed self-heal triage→escalation) AND a witnessed live exercise (codex fires on Phase 14's own gate; self-heal via a deliberately-induced, worktree-isolated, reverted gate fail). Refresh stale command bodies (run-gate 0→codex, next-phase 0→remediation); copy codex-reviewer to `.claude/agents/` for parity (no `platforms/` duplicate — run-gate resolves the `core/agents/` path in-repo); CONTRIBUTING drift note. Adversarial review resolved F1 (project `.claude/` is the live target) + F2 (no codex-reviewer packaging) empirically. Brainstorming + design spec approved. Target v0.14.0. Design: [`2026-06-09-phase-14-install-exercise-codex-self-heal-design.md`](specs/2026-06-09-phase-14-install-exercise-codex-self-heal-design.md). |
 
 ---
 
@@ -113,11 +113,11 @@ section existed — their cold artefacts exist but manifest entries are not yet 
 | 039 | 10 | Command Reframe | `phases/phase-10/loops.md` | **complete** | — | 1 |
 | 040 | 10 | PreCompact Hook + CLAUDE.md Policy | `phases/phase-10/loops.md` | **complete** | — | 1 |
 | 041 | 10 | Verification + End-to-End | `phases/phase-10/loops.md` | **complete** | — | 1 |
-| 042 | 11 | Constraints + Schema Cleanup | `phases/phase-11/loops.md` | **pending** | — | 1 |
-| 043 | 11 | Skills + Agents | `phases/phase-11/loops.md` | **pending** | — | 1 |
-| 044 | 11 | Migration Audit + Durability | `phases/phase-11/loops.md` | **pending** | — | 1 |
-| 045 | 11 | Dogfood Self-Install | `phases/phase-11/loops.md` | **pending** | — | 1 |
-| 046 | 11 | Verification + v0.11.0 Release | `phases/phase-11/loops.md` | **pending** | — | 1 |
+| 042 | 11 | Constraints + Schema Cleanup | `phases/phase-11/loops.md` | **complete** | — | 1 |
+| 043 | 11 | Skills + Agents | `phases/phase-11/loops.md` | **complete** | — | 1 |
+| 044 | 11 | Migration Audit + Durability | `phases/phase-11/loops.md` | **complete** | — | 1 |
+| 045 | 11 | Dogfood Self-Install | `phases/phase-11/loops.md` | **complete** | — | 1 |
+| 046 | 11 | Verification + v0.11.0 Release | `phases/phase-11/loops.md` | **complete** | — | 1 |
 | 047 | 12 | Schema + Tested Gate Core | `phases/phase-12/loops.md` | **complete** | — | 1 |
 | 048 | 12 | Codex Reviewer Contract | `phases/phase-12/loops.md` | **complete** | — | 1 |
 | 049 | 12 | run-gate Wiring (Parallel + Conflict UX) | `phases/phase-12/loops.md` | **complete** | — | 1 |
@@ -126,10 +126,10 @@ section existed — their cold artefacts exist but manifest entries are not yet 
 | 052 | 13 | Gate Isolation Contract | `phases/phase-13/loops.md` | **complete** | — | 1 |
 | 053 | 13 | Remediation Controller | `phases/phase-13/loops.md` | **complete** | — | 1 |
 | 054 | 13 | Verification + v0.13.0 Release | `phases/phase-13/loops.md` | **complete** | — | 1 |
-| 055 | 14 | Runtime Install | `phases/phase-14/loops.md` | **pending** | — | 1 |
-| 056 | 14 | Codex Gate Proof | `phases/phase-14/loops.md` | **pending** | — | 1 |
-| 057 | 14 | Self-Heal Proof | `phases/phase-14/loops.md` | **pending** | — | 1 |
-| 058 | 14 | Witnessed Exercise + v0.14.0 Release | `phases/phase-14/loops.md` | **pending** | — | 1 |
+| 055 | 14 | Runtime Install | `phases/phase-14/loops.md` | **complete** | — | 1 |
+| 056 | 14 | Codex Gate Proof | `phases/phase-14/loops.md` | **complete** | — | 1 |
+| 057 | 14 | Self-Heal Proof | `phases/phase-14/loops.md` | **complete** | — | 1 |
+| 058 | 14 | Witnessed Exercise + v0.14.0 Release | `phases/phase-14/loops.md` | **complete** | — | 1 |
 | 059 | 15 | Doc-Hygiene + Wire State-Archiving | `phases/phase-15/loops.md` | **pending** | — | 1 |
 | 060 | 15 | CI Path-Convention Audit | `phases/phase-15/loops.md` | **pending** | — | 1 |
 | 061 | 15 | /sync-plans Command | `phases/phase-15/loops.md` | **pending** | — | 1 |

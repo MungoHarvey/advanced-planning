@@ -1,5 +1,13 @@
 # Master Plan: Advanced Planning System — Open-Source Restructure
 
+> **Status: HISTORICAL / SUPERSEDED**
+> This document defined the original 4-phase open-source-restructure programme.
+> The programme has since run 14+ additional phases beyond that original scope,
+> continuously extending and improving the framework. This file is preserved as
+> the original master plan and as a worked example of programme-level planning
+> using the framework itself. For the current programme state, see
+> `.advanced-plans/PLANNING.md` and `.advanced-plans/PLANS-INDEX.md`.
+
 ## Context
 
 The advanced planning system has been proven across 9 phases and 56+ ralph loops in a real-world forex trading prediction pipeline. It solves four failure modes in long-running AI agent sessions: context drift, unverifiable progress, no resumption path, and scope creep. The system uses hierarchical planning (Opus), loop orchestration (Sonnet), and bounded task execution (Haiku/Sonnet) to maintain quality across weeks of multi-session work.

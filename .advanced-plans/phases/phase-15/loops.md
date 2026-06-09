@@ -14,9 +14,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "PLANS-INDEX stale-pending rows corrected (042-046, 055-058, phase-14 draft→complete); master-plan.md marked historical; archive_cross_phase_state wired into next-loop.md Step 3a (source + byte-identical .claude/ copy); phase-boundary regression test added (344 tests green, AST NONE); friction-log entries struck through."
   failed: ""
-  needed: ""
+  needed: "Begin loop-060: CI path-convention audit (path_audit.py + tests + ci.yml job)."
 
 todos:
   - id: "loop-059-1"
@@ -24,7 +24,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "PLANS-INDEX.md shows no gate-passed loop with a **pending** status row; a grep for '**pending**' returns only genuinely-pending loops (if any)"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-059-2"
@@ -32,7 +32,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "master-plan.md no longer asserts a 4-phase programme as current; it either reflects the true phase count or carries a clear historical marker"
-    status: pending
+    status: completed
     complexity: low
     priority: medium
   - id: "loop-059-3"
@@ -40,7 +40,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "platforms/claude-code/commands/next-loop.md invokes archive_cross_phase_state at the loop-start/boundary; .claude/commands/next-loop.md is byte-identical to source"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-059-4"
@@ -48,7 +48,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "A pytest test (extending test_orchestrator_state_cleanup.py if apt) asserts a prior-phase loop-ready.json is moved to archive/ at boundary; full suite green"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-059-5"
@@ -56,7 +56,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "The relevant friction-log entries carry a struck-through header + one-line resolution note per the log's convention"
-    status: pending
+    status: completed
     complexity: low
     priority: medium
 

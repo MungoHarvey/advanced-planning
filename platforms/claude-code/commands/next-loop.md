@@ -38,7 +38,32 @@ print `All loops complete. Phase finished.` and stop.
 git add -A && git commit -m "checkpoint: before next-loop cycle" 2>/dev/null || true
 ```
 
-### 3a. Resume-detection check (mid-loop death guard)
+### 3a. Archive cross-phase stale state
+
+Before the resume check, archive any state files that belong to a previous phase.
+This prevents a stale `loop-ready.json` from a completed phase being silently consumed
+as if it referred to the current phase.
+
+```bash
+python -c "
+import pathlib, re
+planning = pathlib.Path('.advanced-plans/PLANNING.md').read_text(encoding='utf-8')
+m = re.search(r'^current_phase:\s*(\S+)', planning, re.MULTILINE)
+phase_num = m.group(1).strip('\"') if m else None
+if phase_num:
+    current_phase = phase_num if str(phase_num).startswith('phase-') else f'phase-{phase_num}'
+    from platforms.python.state_manager import archive_cross_phase_state
+    archived = archive_cross_phase_state('.advanced-plans/state', current_phase)
+    if archived:
+        print(f'Archived stale state from prior phase to: {archived}')
+    else:
+        print('No stale cross-phase state to archive.')
+else:
+    print('Could not determine current_phase from PLANNING.md; skipping archive.')
+"
+```
+
+### 3b. Resume-detection check (mid-loop death guard)
 
 Before spawning the orchestrator, check for signs that a previous worker died mid-loop:
 
@@ -77,6 +102,9 @@ DIRTY=$(git status --porcelain | wc -l | tr -d ' ')
 
 **This check MUST NOT block when state is genuinely clean** (e.g. after a successful loop
 completion the loop-complete.json is newer than loop-ready.json).
+
+Note: cross-phase stale files were already archived in Step 3a before this check runs,
+so `loop-ready.json` here (if present) belongs to the current phase.
 
 ### 4. Spawn ralph-orchestrator
 
@@ -212,7 +240,7 @@ If `AUTO_MODE` is true:
   ```
 
 - **status is "completed" or "partial" with more loops pending** → print `Auto-chaining to next loop...`
-  and return to Step 3 (git checkpoint), beginning the next loop cycle.
+  and return to Step 3 (git checkpoint), beginning the next loop cycle (which will re-run Step 3a archive check).
 
 ## Notes
 

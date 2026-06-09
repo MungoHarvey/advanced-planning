@@ -123,7 +123,7 @@ entries from here.
   `/sync-plans`) that re-renders downstream artefacts from the spec when it
   changes. Worth scoping in the deferred automation-surface phase.
 
-### [PLANS-INDEX.md] — Manifest entries for completed phases were not appended
+### ~~[PLANS-INDEX.md] — Manifest entries for completed phases were not appended~~
 
 - **Observed**: Phases 6 and 7 are complete (per recent commits and the
   phase-completes/ artefacts) but are missing from the PLANS-INDEX.md
@@ -134,6 +134,7 @@ entries from here.
   manifest entry (defect to investigate) or the append step requires manual
   invocation that was forgotten at the last gate pass. Should be its own
   scoping ticket.
+- **RESOLVED (Loop 059, 2026-06-09):** All completed-phase rows (042–046 phase-11; 055–058 phase-14) corrected from `**pending**` to `**complete**` in PLANS-INDEX.md; phase-14 Phases table entry updated from `**draft**` to `**complete**`.
 
 ### [Skill loading] — Skill content arrives as a long inline message
 
@@ -194,7 +195,7 @@ entries from here.
   hygiene scope, OR add a `decompose-phase` Loop 030 sub-task that sweeps the
   command file system for `.claude/plans/` references and corrects them.
 
-### [State files] — Stale loop-ready.json and loop-complete.json from previous phases
+### ~~[State files] — Stale loop-ready.json and loop-complete.json from previous phases~~
 
 - **Observed**: starting Phase 8 with `loop-ready.json` and `loop-complete.json`
   in `.claude/state/` from Phase 7. /next-loop's step 5 reads these without
@@ -206,6 +207,7 @@ entries from here.
   state files at phase boundary. Could check the loop_name in loop-ready.json
   against the next pending loop in the current phase; if they don't match,
   archive the old file to `.claude/state/archive/` before writing.
+- **RESOLVED (Loop 059, 2026-06-09):** `archive_cross_phase_state()` wired into `/next-loop` as new Step 3a; stale prior-phase `loop-ready.json`/`loop-complete.json` are archived to `.advanced-plans/state/archive/` before resume-detection; regression test added and full suite green (344 tests).
 
 ### [Git checkpoint pattern] — In-flight planning work gets bundled with execution checkpoint
 

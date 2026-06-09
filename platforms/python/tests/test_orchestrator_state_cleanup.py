@@ -175,3 +175,47 @@ class TestArchiveCrossPhaseState:
         archive_dir = state_dir / "archive"
         archived_files = list(archive_dir.iterdir())
         assert len(archived_files) == 1
+
+    # ---- Phase-boundary scenario (059 guard) -----------------------------------
+
+    def test_prior_phase_ready_moved_to_archive_not_read_as_current(
+        self, tmp_path: Path
+    ) -> None:
+        """Regression guard for the Loop-059 requirement.
+
+        At a phase boundary, a loop-ready.json that belongs to a prior phase
+        must be moved into archive/ — it must NOT remain in state_dir where the
+        new phase's orchestrator would consume it as if it were the current loop
+        assignment.
+
+        Scenario: phase-14 leaves loop-ready.json in state/; phase-15 starts.
+        """
+        state_dir = tmp_path / "state"
+        state_dir.mkdir()
+
+        # Simulate prior-phase remnant (phase-14 left this behind)
+        prior_ready_content = {
+            "phase": "phase-14",
+            "loop_name": "ralph-loop-058",
+            "status": "ready",
+            "task_name": "Witnessed Exercise + v0.14.0 Release",
+        }
+        ready_path = state_dir / "loop-ready.json"
+        ready_path.write_text(json.dumps(prior_ready_content), encoding="utf-8")
+
+        # Phase-15 orchestrator calls archive at startup
+        result = archive_cross_phase_state(state_dir, current_phase="phase-15")
+
+        # The file must have been moved — not readable as current assignment
+        assert result is not None, "archive_cross_phase_state must return the archived path"
+        assert not ready_path.exists(), (
+            "Prior-phase loop-ready.json must no longer exist in state_dir; "
+            "it would otherwise be consumed as the current phase's assignment"
+        )
+
+        # The archived file must be in archive/ and contain the original data intact
+        archive_dir = state_dir / "archive"
+        assert archive_dir.is_dir()
+        archived_data = json.loads(result.read_text(encoding="utf-8"))
+        assert archived_data["phase"] == "phase-14"
+        assert archived_data["loop_name"] == "ralph-loop-058"
