@@ -28,7 +28,7 @@ Tracking document for the **Advanced Planning System — Open-Source Restructure
 | 10 | /phase-compact Context-Compaction Reframe | [`phase-10/plan.md`](phases/phase-10/plan.md) | **complete** | 037–041 | Reframe /phase-compact from terse-artefact writer to conversation-context compaction (Approach A): per-phase handoff.md resume digest + unchanged LOCKED complete.md; context_meter transparency report; CLAUDE.md ## Compaction Instructions; PreCompact freshness hook; AskUserQuestion consent/handoff. Gate PASSED attempt 1 (both agents). Design: [`2026-05-19-phase-compact-context-compaction-design.md`](specs/2026-05-19-phase-compact-context-compaction-design.md). |
 | 11 | Friction Remediation & v0.x Pre-Release | [`phase-11/plan.md`](phases/phase-11/plan.md) | **complete** | 042–046 | Resolve 9 highest-impact tool-friction-log entries + bootstrap version scheme. Gate PASSED attempt 1 (code-review 95, phase-goals 93). Tag `v0.11.0` cut + pushed; GitHub Release published as pre-release. Key finding: S5 phase-goals-agent Write tool propagation confirmed upstream-blocked at runtime; FALLBACK contingency in run-gate.md is the supported workaround. Design: [`2026-05-20-phase-11-friction-remediation-design.md`](specs/2026-05-20-phase-11-friction-remediation-design.md). |
 | 12 | Codex Cross-Model Second-Opinion Gate Reviewer | [`phase-12/plan.md`](phases/phase-12/plan.md) | **complete** | 047–050 | Add OpenAI Codex as an independent cross-model second opinion on the phase-goals gate check (augment mode: gate = AND of all; degrades to today's two-agent gate when Codex absent). "B+" approach: tested zero-dep `codex_gate.py` (extract/validate/aggregate) + portable `core/agents/codex-reviewer.md` contract + run-gate parallel-independent wiring. Office-hours design + /plan-eng-review CLEARED. Gate PASSED attempt 1 (code-review 95, phase-goals 95); v0.12.0 staged. Design: [`2026-06-08-phase-12-codex-gate-reviewer-design.md`](specs/2026-06-08-phase-12-codex-gate-reviewer-design.md). |
-| 13 | Self-Correcting Gate (Gate-Remediation Loop) | [`phase-13/plan.md`](phases/phase-13/plan.md) | **draft** | 051–054 | Turn the gate-fail dead-end into a bounded, guard-railed self-heal under `/next-phase --auto`: triage findings (structural→re-run loop, localized→focused fix), remediate, re-gate with fresh blind agents, bounded 2 cycles then escalate. Safety spine (anti gate-gaming): diff allowlist + frozen criteria + full criteria_outcomes; git-state policy; composition rules. Brainstorming + /plan-eng-review CLEARED + /codex guardrails folded in. Design: [`2026-06-08-self-correcting-gate-design.md`](specs/2026-06-08-self-correcting-gate-design.md). |
+| 13 | Self-Correcting Gate (Gate-Remediation Loop) | [`phase-13/complete.md`](phases/phase-13/complete.md) | **complete** | 051–054 | Turn the gate-fail dead-end into a bounded, guard-railed self-heal under `/next-phase --auto`: triage findings (structural→re-run loop, localized→focused fix), remediate, re-gate with fresh blind agents, bounded 2 cycles then escalate. Safety spine (anti gate-gaming): diff allowlist + frozen criteria + full criteria_outcomes; git-state policy; composition rules. Brainstorming + /plan-eng-review CLEARED + /codex guardrails folded in. Gate PASSED attempt 1 (both agents); v0.13.0. Post-gate fix: criteria_outcomes array parsing (300 tests). Design: [`2026-06-08-self-correcting-gate-design.md`](specs/2026-06-08-self-correcting-gate-design.md). |
 
 ---
 
@@ -46,6 +46,15 @@ section existed — their cold artefacts exist but manifest entries are not yet 
   highlights:
     - Data home migrated to .advanced-plans/; all 12 success criteria met (verdict attempt-2 PASS)
     - PLANNING.md YAML dashboard introduced for cold-start orientation
+
+- phase: 13
+  title: "Self-Correcting Gate (Gate-Remediation Loop)"
+  status: passed
+  commits: 7936b34..f988a71
+  detail: .advanced-plans/phases/phase-13/complete.md
+  highlights:
+    - Bounded triage→safety→fix→re-gate self-heal in /next-phase --auto; all 11 criteria met (attempt-1 PASS)
+    - Anti-gate-gaming safety spine: diff allowlist + frozen-criteria hash + full criteria_outcomes
 
 ---
 
@@ -103,10 +112,10 @@ section existed — their cold artefacts exist but manifest entries are not yet 
 | 048 | 12 | Codex Reviewer Contract | `phases/phase-12/loops.md` | **complete** | — | 1 |
 | 049 | 12 | run-gate Wiring (Parallel + Conflict UX) | `phases/phase-12/loops.md` | **complete** | — | 1 |
 | 050 | 12 | Verification + v0.12.0 Release | `phases/phase-12/loops.md` | **complete** | — | 1 |
-| 051 | 13 | Triage Core + Channel Move | `phases/phase-13/loops.md` | **pending** | — | 1 |
-| 052 | 13 | Gate Isolation Contract | `phases/phase-13/loops.md` | **pending** | — | 1 |
-| 053 | 13 | Remediation Controller | `phases/phase-13/loops.md` | **pending** | — | 1 |
-| 054 | 13 | Verification + v0.13.0 Release | `phases/phase-13/loops.md` | **pending** | — | 1 |
+| 051 | 13 | Triage Core + Channel Move | `phases/phase-13/loops.md` | **complete** | — | 1 |
+| 052 | 13 | Gate Isolation Contract | `phases/phase-13/loops.md` | **complete** | — | 1 |
+| 053 | 13 | Remediation Controller | `phases/phase-13/loops.md` | **complete** | — | 1 |
+| 054 | 13 | Verification + v0.13.0 Release | `phases/phase-13/loops.md` | **complete** | — | 1 |
 
 ---
 
