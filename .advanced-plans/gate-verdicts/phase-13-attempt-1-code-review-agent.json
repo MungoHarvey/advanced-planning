@@ -1,0 +1,82 @@
+{
+  "phase": "phase-13",
+  "attempt": 1,
+  "timestamp": "2026-06-09T00:00:00Z",
+  "agent": "code-review-agent",
+  "verdict": "pass",
+  "confidence": 95,
+  "findings": [
+    {
+      "severity": "warning",
+      "location": "platforms/python/remediation_controller.py:validate_regateverdict_criteria_outcomes (line 302-303)",
+      "description": "validate_regateverdict_criteria_outcomes treats criteria_outcomes as a dict (using 'c not in outcomes'), but gate-verdict.schema.json defines criteria_outcomes as an array of objects with criterion/status/evidence fields. A schema-valid verdict would have criteria_outcomes as a list of dicts, so 'c not in outcomes' would always evaluate to True (string never found in a list of dicts), causing every criterion to appear missing and triggering false escalations in the re-gate path.",
+      "evidence": "remediation_controller.py line 302: outcomes = verdict.get('criteria_outcomes', {}); line 303: missing = [c for c in frozen_criteria if c not in outcomes]. Schema at core/state/gate-verdict.schema.json lines 80-94 defines criteria_outcomes as 'type: array' with items containing criterion/status/evidence. Tests in TestValidateRegateVerdictCriteriaOutcomes all use dict-format criteria_outcomes (not schema-compliant), so tests pass but function would fail on real agent verdicts."
+    },
+    {
+      "severity": "info",
+      "location": "platforms/python/tests/test_versioning.py (TestInjectFailureContext class)",
+      "description": "inject_failure_context test imports json as _json inside test methods rather than at module top level. Minor style inconsistency — no functional impact.",
+      "evidence": "test_versioning.py lines 187, 203: 'import json as _json' inside test method bodies."
+    }
+  ],
+  "loops_to_revert": [],
+  "failure_notes": [],
+  "phase_title": "Self-Correcting Gate (Gate-Remediation Loop)",
+  "criteria_outcomes": [
+    {
+      "criterion": "platforms/python/remediate.py defines triage_findings returning {structural, localized, unfixable}; routes loops_to_revert->structural, critical+file/line->localized, else->unfixable; ignores warning/info; AST NONE",
+      "status": "met",
+      "evidence": "remediate.py present with correct routing logic; python -m platforms.python.ast_check returns NONE for remediate.py; all 19 triage test cases pass."
+    },
+    {
+      "criterion": "test_remediate.py covers: structural, localized, unfixable, warning/info-ignored, empty verdict, multi-agent union, contradictory-location conflict; pytest passes",
+      "status": "met",
+      "evidence": "test_remediate.py has TestTriageFindings with 19 test methods covering all required scenarios; all pass (111 tests in the three targeted files)."
+    },
+    {
+      "criterion": "inject_failure_context writes retry-context.json sidecar and NO LONGER writes gate_failure_context into loops.md frontmatter; test_versioning.py asserts both (CRITICAL regression); gate-failure-context.schema.json describes the sidecar",
+      "status": "met",
+      "evidence": "versioning.py inject_failure_context writes sidecar at path.parent/retry-context.json and does not touch loop file; grep for 'gate_failure_context' in versioning.py finds zero matches; test_loop_file_not_modified and test_gate_failure_context_not_in_loop_file both pass; gate-failure-context.schema.json description updated to reference the sidecar path."
+    },
+    {
+      "criterion": "core/agents/gate-reviewer.md states the isolation rule (no read of retry-context.*/gate-verdicts/prior verdicts; evaluate frozen criteria; emit criteria_outcomes for ALL criteria); CC gate agents inherit it (no per-agent duplication)",
+      "status": "met",
+      "evidence": "gate-reviewer.md has full Re-Gate Isolation Rule section (lines 98-157) specifying prohibited reads, criteria-frozen.md precedence, and full criteria_outcomes requirement. No .claude/ path references in gate-reviewer.md."
+    },
+    {
+      "criterion": "/next-phase --auto gate-fail branch: cycle count from history.jsonl gate_fail events; bound 2 -> versioned-retry+STOP from pre-remediation snapshot",
+      "status": "met",
+      "evidence": "next-phase.md Step 7-AUTO-a documents count from history.jsonl gate_fail events; bound check 'cycles >= 2' triggers escalation to Step 7a; PRE_REMEDIATION_SHA recorded in Step 7-AUTO-b for use as baseline."
+    },
+    {
+      "criterion": "Remediation Safety enforced: diff allowlist rejection -> escalate; criteria-frozen.md written before cycle 1 and hash-checked before each re-gate; re-gate verdict missing any criterion -> escalate",
+      "status": "met",
+      "evidence": "next-phase.md Steps 7-AUTO-b, 7-AUTO-g, 7-AUTO-i, 7-AUTO-j document all three safety mechanisms; remediation_controller.py predicates validate_diff_allowlist, validate_criteria_hash, validate_regateverdict_criteria_outcomes implement them; predicate tests and gate-gaming guard tests all pass."
+    },
+    {
+      "criterion": "Git-State Policy enforced: remediation commit stages only allowlisted source (no git add -A); no-change detection excludes transient files; pre-remediation SHA recorded; dirty-tree preflight escalates",
+      "status": "met",
+      "evidence": "next-phase.md Step 7-AUTO-b documents PRE_REMEDIATION_SHA recording and dirty-tree preflight; Step 7-AUTO-h explicitly prohibits git add -A; Step 7-AUTO-g documents transient-excluded no-change detection; has_allowlisted_source_changes predicate + tests confirm transient exclusion."
+    },
+    {
+      "criterion": "Composition Rules: --force/--skip-gate skip remediation; failing re-run loop hits loop-fail STOP; contradictory findings escalate with remediation_conflict note; passed_after_remediation recorded on repaired pass",
+      "status": "met",
+      "evidence": "next-phase.md Step 7.0 documents --force/--skip-gate precedence; Step 7-AUTO-f documents loop-fail STOP; Step 7-AUTO-c documents conflict escalation; Step 7-AUTO-j documents passed_after_remediation=true on pass."
+    },
+    {
+      "criterion": "Without --auto, gate-fail behavior is byte-for-byte today's behavior (regression trace)",
+      "status": "met",
+      "evidence": "next-phase.md Step 7.0 states 'Without --auto, Step 7 runs the versioned-retry + STOP path unconditionally. This is byte-for-byte the same behavior as before.' TestAutoOffRegressionTrace.test_auto_off_path_does_not_invoke_controller_predicates passes."
+    },
+    {
+      "criterion": "VERSION is 0.13.0; CHANGELOG.md has a [0.13.0] section; CLAUDE.md has a Phase 13 decision-log entry; tag deferred to gate pass",
+      "status": "met",
+      "evidence": "VERSION file contains '0.13.0'; CHANGELOG.md has '## [0.13.0] - 2026-06-08' section; CLAUDE.md decision log has 'Phase 13 (2026-06-08): Self-correcting gate added...' entry."
+    },
+    {
+      "criterion": "All pre-existing tests pass; AST zero-dep NONE; LOCKED files byte-unchanged (docs/phase-complete.schema.md, docs/phase-manifest-entry.schema.md, docs/phase-handoff.schema.md, .advanced-plans/phases/phase-9/complete.md)",
+      "status": "met",
+      "evidence": "296 tests pass (python -m pytest platforms/python/tests/); AST check returns NONE for all 6 source modules; git diff fa799d3..HEAD on all four locked files returns no output (zero changes)."
+    }
+  ]
+}

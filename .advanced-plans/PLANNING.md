@@ -1,13 +1,13 @@
 ---
 programme: "Advanced Planning Framework"
 status: in_progress
-last_updated: 2026-06-08
+last_updated: 2026-06-09
 
 current_phase: 13
 current_loop: null
-gate_status: not_started
+gate_status: passed
 released: v0.11.0
-next_action: "Phase 13 loops 051-054 complete (self-correcting gate implemented, v0.13.0 staged, 296 tests pass). Run /run-gate to review Phase 13."
+next_action: "Phase 13 gate PASSED attempt 1 (both agents pass; 296 tests, AST NONE, LOCKED unchanged). Run /next-phase to advance and cut v0.13.0. Follow-on: fix criteria_outcomes dict-vs-array bug in remediation_controller.py (gate finding, non-blocking)."
 
 active_branches:
   - branch: main

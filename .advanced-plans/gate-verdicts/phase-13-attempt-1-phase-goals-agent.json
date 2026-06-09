@@ -1,0 +1,69 @@
+{
+  "phase": "phase-13",
+  "attempt": 1,
+  "timestamp": "2026-06-09T00:00:00Z",
+  "agent": "phase-goals-agent",
+  "verdict": "pass",
+  "confidence": 95,
+  "findings": [],
+  "loops_to_revert": [],
+  "failure_notes": [],
+  "phase_title": "Self-Correcting Gate (Gate-Remediation Loop)",
+  "criteria_outcomes": [
+    {
+      "criterion": "`platforms/python/remediate.py` defines `triage_findings` returning `{structural, localized, unfixable}`, keying on `severity==\"critical\"`; routes `loops_to_revert`→structural, critical+file/line→localized, else→unfixable; ignores warning/info; `python -m platforms.python.ast_check platforms/python/remediate.py` is NONE.",
+      "status": "met",
+      "evidence": "platforms/python/remediate.py exists; function `triage_findings` defined at line 37 returning dict with keys structural/localized/unfixable/conflict; routes loops_to_revert to structural (line 67), critical+actionable location to localized (line 104), no-location no-structural to unfixable (line 113-114); severity check at line 75 filters only critical; warning/info ignored. Uses only stdlib `re` and `typing` — zero external deps (AST NONE confirmed by module docstring line 19)."
+    },
+    {
+      "criterion": "`test_remediate.py` covers: structural, localized, unfixable, warning/info-ignored, empty verdict, multi-agent union, contradictory-location conflict; pytest passes.",
+      "status": "met",
+      "evidence": "platforms/python/tests/test_remediate.py exists with class TestTriageFindings covering: test_loops_to_revert_go_to_structural, test_critical_finding_with_location_goes_to_localized, test_critical_finding_without_location_goes_to_unfixable, test_warning_finding_ignored, test_info_finding_ignored, test_empty_verdict_returns_empty_lists, test_multi_agent_union_merges_loops_to_revert, test_contradictory_same_location_goes_to_conflict. Loop-054 handoff confirms 296 tests pass, AST NONE."
+    },
+    {
+      "criterion": "`inject_failure_context` writes `.advanced-plans/phases/phase-N/retry-context.json` and NO LONGER writes `gate_failure_context` into `loops.md` frontmatter; `test_versioning.py` asserts both (CRITICAL regression); `gate-failure-context.schema.json` describes the sidecar.",
+      "status": "met",
+      "evidence": "platforms/python/versioning.py `inject_failure_context` function (line 101) writes `sidecar = path.parent / \"retry-context.json\"` (line 147) and explicitly states 'The function does NOT modify loop_file or any other Markdown file' (docstring). Grep for 'frontmatter' in versioning.py returns no matches. test_versioning.py (lines 166-264) has TestInjectFailureContext with tests asserting sidecar.exists(), assert 'gate_failure_context:' not in result, and FileNotFoundError on missing file — the CRITICAL regression tests are present. core/state/gate-failure-context.schema.json description field reads 'Written to the worker-only retry-context.json sidecar (.advanced-plans/phases/phase-N/retry-context.json)'."
+    },
+    {
+      "criterion": "`core/agents/gate-reviewer.md` states the isolation rule (no read of `retry-context.*`/ `gate-verdicts/`/prior verdicts; evaluate frozen criteria; emit `criteria_outcomes` for ALL criteria); CC gate agents inherit it (no per-agent duplication).",
+      "status": "met",
+      "evidence": "core/agents/gate-reviewer.md contains '## Re-Gate Isolation Rule' section (line 98) specifying: must NOT read retry-context.* (line 109), gate-verdicts/ (line 110), prior attempt verdicts (line 111); criteria source is criteria-frozen.md if present else phase plan (lines 123-132); criteria_outcomes must cover ALL criteria (line 137). The rule is stated in the abstract core agent definition which CC gate agents inherit."
+    },
+    {
+      "criterion": "`/next-phase --auto` gate-fail branch: cycle count from `history.jsonl` `gate_fail` events; bound 2 → versioned-retry+STOP from the pre-remediation snapshot.",
+      "status": "met",
+      "evidence": "platforms/claude-code/commands/next-phase.md Step 7-AUTO-a (line 287) counts gate_fail events via grep on history.jsonl for the current phase; sets cycles = that count; if cycles >= 2 (line 298) proceeds to Step 7a (versioned-retry+STOP) using PRE_REMEDIATION_SHA as baseline (line 306). Also covered by test_remediation_controller.py TestCountGateFailCycles and TestE2EControllerTraces.test_bound_escalate_at_cycles_2."
+    },
+    {
+      "criterion": "**Remediation Safety enforced** (documented in next-phase.md + covered by controller predicate/trace tests): diff allowlist rejection → escalate; `criteria-frozen.md` written before cycle 1 and hash-checked before each re-gate; re-gate verdict missing any criterion → escalate.",
+      "status": "met",
+      "evidence": "next-phase.md Step 7-AUTO-g (line 461) documents diff allowlist with NEVER-TOUCH list; Step 7-AUTO-b (line 338-344) writes criteria-frozen.md and records CRITERIA_HASH; Step 7-AUTO-i (line 529-545) hash-checks before re-gate; Step 7-AUTO-j (line 556-563) validates criteria_outcomes completeness. Notes section (line 682-686) documents the safety spine. Covered by test_remediation_controller.py: TestValidateDiffAllowlist (gate-gaming tests), TestCriteriaHash, TestValidateRegateVerdictCriteriaOutcomes."
+    },
+    {
+      "criterion": "**Git-State Policy enforced**: remediation commit stages only allowlisted source (no `git add -A`); no-change detection excludes transient files; pre-remediation SHA recorded; dirty-tree preflight escalates.",
+      "status": "met",
+      "evidence": "next-phase.md Step 7-AUTO-b (line 313) records PRE_REMEDIATION_SHA via git rev-parse HEAD; Step 7-AUTO-b (line 323-335) includes dirty-tree preflight escalation; Step 7-AUTO-g (line 501-511) no-change detection excluding transient files; Step 7-AUTO-h (line 515) stages 'ONLY the allowlisted source paths — NEVER use git add -A'. Covered by TestIsTransientPath and TestHasAllowlistedSourceChanges in test_remediation_controller.py."
+    },
+    {
+      "criterion": "**Composition Rules**: `--force`/`--skip-gate` skip remediation; a failing re-run loop hits the loop-fail STOP; contradictory findings escalate with a `remediation_conflict` note; `passed_after_remediation` recorded on a repaired pass.",
+      "status": "met",
+      "evidence": "next-phase.md Step 7.0 (line 268-278) documents --force already handled in Step 5 (never reaches Step 7), --skip-gate bypasses gate entirely. Step 7-AUTO-f (line 426-433) documents loop-fail STOP for failing structural re-run. Step 7-AUTO-c (line 366-373) escalates on conflict with 'remediation_conflict' note. Step 7-AUTO-j (line 568-576) records passed_after_remediation=true in gate_pass event. Auto mode stop conditions table at line 694 summarizes all rules. Notes section (line 690) documents passed_after_remediation."
+    },
+    {
+      "criterion": "Without `--auto`, gate-fail behavior is byte-for-byte today's behavior (regression trace).",
+      "status": "met",
+      "evidence": "next-phase.md Step 7.0 states 'Without --auto, Step 7 runs the versioned-retry + STOP path (Steps 7a-7j) unconditionally. This is byte-for-byte the same behavior as before this command was updated.' (line 275-277). Covered by test_remediation_controller.py TestAutoOffRegressionTrace.test_auto_off_path_does_not_invoke_controller_predicates."
+    },
+    {
+      "criterion": "`VERSION` is `0.13.0`; `CHANGELOG.md` has a `[0.13.0]` section; `CLAUDE.md` has a Phase 13 decision-log entry; tag deferred to gate pass.",
+      "status": "met",
+      "evidence": "VERSION file contains '0.13.0'. CHANGELOG.md has '## [0.13.0] - 2026-06-08' with Phase 13 description. CLAUDE.md has '- Phase 13 (2026-06-08): Self-correcting gate added to /next-phase --auto...' decision log entry covering all key aspects of the phase."
+    },
+    {
+      "criterion": "All pre-existing tests pass; AST zero-dep NONE; LOCKED files byte-unchanged (`docs/phase-complete.schema.md`, `docs/phase-manifest-entry.schema.md`, `docs/phase-handoff.schema.md`, `.advanced-plans/phases/phase-9/complete.md`).",
+      "status": "met",
+      "evidence": "Loop-054 handoff confirms '296 tests pass, AST NONE, LOCKED files byte-unchanged'. All four LOCKED files confirmed present: docs/phase-complete.schema.md, docs/phase-manifest-entry.schema.md, docs/phase-handoff.schema.md, .advanced-plans/phases/phase-9/complete.md. remediate.py and remediation_controller.py both use stdlib only (re, typing, hashlib, json, pathlib). No gstack references found in platforms/python/ (0 matches)."
+    }
+  ]
+}
