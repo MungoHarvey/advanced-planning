@@ -1,14 +1,14 @@
 {
   "phase": "phase-14",
-  "loop_name": "ralph-loop-056",
+  "loop_name": "ralph-loop-057",
   "loop_file": ".advanced-plans/phases/phase-14/loops.md",
-  "task_name": "Codex Gate Proof",
-  "todos_count": 4,
-  "prepared_at": "2026-06-09T10:00:00Z",
+  "task_name": "Self-Heal Proof",
+  "todos_count": 3,
+  "prepared_at": "2026-06-09T10:30:00Z",
   "status": "ready",
   "handoff_injected": {
-    "done": "Refreshed .claude/commands/run-gate.md (92 codex refs) and next-phase.md (46 remediation refs) byte-identical from source; copied core/agents/codex-reviewer.md to .claude/agents/ byte-identical; added Runtime Drift section to CONTRIBUTING.md with explicit cp re-sync commands.",
+    "done": "Codex gate proven via test_codex_gate_live.py (14 tests); real codex stdout fixture captured (codex-cli 0.124.0). Finding: real codex exec emits double-fenced blocks triggering the degrade path; logged to tool-friction-log, no code change. Full suite 314 passed, AST NONE.",
     "failed": "none",
-    "needed": "Capture a real codex stdout fixture, write test_codex_gate_live.py proving extract_and_validate produces a schema-valid backend:codex verdict, add a graceful-degrade path test (no codex.json, gate_codex_skipped event), and record the codex preflight smoke result."
+    "needed": "Prove self-heal via a sandboxed synthetic-fail integration test driving remediation_controller triage to a diff-allowlist-breach escalation with no real edits or commits, confirm runtime reachability of remediate and remediation_controller from repo root, and verify the full suite passes with no regression."
   }
 }
