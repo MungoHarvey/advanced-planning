@@ -1,14 +1,14 @@
 {
-  "phase": "phase-13",
-  "loop_name": "ralph-loop-054",
-  "loop_file": ".advanced-plans/phases/phase-13/loops.md",
-  "task_name": "Verification + v0.13.0 Release",
-  "todos_count": 5,
-  "prepared_at": "2026-06-08T00:00:00Z",
+  "phase": "phase-14",
+  "loop_name": "ralph-loop-055",
+  "loop_file": ".advanced-plans/phases/phase-14/loops.md",
+  "task_name": "Runtime Install",
+  "todos_count": 4,
+  "prepared_at": "2026-06-09T00:00:00Z",
   "status": "ready",
   "handoff_injected": {
-    "done": "next-phase.md Step 7 bounded remediation controller (non-auto path preserved); remediation_controller.py (8 zero-dep predicates) + 58 tests covering all escalation paths; hashlib added to allow-set; 292 tests pass, AST NONE.",
-    "failed": "",
-    "needed": "ralph-loop-054: E2E traces (fix->re-gate->pass, bound->escalate, gate-gaming-blocked), gstack grep, VERSION 0.13.0 + CHANGELOG + CLAUDE.md decision log, full pytest + AST NONE + LOCKED files unchanged."
+    "done": "Phase 13 self-correcting gate shipped as v0.13.0 (bounded triage->fix->re-gate, anti-gaming spine, 296 tests passing, AST NONE); Phase 14 decomposed into loops 055-058 targeting v0.14.0.",
+    "failed": "none",
+    "needed": "Refresh .claude/commands/run-gate.md and next-phase.md byte-identical from source, copy core/agents/codex-reviewer.md to .claude/agents/, and add a CONTRIBUTING.md drift note with the re-sync command."
   }
 }
