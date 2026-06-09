@@ -57,6 +57,15 @@ section existed — their cold artefacts exist but manifest entries are not yet 
     - Bounded triage→safety→fix→re-gate self-heal in /next-phase --auto; all 11 criteria met (attempt-1 PASS)
     - Anti-gate-gaming safety spine: diff allowlist + frozen-criteria hash + full criteria_outcomes
 
+- phase: 14
+  title: "Install & Exercise Codex Gate + Self-Heal in Runtime"
+  status: passed
+  commits: 9465e55..d4aefc4
+  detail: .advanced-plans/phases/phase-14/complete.md
+  highlights:
+    - Codex gate + self-heal installed to runtime; proven via 343 tests + witnessed worktree self-heal (attempt-1 PASS, override)
+    - Framework gated itself: real backend:codex verdict written; first live run fixed 4 run-gate codex-invocation bugs
+
 ---
 
 ## Ralph Loops
