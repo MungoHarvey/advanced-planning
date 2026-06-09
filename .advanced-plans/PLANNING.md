@@ -4,10 +4,10 @@ status: in_progress
 last_updated: 2026-06-09
 
 current_phase: 15
-current_loop: null
+current_loop: ralph-loop-059
 gate_status: pending
 released: v0.14.0
-next_action: "Phase 14 CLOSED — gate passed (attempt 1, documented codex override), compaction artefacts written, v0.14.0 released and tagged (v0.13.0 + v0.14.0 tags cut on their gate-pass commits; local main + tags awaiting `git push origin main --follow-tags` by operator — env has no SSH key). Phase 15 not yet planned. Next: run /new-phase or /plan-and-phase to scope Phase 15, then /decompose-phase + /next-loop."
+next_action: "Phase 15 (Automation-Surface Audit) PLANNED — 5 loops (059-063), anchor bd9de6a, target v0.15.0. Scope: doc-hygiene + wire state-archiving (059); CI path-convention audit (060); /sync-plans (061); /next-loop --full (062); gate-override policy + codex version-coupling guard + release (063). Deferred: path-constants refactor, worker-layer missing-skill preflight. Next: /next-loop to begin loop-059, or /next-loop --auto to chain. NOTE: still-unpushed — operator to run `git push origin main --follow-tags` (env has no SSH key)."
 
 active_branches:
   - branch: main

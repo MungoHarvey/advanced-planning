@@ -130,6 +130,11 @@ section existed — their cold artefacts exist but manifest entries are not yet 
 | 056 | 14 | Codex Gate Proof | `phases/phase-14/loops.md` | **pending** | — | 1 |
 | 057 | 14 | Self-Heal Proof | `phases/phase-14/loops.md` | **pending** | — | 1 |
 | 058 | 14 | Witnessed Exercise + v0.14.0 Release | `phases/phase-14/loops.md` | **pending** | — | 1 |
+| 059 | 15 | Doc-Hygiene + Wire State-Archiving | `phases/phase-15/loops.md` | **pending** | — | 1 |
+| 060 | 15 | CI Path-Convention Audit | `phases/phase-15/loops.md` | **pending** | — | 1 |
+| 061 | 15 | /sync-plans Command | `phases/phase-15/loops.md` | **pending** | — | 1 |
+| 062 | 15 | /next-loop --full One-Pass Population | `phases/phase-15/loops.md` | **pending** | — | 1 |
+| 063 | 15 | Gate-Override Policy + codex Guard + Release | `phases/phase-15/loops.md` | **pending** | — | 1 |
 
 ---
 
