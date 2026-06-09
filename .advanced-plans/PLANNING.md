@@ -3,20 +3,20 @@ programme: "Advanced Planning Framework"
 status: in_progress
 last_updated: 2026-06-09
 
-current_phase: 14
+current_phase: 15
 current_loop: null
-gate_status: pass
-released: v0.13.0
-next_action: "Phase 14 GATE PASSED (attempt 1). code-review-agent + phase-goals-agent PASS; codex backend:codex verdict written (self-evidencing criterion met) — codex 'fail' recorded as documented override (read-only-sandbox/isolation false-negative, no deliverable defect). The gate's first real codex run surfaced + fixed 4 run-gate codex-invocation bugs (-s read-only, -o last-message, </dev/null, USERPROFILE auth) in source + byte-identical runtime. Next: /phase-compact 14, then /next-phase to advance; cut tags v0.13.0 + v0.14.0."
+gate_status: pending
+released: v0.14.0
+next_action: "Phase 14 CLOSED — gate passed (attempt 1, documented codex override), compaction artefacts written, v0.14.0 released and tagged (v0.13.0 + v0.14.0 tags cut on their gate-pass commits; local main + tags awaiting `git push origin main --follow-tags` by operator — env has no SSH key). Phase 15 not yet planned. Next: run /new-phase or /plan-and-phase to scope Phase 15, then /decompose-phase + /next-loop."
 
 active_branches:
   - branch: main
-    phase: 14
+    phase: 15
     session: primary
 
 phases:
-  complete: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-  pending: [14]
+  complete: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+  pending: []
   failed: []
 
 state_files:
@@ -25,13 +25,15 @@ state_files:
   history: .advanced-plans/state/history.jsonl
 
 notes: |
-  Phase 13 — Self-Correcting Gate (loops 051-054): complete, gate PASSED attempt 1
-  (code-review-agent + phase-goals-agent both pass), released as v0.13.0. Bounded
-  triage->safety->fix->re-gate remediation loop in /next-phase --auto, with the
-  anti-gate-gaming safety spine (diff allowlist, frozen criteria, full
-  criteria_outcomes). Post-gate fix folded in: validate_regateverdict_criteria_outcomes
-  now parses the schema-compliant criteria_outcomes array (300 tests, AST NONE).
-  Phase 14 not yet planned.
+  Phase 14 — Install & Exercise Codex Gate + Self-Heal in Runtime (loops 055-058):
+  complete, gate PASSED attempt 1. code-review-agent + phase-goals-agent both PASS
+  (conf 95/93); codex produced a backend:codex verdict (self-evidencing criterion met),
+  recorded fail as a documented override (read-only-sandbox/isolation false-negative,
+  no deliverable defect). First real codex run surfaced + fixed 4 run-gate
+  codex-invocation bugs. Witnessed self-heal ran in a discarded worktree (main pristine).
+  343 tests, AST NONE, 4 LOCKED files byte-unchanged. Released v0.14.0; tags v0.13.0 +
+  v0.14.0 cut locally on gate-pass commits (push pending — no SSH key in env).
+  Phase 15 not yet planned.
 ---
 
 # PLANNING.md — Live Programme Dashboard
@@ -46,25 +48,26 @@ current phase, loop, gate state, and recommended next action.
 
 ## What to do next
 
-All 5 Phase 9 loops are complete. Gate review attempt 1 **FAILED** (both
-agents) on a self-inflicted double-prefix path corruption in 4 command
-files, introduced by Loop 036's substitution pass. The corruption and the
-secondary findings have been remediated in-place. Re-run `/run-gate` for
-attempt 2.
+Phase 14 is **closed** — gate passed (attempt 1, documented codex override),
+compaction artefacts written, v0.14.0 released. Tags `v0.13.0` and `v0.14.0`
+are cut locally on their gate-pass commits; `main` (+ tags) still needs
+`git push origin main --follow-tags` by the operator (this environment has no
+SSH key). Phase 15 is **not yet planned** — run `/new-phase` or
+`/plan-and-phase` to scope it, then `/decompose-phase` + `/next-loop`.
 
 ---
 
-## Phase 9 Progress
+## Phase 14 Progress
 
-Phase 9 — `.advanced-plans/` Restructure decomposes into 5 loops:
+Phase 14 — Install & Exercise Codex Gate + Self-Heal in Runtime, 4 loops:
 
 | Loop | Task | Status |
 |---|---|---|
-| ralph-loop-032 | Skeleton + Preconditions | completed |
-| ralph-loop-033 | File Migration | completed |
-| ralph-loop-034 | Command Rewrites + Phase 8 Absorption | completed |
-| ralph-loop-035 | Hooks + Permissions + Python + Install | completed |
-| ralph-loop-036 | Docs + Tests + Backfill + Audit | completed (gate-1 remediated) |
+| ralph-loop-055 | Runtime install (byte-identical commands + codex-reviewer) | completed |
+| ralph-loop-056 | Codex gate proof (live fixture + degrade test) | completed |
+| ralph-loop-057 | Self-heal proof (sandboxed integration test) | completed |
+| ralph-loop-058 | Witnessed worktree self-heal + v0.14.0 release | completed |
 
-Loop file: `.advanced-plans/phases/phase-9/loops.md`
-Gate verdicts: `.advanced-plans/gate-verdicts/phase-9-attempt-1-*.json`
+Loop file: `.advanced-plans/phases/phase-14/loops.md`
+Gate verdicts: `.advanced-plans/gate-verdicts/phase-14-attempt-1-*.json`
+Compaction: `.advanced-plans/phases/phase-14/complete.md` + `handoff.md`
