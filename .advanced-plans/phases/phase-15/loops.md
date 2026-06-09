@@ -203,9 +203,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "/sync-plans command written (platforms/claude-code/commands/sync-plans.md + byte-identical .claude/ copy); CLAUDE.md Command Surface table updated; drift-kill demo confirmed via 3 new pytest tests (seeded task-name + status drift reconciled, idempotency and no-op cases verified; 359 tests total green, AST NONE); [Plans pipeline] friction-log entry struck through."
   failed: ""
-  needed: ""
+  needed: "Begin loop-062: /next-loop --full one-pass loop population."
 
 todos:
   - id: "loop-061-1"
@@ -213,7 +213,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "sync-plans.md exists with numbered steps, a usage section, and error modes; references only canonical .advanced-plans/ paths"
-    status: pending
+    status: completed
     complexity: high
     priority: high
   - id: "loop-061-2"
@@ -221,7 +221,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: ".claude/commands/sync-plans.md byte-identical to source; CLAUDE.md Command Surface table lists /sync-plans with its one-line purpose"
-    status: pending
+    status: completed
     complexity: low
     priority: medium
   - id: "loop-061-3"
@@ -229,7 +229,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Evidence captured that a seeded spec→index drift is reconciled by /sync-plans without hand-editing the index"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-061-4"
@@ -237,7 +237,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "The drift friction-log entry struck through with a resolution note"
-    status: pending
+    status: completed
     complexity: low
     priority: low
 

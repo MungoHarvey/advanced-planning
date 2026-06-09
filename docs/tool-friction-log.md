@@ -106,7 +106,7 @@ entries from here.
   to the design spec and phase plan it's producing". Or: gate language could
   be "no code edits to source files outside `plans/` and `docs/`".
 
-### [Plans pipeline] — Three artefacts encode the same design
+### ~~[Plans pipeline] — Three artefacts encode the same design~~
 
 - **Observed**: a single design (Phase 8) is documented in three places:
   1. `plans/2026-05-13-framework-consistency-audit-remediation.md` (spec)
@@ -122,6 +122,7 @@ entries from here.
   spec rather than co-authored. Short-term — a single command (e.g.,
   `/sync-plans`) that re-renders downstream artefacts from the spec when it
   changes. Worth scoping in the deferred automation-surface phase.
+- **RESOLVED (Loop 061, 2026-06-09):** `/sync-plans <phase-id>` command added; reconciles the PLANS-INDEX.md Phases row and Ralph Loops rows for a phase from `plan.md` frontmatter + `loops.md` with zero manual edits; idempotent and demo-verified (3 new tests green, 359 total).
 
 ### ~~[PLANS-INDEX.md] — Manifest entries for completed phases were not appended~~
 

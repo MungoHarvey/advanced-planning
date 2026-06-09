@@ -174,6 +174,7 @@ Each slash command has a single non-overlapping purpose. `/loop-status` reports 
 | `/check-execution` | Health diagnostic for an interrupted/odd loop |
 | `/run-closeout` | Final programme narrative |
 | `/model-check` | Verify agent model routing |
+| `/sync-plans` | Reconcile PLANS-INDEX.md Phases and loop-status rows for a phase from plan frontmatter |
 
 ## Model Tiers
 
