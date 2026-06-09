@@ -7,7 +7,7 @@ current_phase: 14
 current_loop: null
 gate_status: not_started
 released: v0.13.0
-next_action: "Phase 13 complete (gate PASSED attempt 1; v0.13.0). Phase 14 not yet defined — run /decompose-phase (or /new-phase) to plan it. Optional: cut git tag v0.13.0 and run /phase-compact for the Phase 13 cold artefact."
+next_action: "Phase 14 planned (draft): Install & Exercise Codex Gate + Self-Heal in Runtime — loops 055–058, target v0.14.0. Run /decompose-phase 14 to generate loop todos, then /next-loop to begin. Optional: cut git tag v0.13.0 first."
 
 active_branches:
   - branch: main
