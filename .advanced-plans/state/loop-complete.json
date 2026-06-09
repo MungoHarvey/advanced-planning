@@ -1,13 +1,14 @@
 {
-  "loop_name": "ralph-loop-056",
+  "loop_name": "ralph-loop-057",
   "loop_file": ".advanced-plans/phases/phase-14/loops.md",
   "status": "completed",
-  "todos_done": 4,
+  "todos_count": 3,
+  "todos_done": 3,
   "todos_failed": 0,
-  "completed_at": "2026-06-09T14:30:00Z",
+  "completed_at": "2026-06-09T11:00:00Z",
   "handoff": {
-    "done": "Real codex stdout fixture captured (codex-cli 0.124.0, gpt-5.5, double-block behavior documented); test_codex_gate_live.py written with 14 tests covering happy path (single-block, backend==codex, schema-valid), real fixture (double-block triggers degrade), and full degrade path (no codex.json, gate_codex_skipped event shape, two-agent aggregate pass); full suite 314 passed, AST NONE.",
-    "failed": "Real codex stdout (codex exec review) always emits double fenced blocks, causing extract_and_validate to return ok=False (degrade path) — documented in docs/tool-friction-log.md; no fix to codex_gate.py per hard constraint.",
-    "needed": "Proceed to loop-057 (Self-Heal Proof) — codex gate behavior is now fully proven and regression-tested."
+    "done": "Sandboxed synthetic-fail integration test written (test_self_heal_integration.py, 26 tests) covering triage routing, NEVER-TOUCH allowlist-breach escalation, sentinel guard, criteria hash guard, cycle-bound escalation, and full traces; both modules import/run cleanly from repo root; 340 tests pass, AST NONE.",
+    "failed": "One test assertion needed a fix: history.jsonl is NEVER-TOUCH (not just transient), so the transient-only diff test was corrected to use retry-context.json pairs instead.",
+    "needed": "Proceed to loop-058 (Witnessed Exercise + v0.14.0 Release)."
   }
 }

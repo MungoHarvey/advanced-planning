@@ -252,9 +252,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
-  failed: ""
-  needed: ""
+  done: "Sandboxed synthetic-fail integration test written (test_self_heal_integration.py, 26 tests) covering triage routing, NEVER-TOUCH allowlist-breach escalation, sentinel guard, criteria hash guard, cycle-bound escalation, and full traces; both modules import/run cleanly from repo root; 340 tests pass, AST NONE."
+  failed: "One test assertion needed a fix: history.jsonl is NEVER-TOUCH (not just transient), so the transient-only diff test was corrected to use retry-context.json pairs instead."
+  needed: "Proceed to loop-058 (Witnessed Exercise + v0.14.0 Release)."
 
 todos:
   - id: "loop-057-1"
@@ -262,7 +262,7 @@ todos:
     skill: "test-driven-development"
     agent: "NA"
     outcome: "A pytest in platforms/python/tests/ stages a synthetic gate fail and asserts triage routes correctly AND a diff-allowlist breach escalates rather than commits"
-    status: pending
+    status: completed
     complexity: high
     priority: high
   - id: "loop-057-2"
@@ -270,7 +270,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "python -m platforms.python.remediate runs cleanly from repo root; remediation_controller imports without error; result recorded in handoff"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-057-3"
@@ -278,7 +278,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "python -m pytest platforms/python/tests/ passes with count >= prior (300) + the new tests from loops 056-057"
-    status: pending
+    status: completed
     complexity: low
     priority: medium
 
