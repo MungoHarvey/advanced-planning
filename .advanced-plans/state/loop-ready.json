@@ -1,14 +1,14 @@
 {
   "phase": "phase-15",
-  "loop_name": "ralph-loop-059",
+  "loop_name": "ralph-loop-060",
   "loop_file": ".advanced-plans/phases/phase-15/loops.md",
-  "task_name": "Doc-Hygiene + Wire State-Archiving",
+  "task_name": "CI Path-Convention Audit",
   "todos_count": 5,
-  "prepared_at": "2026-06-09T13:50:00Z",
+  "prepared_at": "2026-06-09T14:00:00Z",
   "status": "ready",
   "handoff_injected": {
-    "done": "Phase 14 closed; v0.14.0 released. Self-heal exercise ran through real remediation guards in a throwaway worktree (gate_remediation + passed_after_remediation emitted), main history pristine; codex_gate double-block parser fix applied (343 tests); gate passed attempt 1 with backend:codex verdict.",
+    "done": "PLANS-INDEX stale-pending rows corrected (042-046, 055-058, phase-14 draft→complete); master-plan.md marked historical; archive_cross_phase_state wired into next-loop.md Step 3a (source + byte-identical .claude/ copy); phase-boundary regression test added (344 tests green, AST NONE); friction-log entries struck through.",
     "failed": "",
-    "needed": "Begin Phase 15 automation-surface audit: fix PLANS-INDEX.md stale pending rows, mark master-plan.md historical, wire archive_cross_phase_state into next-loop.md (source + .claude/ copy), add archiving test, and strike resolved friction-log entries."
+    "needed": "Begin loop-060: CI path-convention audit (path_audit.py + tests + ci.yml job)."
   }
 }
