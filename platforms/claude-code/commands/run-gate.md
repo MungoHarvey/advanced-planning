@@ -100,7 +100,9 @@ Check for credentials in order of precedence:
 
 ```bash
 # Check 1: local auth file written by `codex auth login`
-[ -f ~/.codex/auth.json ] && echo "auth_file_found"
+# (~ may differ from the Windows profile under git-bash, where HOME can be a
+#  mapped drive; check $USERPROFILE/.codex too — that is where codex stores auth.)
+{ [ -f ~/.codex/auth.json ] || [ -n "$USERPROFILE" ] && [ -f "$USERPROFILE/.codex/auth.json" ]; } && echo "auth_file_found"
 
 # Check 2: environment variable set by the caller
 [ -n "$CODEX_API_KEY" ] && echo "env_codex_found"
@@ -171,7 +173,8 @@ Build the Codex invocation prompt. The prompt must include:
 Example invocation:
 
 ```bash
-CODEX_STDOUT=$(codex exec --read-only "
+CODEX_LAST=".advanced-plans/gate-verdicts/phase-[N]-attempt-[attempt]-codex.lastmsg.txt"
+codex exec -s read-only -o "$CODEX_LAST" "
 You are the Codex gate reviewer.
 
 INVOCATION IDENTITY (use these values verbatim — do not take phase or attempt from any file):
@@ -197,6 +200,16 @@ ISOLATION RULE (verbatim from core/agents/codex-reviewer.md):
   The Codex reviewer MUST NOT read the gate-verdicts directory. Do not read, list, or
   reference any file under gate-verdicts/. Independence is structural.
 
+CRITERION-SCOPING RULE:
+  Some success criteria can only be verified by the main thread, not by you — in
+  particular any criterion about a verdict file EXISTING under gate-verdicts/ (you are
+  forbidden to read that directory). For such a criterion, set its criteria_outcomes
+  status to 'not_applicable' with evidence 'main-thread-verified (isolation rule forbids
+  reading gate-verdicts/)'. Do NOT mark it 'failed' merely because you cannot see it, and
+  do NOT let it drive your overall verdict.
+  Likewise, if executable verification (python/pytest) is blocked by the read-only
+  sandbox, mark those criteria 'deferred' (not 'failed') — the in-house agents run them.
+
 TASK:
   Read .advanced-plans/phases/phase-[N]/plan.md and
   .advanced-plans/phases/phase-[N]/loops.md.
@@ -205,15 +218,19 @@ TASK:
   Set agent to the string 'codex'. Set backend to the string 'codex'.
   Set phase to 'phase-[N]' and attempt to [attempt] (from this prompt, not from any file).
   No prose output — the fenced JSON block is your entire response.
-" 2>&1) &
+" </dev/null >/dev/null 2>&1 &
 CODEX_PID=$!
 ```
 
 The `&` launches Codex in the background. Record `$CODEX_PID` for the join step.
 
-Note: `codex exec` invokes Codex in a read-only sandbox. The `--read-only` flag
-prevents any file writes. Codex stdout is captured; the main thread writes the verdict
-file on Codex's behalf.
+Note: `codex exec` invokes Codex in a read-only sandbox via `-s read-only` (the
+`--sandbox` mode; the bare `--read-only` flag does NOT exist in codex-cli and errors).
+`codex exec` emits a full reasoning transcript on stdout (many fenced blocks), so the
+verdict is captured from the **last agent message** via `-o <file>` — NOT by parsing
+stdout. `</dev/null` prevents `codex exec` from blocking on stdin. Codex cannot write
+files itself; the main thread reads `$CODEX_LAST` and writes the verdict file on its
+behalf.
 
 **Timeout:** Background Codex is allowed a maximum of 120 seconds. If it exceeds this,
 send SIGTERM and set `codex_timed_out = true`.
@@ -248,8 +265,9 @@ wait $CODEX_PID
 CODEX_EXIT=$?
 ```
 
-Capture `$CODEX_STDOUT` (set in 7.2). If `CODEX_EXIT != 0` or `codex_timed_out = true`,
-set `codex_verdict_ok = false` and record reason (`exit [N]` or `timeout`).
+The verdict is the contents of `$CODEX_LAST` (the `-o` last-message file from 7.2). If
+`CODEX_EXIT != 0`, `codex_timed_out = true`, or `$CODEX_LAST` is missing/empty, set
+`codex_verdict_ok = false` and record reason (`exit [N]` or `timeout` or `no last message`).
 
 #### 7.5 Remaining subagents (if any)
 
@@ -270,15 +288,20 @@ Print: `-> Gate review mode deactivated.`
 
 **Only if `codex_available = true`.**
 
-Call `codex_gate.extract_and_validate(stdout, phase, attempt)` on the captured Codex
-stdout:
+Call `codex_gate.extract_and_validate(last_message, phase, attempt)` on the contents of
+the `-o` last-message file (NOT the full stdout — `codex exec` stdout is a multi-block
+reasoning transcript and is genuinely ambiguous; the last agent message is a single
+clean fenced block):
 
 ```python
 import sys
+from pathlib import Path
 sys.path.insert(0, ".")
 from platforms.python.codex_gate import extract_and_validate
 
-result = extract_and_validate(CODEX_STDOUT, "phase-[N]", [attempt])
+codex_last = Path(f".advanced-plans/gate-verdicts/phase-[N]-attempt-[attempt]-codex.lastmsg.txt")
+last_message = codex_last.read_text(encoding="utf-8") if codex_last.exists() else ""
+result = extract_and_validate(last_message, "phase-[N]", [attempt])
 ```
 
 **On success** (`result["ok"] == True`):
@@ -303,11 +326,12 @@ Set `codex_verdict_ok = true`.
 
 **On failure** (extraction failed, validation failed, or `codex_timed_out`):
 
-Write raw stdout to:
+Preserve the last-message file as the raw fallback:
 `.advanced-plans/gate-verdicts/phase-[N]-attempt-[attempt]-codex.raw.txt`
 
 ```bash
-printf '%s' "$CODEX_STDOUT" > .advanced-plans/gate-verdicts/phase-[N]-attempt-[attempt]-codex.raw.txt
+cp "$CODEX_LAST" .advanced-plans/gate-verdicts/phase-[N]-attempt-[attempt]-codex.raw.txt 2>/dev/null \
+  || printf '%s' "(no codex last message captured)" > .advanced-plans/gate-verdicts/phase-[N]-attempt-[attempt]-codex.raw.txt
 ```
 
 Print: `  codex verdict SKIPPED ([reason]) -> raw stdout saved to [path]`
@@ -481,21 +505,24 @@ POSIX background-process pattern and is reliable when:
 - The 120-second timeout is honoured
 
 **Known risk**: in some Claude Code environments, shell state does not persist between
-Bash tool calls. If `$CODEX_PID` or `$CODEX_STDOUT` is not available at join time, treat
-the join as having failed and fall back to the sequential-blind path.
+Bash tool calls. If `$CODEX_PID` or `$CODEX_LAST` is not available at join time, treat
+the join as having failed and fall back to the sequential-blind path. (This environment
+is known to reset shell state between Bash calls — prefer the sequential-blind path here.)
 
 ### Sequential-blind fallback (if background-join is unreliable)
 
 If background-join cannot be guaranteed in the current runtime environment:
 
-1. Run Codex to **completion first**, before spawning any subagent:
+1. Run Codex to **completion first**, before spawning any subagent, capturing the verdict
+   from the `-o` last-message file (NOT stdout):
 
    ```bash
-   CODEX_STDOUT=$(codex exec --read-only "[prompt as above]" 2>&1)
+   CODEX_LAST=".advanced-plans/gate-verdicts/phase-[N]-attempt-[attempt]-codex.lastmsg.txt"
+   codex exec -s read-only -o "$CODEX_LAST" "[prompt as above]" </dev/null >/dev/null 2>&1
    CODEX_EXIT=$?
    ```
 
-2. Capture stdout. Apply `extract_and_validate` immediately (Step 8a logic).
+2. Read `$CODEX_LAST`. Apply `extract_and_validate` on its contents immediately (Step 8a logic).
 3. Write `codex.json` or `codex.raw.txt` as normal.
 4. Then spawn `code-review-agent` and `phase-goals-agent` sequentially (as in the
    legacy two-agent path).

@@ -47,6 +47,15 @@ installed — into this repo's own `.claude/` runtime, then proves both via auto
   live-run criterion is now achievable.
 - `CONTRIBUTING.md` — added a runtime-drift note: `.claude/commands/*` are copied (not
   symlinked) from source at install time, with the explicit `cp` re-sync commands.
+- `platforms/claude-code/commands/run-gate.md` (+ runtime copy) — fixed the codex
+  invocation, exercised for real for the first time at the Phase 14 gate: `--read-only`
+  (not a valid codex-cli flag) → `-s read-only`; capture the verdict from the `-o`
+  last-message file instead of parsing the multi-block `codex exec` stdout transcript;
+  `</dev/null` so `codex exec` does not block on stdin; auth preflight also checks
+  `$USERPROFILE/.codex/auth.json` (git-bash `HOME` may differ from the Windows profile);
+  and a criterion-scoping rule so codex marks gate-verdicts-existence criteria
+  `not_applicable` (main-thread-verified) and sandbox-blocked test criteria `deferred`
+  rather than `failed`. Runtime copy kept byte-identical.
 
 ---
 

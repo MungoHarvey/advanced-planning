@@ -1,0 +1,90 @@
+{
+  "phase": "phase-14",
+  "attempt": 1,
+  "timestamp": "2026-06-09T00:00:00Z",
+  "agent": "codex",
+  "backend": "codex",
+  "verdict": "fail",
+  "confidence": 86,
+  "findings": [
+    {
+      "severity": "critical",
+      "location": ".advanced-plans/gate-verdicts/",
+      "description": "The phase-level codex live-run criterion cannot be independently verified because the isolation rule forbids reading, listing, or referencing files under gate-verdicts/.",
+      "evidence": "Success criterion requires Phase 14 gate-verdicts to include backend: codex for phase-14-attempt-1, but the reviewer isolation rule explicitly forbids reading gate-verdicts/."
+    },
+    {
+      "severity": "critical",
+      "location": "working tree",
+      "description": "The repository is not clean outside gate-verdicts, so the witnessed exercise cleanup criterion is not satisfied as observed.",
+      "evidence": "git status --porcelain -- . ':!.advanced-plans/gate-verdicts' reported ?? .advanced-plans/state/gate-review-mode"
+    },
+    {
+      "severity": "warning",
+      "location": "verification environment",
+      "description": "Executable verification commands were blocked, so test pass and runtime import/run criteria could not be independently confirmed in this review.",
+      "evidence": "python --version and python -m pytest commands were rejected by the shell policy; static files and test contents were inspected instead."
+    }
+  ],
+  "loops_to_revert": [
+    "ralph-loop-058"
+  ],
+  "failure_notes": [
+    "Do not require the Codex reviewer to inspect gate-verdicts/; provide an isolation-safe proof of the phase-level backend: codex verdict or adjust the criterion.",
+    "Restore or account for .advanced-plans/state/gate-review-mode so the main-clean criterion can be verified with git status outside gate-verdicts.",
+    "Re-run executable verification in an environment that permits python/pytest commands, then record isolation-safe evidence."
+  ],
+  "phase_title": "Install & Exercise Codex Gate + Self-Heal in Runtime",
+  "criteria_outcomes": [
+    {
+      "criterion": ".claude/commands/run-gate.md is byte-identical to platforms/claude-code/commands/run-gate.md (codex refs > 0); .claude/commands/next-phase.md byte-identical to its source (remediation refs > 0).",
+      "status": "met",
+      "evidence": "git diff --no-index returned exit 0 for both command pairs; rg counts were codex=92 and remediat=46."
+    },
+    {
+      "criterion": ".claude/agents/codex-reviewer.md present; the core/agents/codex-reviewer.md path the refreshed run-gate references resolves from the repo root.",
+      "status": "met",
+      "evidence": "git diff --no-index returned exit 0 for .claude/agents/codex-reviewer.md vs core/agents/codex-reviewer.md; Test-Path returned true for both files."
+    },
+    {
+      "criterion": "test_codex_gate_live.py passes: a real codex stdout fixture parses via extract_and_validate into a schema-valid verdict; AND the degrade path is asserted (codex unavailable -> in-house agents proceed, gate_codex_skipped appended, no codex.json).",
+      "status": "deferred",
+      "evidence": "test_codex_gate_live.py and fixtures contain assertions for backend=='codex', schema validation, gate_codex_skipped, and no codex.json; python/pytest execution was blocked by policy."
+    },
+    {
+      "criterion": "A sandboxed self-heal integration test passes: synthetic gate fail -> remediation_controller triage -> a diff-allowlist breach escalates rather than commits.",
+      "status": "deferred",
+      "evidence": "test_self_heal_integration.py contains synthetic gate-fail, triage_findings, validate_diff_allowlist, and escalation/no-commit assertions; python/pytest execution was blocked by policy."
+    },
+    {
+      "criterion": "python -m platforms.python.remediate and the controller import/run cleanly from repo root (the runtime command invocation path).",
+      "status": "deferred",
+      "evidence": "remediate.py and remediation_controller.py are present and import only stdlib modules, but python execution was blocked by policy."
+    },
+    {
+      "criterion": "Witnessed live self-heal: a deliberately-induced gate fail in a git worktree runs the bounded remediation loop (<=2 cycles), emits gate_remediation / passed_after_remediation events, is captured, and the worktree is discarded leaving main clean (git status + git worktree list verified).",
+      "status": "failed",
+      "evidence": "exercise-058-transcript.md contains captured gate_remediation and passed_after_remediation evidence, but git status outside gate-verdicts showed untracked .advanced-plans/state/gate-review-mode; git worktree list was blocked by policy."
+    },
+    {
+      "criterion": "Phase-level codex live run: Phase 14's own gate-verdicts include a backend: codex verdict for phase-14-attempt-1.",
+      "status": "failed",
+      "evidence": "Cannot verify without violating the isolation rule forbidding reads/lists/references under gate-verdicts/."
+    },
+    {
+      "criterion": "CONTRIBUTING.md documents the runtime-drift mechanism (commands copied not symlinked) and the re-sync command.",
+      "status": "met",
+      "evidence": "CONTRIBUTING.md contains runtime drift text and cp commands from platforms/claude-code/commands/ to .claude/commands/."
+    },
+    {
+      "criterion": "VERSION is 0.14.0; CHANGELOG.md has a [0.14.0] section; CLAUDE.md has a Phase 14 decision-log entry; tag deferred to gate pass.",
+      "status": "met",
+      "evidence": "VERSION:1 is 0.14.0; CHANGELOG.md:14 has [0.14.0]; CLAUDE.md:104 has a Phase 14 decision-log entry."
+    },
+    {
+      "criterion": "All tests pass (no regression; new tests added); AST zero-dep NONE; LOCKED files byte-unchanged (docs/phase-complete.schema.md, docs/phase-manifest-entry.schema.md, docs/phase-handoff.schema.md, .advanced-plans/phases/phase-9/complete.md).",
+      "status": "deferred",
+      "evidence": "New tests are present and locked-file git diff was empty; python/pytest and AST checker execution were blocked by policy."
+    }
+  ]
+}

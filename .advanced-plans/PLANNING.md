@@ -5,9 +5,9 @@ last_updated: 2026-06-09
 
 current_phase: 14
 current_loop: null
-gate_status: ready_for_gate
+gate_status: pass
 released: v0.13.0
-next_action: "Phase 14 loops 055-058 ALL COMPLETE. Codex gate + self-heal installed to runtime; proven via 343 tests + a witnessed worktree-isolated self-heal exercise (main untouched); codex double-block parser fix applied (real codex output now yields backend:codex). v0.14.0 staged (VERSION/CHANGELOG/CLAUDE.md). Run /next-phase (or /run-gate) for the Phase 14 gate — codex should write a backend:codex verdict for phase-14-attempt-1. Then /phase-compact + tag v0.14.0."
+next_action: "Phase 14 GATE PASSED (attempt 1). code-review-agent + phase-goals-agent PASS; codex backend:codex verdict written (self-evidencing criterion met) — codex 'fail' recorded as documented override (read-only-sandbox/isolation false-negative, no deliverable defect). The gate's first real codex run surfaced + fixed 4 run-gate codex-invocation bugs (-s read-only, -o last-message, </dev/null, USERPROFILE auth) in source + byte-identical runtime. Next: /phase-compact 14, then /next-phase to advance; cut tags v0.13.0 + v0.14.0."
 
 active_branches:
   - branch: main

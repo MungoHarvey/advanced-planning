@@ -1,0 +1,88 @@
+{
+  "phase": "phase-14",
+  "attempt": 1,
+  "timestamp": "2026-06-09T13:58:58Z",
+  "agent": "code-review-agent",
+  "verdict": "pass",
+  "confidence": 95,
+  "phase_title": "Install & Exercise Codex Gate + Self-Heal in Runtime",
+  "findings": [
+    {
+      "severity": "info",
+      "location": ".advanced-plans/state/history.jsonl",
+      "description": "gate_remediation and passed_after_remediation events do not appear in main branch history.jsonl — they are in the worktree-only history as designed by the phase plan. The exercise transcript at .advanced-plans/phases/phase-14/exercise-058-transcript.md confirms they were emitted in the throwaway worktree.",
+      "evidence": "Worktree events captured in exercise-058-transcript.md lines 44-46; main history.jsonl (20 entries) contains no gate_remediation events, confirming the worktree was correctly isolated and discarded."
+    },
+    {
+      "severity": "info",
+      "location": ".advanced-plans/gate-verdicts/phase-14-attempt-1-codex.stdout.tmp",
+      "description": "The backend:codex verdict file for phase-14-attempt-1 does not yet exist at time of this review — the codex subprocess is still executing in parallel (stdout shows 'Reading additional input from stdin...'). This is expected gate-review-mode behaviour; the main thread writes the codex verdict after the subprocess completes. This criterion cannot be verified by code-review-agent at time of writing but will be met or gracefully degraded by the orchestrating run-gate command.",
+      "evidence": "File .advanced-plans/gate-verdicts/phase-14-attempt-1-codex.stdout.tmp exists (39 bytes) with 'Reading additional input from stdin...' — codex still running. The codex gate degrade path (gate_codex_skipped) is a valid outcome that does not block this verdict."
+    }
+  ],
+  "loops_to_revert": [],
+  "failure_notes": [],
+  "criteria_outcomes": [
+    {
+      "criterion": ".claude/commands/run-gate.md byte-identical to platforms/claude-code/commands/run-gate.md (codex refs > 0)",
+      "status": "met",
+      "evidence": "diff .claude/commands/run-gate.md platforms/claude-code/commands/run-gate.md returned empty (IDENTICAL); grep -c -i codex returned 92."
+    },
+    {
+      "criterion": ".claude/commands/next-phase.md byte-identical to platforms/claude-code/commands/next-phase.md (remediation refs > 0)",
+      "status": "met",
+      "evidence": "diff .claude/commands/next-phase.md platforms/claude-code/commands/next-phase.md returned empty (IDENTICAL); grep -c -i remediat returned 46."
+    },
+    {
+      "criterion": ".claude/agents/codex-reviewer.md present and byte-identical to core/agents/codex-reviewer.md",
+      "status": "met",
+      "evidence": "diff .claude/agents/codex-reviewer.md core/agents/codex-reviewer.md returned empty (IDENTICAL); both files confirmed present."
+    },
+    {
+      "criterion": "test_codex_gate_live.py passes: real codex stdout fixture parses via extract_and_validate into a schema-valid verdict AND degrade path asserted",
+      "status": "met",
+      "evidence": "12 tests in test_codex_gate_live.py all PASSED: TestHappyPath (3), TestRealCapturedStdout (5), TestDegradePathFull (4). Confirmed by pytest run returning 343 passed total."
+    },
+    {
+      "criterion": "Sandboxed self-heal integration test passes: synthetic gate fail -> remediation_controller triage -> diff-allowlist breach escalates",
+      "status": "met",
+      "evidence": "29 tests in test_self_heal_integration.py all PASSED covering triage routing, NEVER-TOUCH escalation, sentinel guard, criteria hash guard, cycle-bound escalation, and sandbox isolation. Confirmed by pytest run."
+    },
+    {
+      "criterion": "python -m platforms.python.remediate and controller import/run cleanly from repo root",
+      "status": "met",
+      "evidence": "AST check reports NONE (0 violations across 11 files). Loop-057 handoff confirms runtime reachability smoke passed. All 343 tests pass with no import errors."
+    },
+    {
+      "criterion": "Witnessed live self-heal: deliberately-induced gate fail in git worktree runs bounded remediation loop, emits gate_remediation/passed_after_remediation events, worktree discarded leaving main clean",
+      "status": "met",
+      "evidence": "exercise-058-transcript.md documents full trace: worktree created, FIXME defect induced, triage classified LOCALIZED, allowlist validated, fix applied, gate_remediation emitted (cycle=1), re-gate with hash-verified criteria, passed_after_remediation=true emitted. git worktree list shows only main; git status shows clean tracked tree."
+    },
+    {
+      "criterion": "Phase-level codex live run: Phase 14 gate-verdicts include a backend:codex verdict for phase-14-attempt-1",
+      "status": "deferred",
+      "evidence": "Codex subprocess is still executing at time of this review (stdout.tmp shows 'Reading additional input from stdin...'). This criterion will be resolved by the main thread after subprocess completion — either a codex.json verdict is written (met) or gate_codex_skipped is appended (graceful degrade). Per the phase plan, graceful degrade is a valid outcome.",
+      "deferred_to": "post-gate-run resolution by run-gate main thread"
+    },
+    {
+      "criterion": "CONTRIBUTING.md documents runtime-drift mechanism and re-sync command",
+      "status": "met",
+      "evidence": "CONTRIBUTING.md line 133: '## Runtime Drift: Commands Are Copied, Not Symlinked'; lines 140-141 and 156-157 contain explicit cp re-sync commands for run-gate.md and next-phase.md."
+    },
+    {
+      "criterion": "VERSION is 0.14.0; CHANGELOG.md has a [0.14.0] section; CLAUDE.md has a Phase 14 decision-log entry",
+      "status": "met",
+      "evidence": "VERSION file reads '0.14.0'; CHANGELOG.md line 14: '## [0.14.0] - 2026-06-09'; CLAUDE.md line 104: '- Phase 14 (2026-06-09): Codex gate (Phase 12) and self-heal (Phase 13) — built and tested'."
+    },
+    {
+      "criterion": "All tests pass (no regression; new tests added); AST zero-dep NONE; LOCKED files byte-unchanged",
+      "status": "met",
+      "evidence": "pytest: 343 passed in 23.97s (up from ~300 baseline; new tests: 12 codex_gate_live + 29 self_heal_integration = 41 new). AST check: NONE -- 11 file(s) checked, 0 violations. LOCKED files: md5sum confirms docs/phase-complete.schema.md (39744bb2), docs/phase-manifest-entry.schema.md (df7a8c7d), docs/phase-handoff.schema.md (9481f621), .advanced-plans/phases/phase-9/complete.md (326da193) all match HEAD — byte-unchanged."
+    },
+    {
+      "criterion": "codex_gate.py change is minimal/scoped: identical-duplicate-block handling only; differing blocks still degrade",
+      "status": "met",
+      "evidence": "git diff HEAD~1 HEAD -- platforms/python/codex_gate.py shows only extract_verdict_json modified (docstring + 10 lines logic): identical multi-block returns last; any malformed or differing block still returns None. test_real_fixture_identical_double_block_resolves and test_differing_double_block_still_degrades both PASSED."
+    }
+  ]
+}

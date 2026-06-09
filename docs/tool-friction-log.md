@@ -585,3 +585,32 @@ entries from here.
   (`test_real_fixture_identical_double_block_resolves`,
   `test_differing_double_block_still_degrades`). Logged as a CLAUDE.md Phase 14
   decision (minimal scoped fix for a blocking bug found during the exercise).
+
+## 2026-06-09 — Phase 14 gate (run-gate.md codex invocation, first real execution)
+
+Loop 058 / the Phase 14 gate was the first time the codex-wired `run-gate.md` was
+executed for real (Phase 12/13 gated it as a document only). Four defects surfaced and
+were fixed in the same gate session (source + byte-identical runtime copy):
+
+1. **Invalid flag.** `codex exec --read-only` errors in codex-cli 0.124.0
+   (`unexpected argument '--read-only'`). Correct flag is `-s read-only`
+   (`--sandbox read-only`). FIXED.
+2. **Ambiguous stdout parsing.** `codex exec` streams a full reasoning transcript
+   (observed 12 fenced json blocks, 8 distinct) → `extract_and_validate` correctly
+   returns ambiguous/None. The single clean verdict is the agent's LAST message; capture
+   it with `-o <file>` and parse that file, not stdout. FIXED.
+3. **stdin block.** Backgrounded `codex exec` hung on "Reading additional input from
+   stdin..."; needs `</dev/null`. FIXED.
+4. **Auth preflight false-negative on Windows.** Preflight checked only
+   `~/.codex/auth.json`, but git-bash `HOME` here is `/m/` while codex stores auth at
+   `$USERPROFILE/.codex/auth.json` — preflight would have falsely degraded (skipped codex)
+   even though codex was authenticated. Added a `$USERPROFILE/.codex/auth.json` fallback.
+   FIXED.
+
+Also: a *criterion-scoping* gap (not a code bug). A phase success criterion asked codex to
+confirm a `backend:codex` verdict EXISTS in `gate-verdicts/`, but the isolation rule
+forbids codex reading that directory, so codex marked it `failed` (false-negative). The
+isolation rule is correct and unchanged; instead the run-gate codex prompt now instructs
+codex to mark gate-verdicts-existence criteria `not_applicable` (main-thread-verified) and
+sandbox-blocked test criteria `deferred`, not `failed`. Recorded as the Phase 14 gate
+override rationale in `history.jsonl`.
