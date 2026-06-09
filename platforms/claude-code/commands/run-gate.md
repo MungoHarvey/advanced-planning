@@ -1,6 +1,6 @@
 ---
-description: Run the gate review sub-phase. Spawns configured gate agents sequentially, runs Codex in parallel with the final subagent, reads verdicts, aggregates pass/fail, and writes gate_pass or gate_fail to history.jsonl.
-allowed-tools: Read, Write, Glob, Bash, Agent
+description: Run the gate review sub-phase. Spawns configured gate agents sequentially, runs Codex in parallel with the final subagent, reads verdicts, aggregates pass/fail, writes gate_pass or gate_fail to history.jsonl, and on a pass for the current phase closes the phase out (marks it complete and advances the programme pointer).
+allowed-tools: Read, Write, Glob, Bash, Edit, Agent
 argument-hint: "[--phase N] [--agents code-review-agent,phase-goals-agent,security-agent,test-agent]"
 ---
 
@@ -10,6 +10,12 @@ Run the gate review sub-phase for the current (or specified) phase. Gate agents 
 all loop outputs against the phase success criteria and return a structured verdict. A
 Codex subprocess runs as an independent cross-model reviewer in parallel with the final
 in-house subagent.
+
+On a **pass for the current phase**, the gate is the natural end of the phase, so `/run-gate`
+**closes the phase out automatically** (Step 10.4): it marks the phase complete, advances the
+`current_phase` pointer, and directs you to `/phase-compact`. No separate `/next-phase` call is
+needed just to advance. (`/next-phase` remains for the gate-not-yet-run path and for `--auto`
+cross-boundary chaining, and it detects an already-closed phase to avoid double work.)
 
 ## Steps
 
@@ -433,17 +439,71 @@ If gate **fails** (user confirmed or auto-remediation policy applied):
 echo '{"event":"gate_fail","phase":"phase-[N]","attempt":[attempt],"timestamp":"[ISO timestamp]","agent":"[failing-agent]","verdict_file":"[failing-verdict-path]","loops_to_revert":[loops JSON array],"conflicts":[conflict descriptions JSON array]}' >> .advanced-plans/state/history.jsonl
 ```
 
+### 10.4 Phase closeout (on PASS only)
+
+A passing gate is the natural completion of a phase, so `/run-gate` closes it out
+automatically — no separate `/next-phase` step is needed to advance. This runs **only when
+all of these hold**:
+
+- `agg["result"] == "pass"` (and the user accepted any conflict in Step 10.2), AND
+- the gated phase `[N]` is the **current active phase** — i.e. `[N]` equals `current_phase`
+  in `.advanced-plans/PLANNING.md`. Do **not** auto-close when `--phase` was used to re-gate
+  a non-current or historical phase.
+
+Closeout is fully reversible (PLANNING.md edits + a history event + a commit). Perform it
+after the `gate_pass` event is written (Step 10.3):
+
+1. Edit `.advanced-plans/PLANNING.md` frontmatter:
+   - Move `[N]` from `phases.pending` to `phases.complete` (append, ascending order).
+   - Set `current_phase: [N+1]` and `current_loop: null`.
+   - Set `gate_status: pending` (the newly-current phase `[N+1]` is not yet gated).
+   - Update any `active_branches[].phase` that referenced `[N]` to `[N+1]`.
+   - Set `last_updated:` to today's date.
+   - Rewrite `next_action:` to: `"Phase [N] CLOSED (gate passed attempt [attempt]). Run
+     /phase-compact [N] to compact; then /plan-and-phase (or /next-phase --auto) for Phase
+     [N+1]."`
+   - Refresh the `## What to do next` body section to reflect the closed phase.
+
+2. Append a `phase_closed` event to `history.jsonl`:
+
+   ```bash
+   echo '{"event":"phase_closed","phase":"phase-[N]","attempt":[attempt],"timestamp":"[ISO timestamp]","advanced_to":"phase-[N+1]","trigger":"run-gate-pass"}' >> .advanced-plans/state/history.jsonl
+   ```
+
+3. Commit the closeout:
+
+   ```bash
+   git add -A && git commit -m "close: phase-[N] gate passed -- advancing to phase-[N+1]"
+   ```
+
+Print: `-> Phase [N] closed out (gate pass): marked complete, programme advanced to Phase [N+1].`
+
+**If the gate failed, or `--phase` targeted a non-current phase:** skip closeout entirely
+(no PLANNING.md advance, no `phase_closed` event). A fail is routed through `/next-phase`
+retry logic as before.
+
 ### 11. Print summary
 
-If gate **passes**:
+If gate **passes** (current phase — closeout performed in Step 10.4):
 ```
-Gate PASSED — Phase [N] approved.
-  Agents:   [comma-separated list (including codex if contributed)]
-  Attempt:  [N]
-  Verdicts: [verdict file paths]
+Gate PASSED — Phase [N] approved and closed out.
+  Agents:    [comma-separated list (including codex if contributed)]
+  Attempt:   [N]
+  Verdicts:  [verdict file paths]
   Conflicts: [None | list]
+  Advanced:  programme pointer is now Phase [N+1].
 
-Run /next-phase to advance.
+Run /phase-compact [N] to compact the completed phase, then /plan-and-phase
+(or /next-phase --auto) to begin Phase [N+1].
+```
+
+If gate **passes** but `--phase` targeted a non-current/historical phase (no closeout):
+```
+Gate PASSED — Phase [N] approved (re-gate of a non-current phase; no advance performed).
+  Agents:    [comma-separated list (including codex if contributed)]
+  Attempt:   [N]
+  Verdicts:  [verdict file paths]
+  Conflicts: [None | list]
 ```
 
 If gate **fails**:

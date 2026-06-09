@@ -128,6 +128,18 @@ Changes to either schema require an explicit decision logged in this file.
   Schema decision: **no change to `core/state/gate-verdict.schema.json`** — the override record
   (`override: true`, `override_reason`) lives on the `history.jsonl` `gate_pass` event (main-thread
   decision), not on the per-agent verdict file; existing verdicts remain fully valid.
+- Phase 15 follow-on (2026-06-09): **gate-pass closeout folded into `/run-gate`.** A passing gate
+  for the *current* phase is now the natural end of that phase, so `/run-gate` Step 10.4 closes it
+  out automatically — moves the phase to `phases.complete`, advances `current_phase`, appends a
+  `phase_closed` event (`trigger: run-gate-pass`), commits, and directs to `/phase-compact`. No
+  separate `/next-phase` call is needed merely to advance. `/run-gate --phase N` on a non-current
+  phase does NOT auto-close (re-gate of history). `/next-phase` gained Step 1a, which detects a
+  phase already closed by `/run-gate` (current-phase plan absent ⇒ pointer already advanced) and
+  skips re-gating — under `--auto` it proceeds to plan the freshly-pointed phase; otherwise it
+  directs to `/phase-compact` + `/plan-and-phase`. Removes the "gated but not closed" seam. This
+  edits the framework source (`platforms/claude-code/commands/{run-gate,next-phase}.md`) + this
+  repo's `.claude/` runtime copies; the machine-global `~/.claude/commands/` copies are a separate
+  install surface and are intentionally left to the operator to refresh.
 
 ## Platform Adapters
 
@@ -178,8 +190,8 @@ Each slash command has a single non-overlapping purpose. `/loop-status` reports 
 | `/new-phase` | Headless phase-plan pipeline |
 | `/decompose-phase` | Decompose one phase plan into ralph loops |
 | `/next-loop` | Execute one loop (orchestrator → worker); `--auto` chains until phase done |
-| `/next-phase` | Gate review + advance to next phase; `--auto` chains across boundaries |
-| `/run-gate` | Standalone gate review of the current phase |
+| `/next-phase` | Plan/advance the next phase; gates first if not already gated; `--auto` chains across boundaries. Detects a phase already closed by `/run-gate` and skips re-gating |
+| `/run-gate` | Gate review of the current phase; on a pass for the current phase it **closes the phase out** (marks complete + advances the pointer) and directs to `/phase-compact` |
 | `/phase-compact` | Produce compaction artefacts at a gate pass |
 | `/loop-status` | Live snapshot: pending/in-progress todos |
 | `/progress-report` | Historical synthesis: completed work across loops/phases |

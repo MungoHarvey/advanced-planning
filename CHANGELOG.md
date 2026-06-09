@@ -52,6 +52,15 @@ cuts the release.
 - `CLAUDE.md` — Gate Review Protocol section now cross-references
   `docs/gate-override-policy.md`; Phase 15 decision-log entry added; `--full` flag
   documented.
+- `platforms/claude-code/commands/run-gate.md` Step 10.4 (+ `.claude/` copy) — on a gate
+  **pass for the current phase**, `/run-gate` now closes the phase out automatically (moves
+  it to `phases.complete`, advances `current_phase`, appends a `phase_closed` event, commits)
+  and directs to `/phase-compact`. Removes the "gated but not closed" seam. `--phase N` on a
+  non-current phase does not auto-close.
+- `platforms/claude-code/commands/next-phase.md` Step 1a (+ `.claude/` copy) — detects a phase
+  already closed by `/run-gate` (current-phase plan absent ⇒ pointer already advanced) and
+  skips re-gating; under `--auto` proceeds to plan the freshly-pointed phase, otherwise directs
+  to `/phase-compact` + `/plan-and-phase`. Command Surface descriptions updated accordingly.
 
 ---
 

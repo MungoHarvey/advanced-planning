@@ -29,6 +29,30 @@ print `Phase [N] is already complete. Run /decompose-phase to plan Phase [N+1].`
 
 Print: `-> Current phase: Phase [N]`
 
+### 1a. Detect a phase already closed by /run-gate
+
+`/run-gate` now closes a phase out on gate pass (marks it complete and advances the
+`current_phase` pointer — see run-gate.md Step 10.4). So by the time you reach `/next-phase`,
+the gate and closeout for the just-finished phase may already be done. Detect this to avoid
+re-gating or double-advancing.
+
+Check whether the current phase `[N]` has a plan at
+`.advanced-plans/phases/phase-[N]/plan.md`:
+
+- **Plan present with pending/in-progress loops** → normal case. Proceed to Step 2 (this phase
+  still needs its gate).
+- **Plan absent** → the `current_phase` pointer was advanced by a prior `/run-gate` closeout and
+  phase `[N]` is not yet planned. There is nothing to gate or advance for the prior phase. Then:
+  - If `--auto` is set (`AUTO_PHASE_MODE`): skip the gate (Steps 3–6) and go directly to Step 8b
+    to plan and execute phase `[N]`.
+  - Otherwise: print `Phase [N-1] was already closed out by /run-gate (gate passed). Phase [N]
+    is not yet planned — run /phase-compact [N-1] if you have not, then /plan-and-phase to scope
+    Phase [N] (or /next-phase --auto to plan + run it).` and stop.
+
+This guard makes `/run-gate` (gate + close) and `/next-phase` (plan/advance + `--auto` chaining)
+compose cleanly: running `/next-phase` after a `/run-gate` pass never re-spawns gate agents for
+the already-passed phase.
+
 ### 2. Parse flags
 
 Check `$ARGUMENTS` for:
