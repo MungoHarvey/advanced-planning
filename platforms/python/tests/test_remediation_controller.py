@@ -428,6 +428,69 @@ class TestValidateRegateVerdictCriteriaOutcomes:
         assert ok
         assert missing == []
 
+    # --- Schema-compliant array form (gate-verdict.schema.json) ---
+    # criteria_outcomes is an array of {criterion, status, evidence} objects.
+    # These cases would FAIL under the old dict-only implementation, which
+    # tested `criterion not in outcomes` against a list-of-dicts and so read
+    # every criterion as missing.
+
+    def test_array_all_criteria_present_passes(self):
+        verdict = {
+            "verdict": "pass",
+            "criteria_outcomes": [
+                {"criterion": "criterion A", "status": "met", "evidence": "e1"},
+                {"criterion": "criterion B", "status": "met", "evidence": "e2"},
+            ],
+        }
+        ok, missing = validate_regateverdict_criteria_outcomes(
+            verdict, ["criterion A", "criterion B"]
+        )
+        assert ok
+        assert missing == []
+
+    def test_array_missing_one_criterion_triggers_escalation(self):
+        verdict = {
+            "verdict": "fail",
+            "criteria_outcomes": [
+                {"criterion": "criterion A", "status": "met", "evidence": "e1"},
+                # criterion B absent from the array
+            ],
+        }
+        ok, missing = validate_regateverdict_criteria_outcomes(
+            verdict, ["criterion A", "criterion B"]
+        )
+        assert not ok
+        assert missing == ["criterion B"]
+
+    def test_array_extra_criteria_ok(self):
+        verdict = {
+            "criteria_outcomes": [
+                {"criterion": "criterion A", "status": "met", "evidence": "e1"},
+                {"criterion": "criterion B", "status": "met", "evidence": "e2"},
+                {"criterion": "criterion C", "status": "met", "evidence": "e3"},
+            ]
+        }
+        ok, missing = validate_regateverdict_criteria_outcomes(
+            verdict, ["criterion A", "criterion B"]
+        )
+        assert ok
+        assert missing == []
+
+    def test_array_malformed_entry_skipped(self):
+        """A non-dict or criterion-less entry is ignored, not a crash."""
+        verdict = {
+            "criteria_outcomes": [
+                {"criterion": "criterion A", "status": "met", "evidence": "e1"},
+                "not-an-object",          # malformed — skipped
+                {"status": "met"},         # no criterion key — skipped
+            ]
+        }
+        ok, missing = validate_regateverdict_criteria_outcomes(
+            verdict, ["criterion A", "criterion B"]
+        )
+        assert not ok
+        assert missing == ["criterion B"]
+
 
 # ---------------------------------------------------------------------------
 # --auto OFF regression trace

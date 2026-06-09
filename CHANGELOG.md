@@ -11,10 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.13.0] - 2026-06-08
+## [0.13.0] - 2026-06-09
 
-Phase 13 — Self-Correcting Gate (Loops 051–054, 4 loops).
-Gate pending at time of this entry.
+Phase 13 — Self-Correcting Gate (Loops 051–054, 4 loops). Gate PASSED (attempt 1).
 
 ### Added
 
@@ -68,6 +67,16 @@ Gate pending at time of this entry.
   worker-only `retry-context.json` sidecar.
 - `core/constraints.json` — `hashlib` added to the stdlib allow-set (used by
   `remediation_controller.compute_criteria_hash`).
+
+### Fixed
+
+- `remediation_controller.validate_regateverdict_criteria_outcomes` now parses the
+  schema-compliant `criteria_outcomes` **array** of `{criterion, status, evidence}`
+  objects (union of `criterion` values), with tolerance for the legacy dict form and
+  malformed entries. Previously it tested membership against a list-of-dicts, so a
+  real schema-compliant re-gate verdict read every criterion as missing and would have
+  wrongly escalated. Caught by the Phase 13 gate; +4 array-form tests close the blind
+  spot (300 tests total).
 
 ---
 

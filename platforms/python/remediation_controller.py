@@ -298,9 +298,27 @@ def validate_regateverdict_criteria_outcomes(
     tuple (ok: bool, missing: list[str])
         ``ok`` is True if all criteria are present in ``criteria_outcomes``.
         ``missing`` lists criteria not found in the verdict's criteria_outcomes.
+
+    Notes
+    -----
+    Per ``gate-verdict.schema.json``, ``criteria_outcomes`` is an array of
+    objects, each carrying a ``criterion`` string (plus ``status``/``evidence``).
+    The set of covered criteria is the union of those ``criterion`` values. A
+    legacy dict form (criterion-string keys) is also tolerated so older verdicts
+    validate unchanged; malformed entries are skipped rather than raising.
     """
-    outcomes = verdict.get("criteria_outcomes", {})
-    missing = [c for c in frozen_criteria if c not in outcomes]
+    outcomes = verdict.get("criteria_outcomes", [])
+    if isinstance(outcomes, dict):
+        # Legacy form: criterion strings as dict keys.
+        covered = set(outcomes.keys())
+    else:
+        # Schema form: array of {criterion, status, evidence} objects.
+        covered = {
+            entry["criterion"]
+            for entry in outcomes
+            if isinstance(entry, dict) and "criterion" in entry
+        }
+    missing = [c for c in frozen_criteria if c not in covered]
     return (len(missing) == 0, missing)
 
 
