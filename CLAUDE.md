@@ -243,7 +243,7 @@ Three jobs in `.github/workflows/ci.yml`, all must pass on `main` and PRs:
 
 When compacting this conversation (via `/compact` or auto-threshold), use this retention policy:
 
-**Retain verbatim:** `.advanced-plans/phases/phase-14/handoff.md` (the validated phase
+**Retain verbatim:** `.advanced-plans/phases/phase-15/handoff.md` (the validated phase
 resume digest for the most recently completed phase), `.advanced-plans/PLANNING.md`
 frontmatter, and any open cross-phase decisions/threads.
 

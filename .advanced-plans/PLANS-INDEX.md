@@ -66,6 +66,15 @@ section existed — their cold artefacts exist but manifest entries are not yet 
     - Codex gate + self-heal installed to runtime; proven via 343 tests + witnessed worktree self-heal (attempt-1 PASS, override)
     - Framework gated itself: real backend:codex verdict written; first live run fixed 4 run-gate codex-invocation bugs
 
+- phase: 15
+  title: "Automation-Surface Audit"
+  status: passed
+  commits: bd9de6a..36efe6e
+  detail: .advanced-plans/phases/phase-15/complete.md
+  highlights:
+    - Friction paydown: state-archiving wired, CI path-audit guard, /sync-plans, /next-loop --full (gate PASS attempt 1, 366 tests)
+    - /run-gate now closes the phase out on pass (gate->close seam removed); gate-override policy formalised
+
 ---
 
 ## Ralph Loops
