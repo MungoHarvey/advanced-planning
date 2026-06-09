@@ -3,19 +3,19 @@ programme: "Advanced Planning Framework"
 status: in_progress
 last_updated: 2026-06-09
 
-current_phase: 15
+current_phase: 16
 current_loop: null
 gate_status: pending
 released: v0.14.0
-next_action: "Phase 15 (Automation-Surface Audit) — ALL 5 LOOPS COMPLETE (059-063). Delivered: state-archiving wired into next-loop.md Step 3a; CI path-convention audit (path_audit.py + job 4, catches Phase-9-class corruption); /sync-plans command; /next-loop --full one-pass population (Step 3c); gate-override-policy.md + codex version-coupling guard. v0.15.0 staged (VERSION+CHANGELOG+CLAUDE.md decision log). 366 tests, AST NONE, path_audit CLEAN, LOCKED docs byte-unchanged, gate-verdict.schema.json unchanged. Gate NOT yet run. Next: /run-gate (or /next-phase) to gate Phase 15; then /phase-compact 15; tag v0.15.0; push (operator — no SSH key in env)."
+next_action: "Phase 15 CLOSED (gate passed attempt 1; code-review 95, phase-goals 93). Closed out via the new /run-gate-pass progression (gate→close). Delivered: state-archiving wired into next-loop.md; CI path-convention audit; /sync-plans; /next-loop --full; gate-override-policy.md + codex guard; AND the /run-gate closeout-on-pass improvement folded in. v0.15.0 staged. Next: /phase-compact 15 to compact; tag v0.15.0; then /plan-and-phase (or /next-phase --auto) for Phase 16. Operator still to push: `git push origin main --follow-tags` (no SSH key in env)."
 
 active_branches:
   - branch: main
-    phase: 15
+    phase: 16
     session: primary
 
 phases:
-  complete: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+  complete: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
   pending: []
   failed: []
 
@@ -25,15 +25,16 @@ state_files:
   history: .advanced-plans/state/history.jsonl
 
 notes: |
-  Phase 14 — Install & Exercise Codex Gate + Self-Heal in Runtime (loops 055-058):
-  complete, gate PASSED attempt 1. code-review-agent + phase-goals-agent both PASS
-  (conf 95/93); codex produced a backend:codex verdict (self-evidencing criterion met),
-  recorded fail as a documented override (read-only-sandbox/isolation false-negative,
-  no deliverable defect). First real codex run surfaced + fixed 4 run-gate
-  codex-invocation bugs. Witnessed self-heal ran in a discarded worktree (main pristine).
-  343 tests, AST NONE, 4 LOCKED files byte-unchanged. Released v0.14.0; tags v0.13.0 +
-  v0.14.0 cut locally on gate-pass commits (push pending — no SSH key in env).
-  Phase 15 not yet planned.
+  Phase 15 — Automation-Surface Audit (loops 059-063): complete, gate PASSED attempt 1
+  (code-review 95, phase-goals 93; two-agent gate, no codex this run). Delivered:
+  state-archiving wired into next-loop.md Step 3a; CI path-convention audit (path_audit.py
+  + ci.yml job 4); /sync-plans; /next-loop --full one-pass population; gate-override-policy.md
+  + codex version-coupling guard. Follow-on (same session): /run-gate now closes the phase
+  out on a current-phase pass (Step 10.4), and /next-phase detects an already-closed phase
+  (Step 1a) — removes the "gated but not closed" seam. 366 tests, AST NONE, path_audit CLEAN,
+  LOCKED docs + gate-verdict.schema.json byte-unchanged. v0.15.0 staged (not yet tagged).
+  Phase 15 closed out via the new gate->close progression. Phase 16 not yet planned.
+  Pending: /phase-compact 15; tag v0.15.0; push (operator — no SSH key in env).
 ---
 
 # PLANNING.md — Live Programme Dashboard
@@ -48,26 +49,30 @@ current phase, loop, gate state, and recommended next action.
 
 ## What to do next
 
-Phase 14 is **closed** — gate passed (attempt 1, documented codex override),
-compaction artefacts written, v0.14.0 released. Tags `v0.13.0` and `v0.14.0`
-are cut locally on their gate-pass commits; `main` (+ tags) still needs
-`git push origin main --follow-tags` by the operator (this environment has no
-SSH key). Phase 15 is **not yet planned** — run `/new-phase` or
-`/plan-and-phase` to scope it, then `/decompose-phase` + `/next-loop`.
+Phase 15 is **closed** — gate passed (attempt 1; code-review 95, phase-goals 93),
+and closed out via the new `/run-gate`-pass progression (gate → close). **Not yet
+compacted or released externally.** Next: `/phase-compact 15` to write the cold
+artefact + handoff digest, then tag `v0.15.0`. `main` (+ tags `v0.11/0.13/0.14` and
+the forthcoming `v0.15.0`) still needs `git push origin main --follow-tags` by the
+operator (this environment has no SSH key). Phase 16 is **not yet planned** — run
+`/plan-and-phase` (or `/next-phase --auto`) to scope it.
 
 ---
 
-## Phase 14 Progress
+## Phase 15 Progress
 
-Phase 14 — Install & Exercise Codex Gate + Self-Heal in Runtime, 4 loops:
+Phase 15 — Automation-Surface Audit, 5 loops:
 
 | Loop | Task | Status |
 |---|---|---|
-| ralph-loop-055 | Runtime install (byte-identical commands + codex-reviewer) | completed |
-| ralph-loop-056 | Codex gate proof (live fixture + degrade test) | completed |
-| ralph-loop-057 | Self-heal proof (sandboxed integration test) | completed |
-| ralph-loop-058 | Witnessed worktree self-heal + v0.14.0 release | completed |
+| ralph-loop-059 | Doc-hygiene + wire state-archiving | completed |
+| ralph-loop-060 | CI path-convention audit | completed |
+| ralph-loop-061 | /sync-plans command | completed |
+| ralph-loop-062 | /next-loop --full one-pass population | completed |
+| ralph-loop-063 | Gate-override policy + codex guard + v0.15.0 | completed |
 
-Loop file: `.advanced-plans/phases/phase-14/loops.md`
-Gate verdicts: `.advanced-plans/gate-verdicts/phase-14-attempt-1-*.json`
-Compaction: `.advanced-plans/phases/phase-14/complete.md` + `handoff.md`
+Follow-on (same session): `/run-gate` closeout-on-pass (Step 10.4) + `/next-phase`
+already-closed detection (Step 1a) — the "gated but not closed" seam fix.
+
+Loop file: `.advanced-plans/phases/phase-15/loops.md`
+Gate verdicts: `.advanced-plans/gate-verdicts/phase-15-attempt-1-*.json`
