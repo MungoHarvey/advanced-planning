@@ -130,6 +130,48 @@ Claude Code session -- the symlinked file is read fresh each time.
 
 ---
 
+## Runtime Drift: Commands Are Copied, Not Symlinked
+
+When you install this framework into a **target project** (i.e. `--project /path/to/other/project`,
+not self-install), the installer **copies** command files rather than linking them:
+
+```sh
+# What the installer does at normal (non-self-install) time:
+cp platforms/claude-code/commands/run-gate.md    /path/to/project/.claude/commands/run-gate.md
+cp platforms/claude-code/commands/next-phase.md  /path/to/project/.claude/commands/next-phase.md
+# etc.
+```
+
+This means `.claude/commands/` in a target project can **silently drift** from
+`platforms/claude-code/commands/` as the framework source evolves. If you pull new framework
+commits, the runtime copies are **not** automatically updated.
+
+### Re-sync command
+
+To refresh the two most commonly updated commands in an installed project, run from the
+framework repo root (or from the target project if you have the framework checked out nearby):
+
+```sh
+# Run from the advanced-planning repo root; substitute the real target project path:
+cp platforms/claude-code/commands/run-gate.md   /path/to/project/.claude/commands/run-gate.md
+cp platforms/claude-code/commands/next-phase.md /path/to/project/.claude/commands/next-phase.md
+```
+
+Or re-run the full installer to refresh all copied files at once:
+
+```sh
+# Unix
+sh setup/claude-code/install.sh --project /path/to/project
+
+# Windows PowerShell
+.\setup\claude-code\install.ps1 -Project /path/to/project
+```
+
+> **Self-install mode** (when `--project .` resolves to this repo) creates symlinks/junctions
+> instead of copies, so it never drifts. See [Dev-Mode Self-Install](#dev-mode-self-install).
+
+---
+
 ## Submitting a Pull Request
 
 1. Fork the repository and create a branch from `main`

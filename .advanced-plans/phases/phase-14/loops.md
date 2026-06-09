@@ -14,9 +14,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "Refreshed .claude/commands/run-gate.md (92 codex refs) and next-phase.md (46 remediation refs) byte-identical from source; copied core/agents/codex-reviewer.md to .claude/agents/ byte-identical; added Runtime Drift section to CONTRIBUTING.md with explicit cp re-sync commands."
   failed: ""
-  needed: ""
+  needed: "Proceed to loop-056 (Codex Gate Proof) and loop-057 (Self-Heal Proof) — both depend on loop-055 being complete."
 
 todos:
   - id: "loop-055-1"
@@ -24,7 +24,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: ".claude/commands/run-gate.md is byte-identical to platforms/claude-code/commands/run-gate.md (diff empty); grep -c -i codex returns >0"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-055-2"
@@ -32,7 +32,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: ".claude/commands/next-phase.md is byte-identical to platforms/claude-code/commands/next-phase.md (diff empty); grep -c -i remediat returns >0"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-055-3"
@@ -40,7 +40,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: ".claude/agents/codex-reviewer.md exists; the core/agents/codex-reviewer.md path referenced by run-gate.md resolves from repo root (file readable)"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-055-4"
@@ -48,7 +48,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "CONTRIBUTING.md contains a section stating .claude/commands/ are copied not symlinked, with the explicit cp re-sync command from platforms/claude-code/commands/"
-    status: pending
+    status: completed
     complexity: low
     priority: medium
 

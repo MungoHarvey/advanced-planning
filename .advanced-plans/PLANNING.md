@@ -4,10 +4,10 @@ status: in_progress
 last_updated: 2026-06-09
 
 current_phase: 14
-current_loop: null
+current_loop: 056
 gate_status: not_started
 released: v0.13.0
-next_action: "Phase 14 planned (draft): Install & Exercise Codex Gate + Self-Heal in Runtime — loops 055–058, target v0.14.0. Run /decompose-phase 14 to generate loop todos, then /next-loop to begin. Optional: cut git tag v0.13.0 first."
+next_action: "Phase 14 in progress: loop-055 (Runtime Install) complete — codex gate + self-heal commands installed to .claude/ byte-identical, codex-reviewer parity copy + CONTRIBUTING drift note done. Next: loop-056 (Codex Gate Proof). Auto-chaining loops 056-058 then phase gate."
 
 active_branches:
   - branch: main

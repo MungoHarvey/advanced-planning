@@ -1,13 +1,14 @@
 {
-  "loop_name": "ralph-loop-054",
-  "loop_file": ".advanced-plans/phases/phase-13/loops.md",
+  "loop_name": "ralph-loop-055",
+  "loop_file": ".advanced-plans/phases/phase-14/loops.md",
   "status": "completed",
-  "todos_done": 5,
+  "todos_count": 4,
+  "todos_done": 4,
   "todos_failed": 0,
-  "completed_at": "2026-06-08T00:00:00Z",
+  "completed_at": "2026-06-09T00:00:00Z",
   "handoff": {
-    "done": "E2E trace tests added (fix->re-gate->pass + bound->escalate at cycles>=2); gate-gaming guard tests (loops.md + criteria-frozen.md edits rejected); gstack grep zero matches across 6 target files; VERSION 0.13.0 + CHANGELOG [0.13.0] + CLAUDE.md Phase 13 decision log; 296 tests pass, AST NONE, LOCKED files byte-unchanged.",
+    "done": "Refreshed .claude/commands/run-gate.md (92 codex refs) and next-phase.md (46 remediation refs) byte-identical from source; copied core/agents/codex-reviewer.md to .claude/agents/ byte-identical; added Runtime Drift section to CONTRIBUTING.md with explicit cp re-sync commands.",
     "failed": "",
-    "needed": ""
+    "needed": "Proceed to loop-056 (Codex Gate Proof) and loop-057 (Self-Heal Proof) — both depend on loop-055 being complete."
   }
 }
