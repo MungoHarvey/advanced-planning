@@ -1,14 +1,14 @@
 {
-  "loop_name": "ralph-loop-057",
+  "loop_name": "ralph-loop-058",
   "loop_file": ".advanced-plans/phases/phase-14/loops.md",
   "status": "completed",
-  "todos_count": 3,
-  "todos_done": 3,
+  "todos_count": 4,
+  "todos_done": 4,
   "todos_failed": 0,
-  "completed_at": "2026-06-09T11:00:00Z",
+  "completed_at": "2026-06-09T13:47:00Z",
   "handoff": {
-    "done": "Sandboxed synthetic-fail integration test written (test_self_heal_integration.py, 26 tests) covering triage routing, NEVER-TOUCH allowlist-breach escalation, sentinel guard, criteria hash guard, cycle-bound escalation, and full traces; both modules import/run cleanly from repo root; 340 tests pass, AST NONE.",
-    "failed": "One test assertion needed a fix: history.jsonl is NEVER-TOUCH (not just transient), so the transient-only diff test was corrected to use retry-context.json pairs instead.",
-    "needed": "Proceed to loop-058 (Witnessed Exercise + v0.14.0 Release)."
+    "done": "Witnessed self-heal exercise ran a deliberately-induced gate fail through the real remediation guards in a throwaway git worktree (gate_remediation + passed_after_remediation emitted), then discarded it leaving main pristine (history 20->20, no leaks; transcript at phase-14/exercise-058-transcript.md); folded in the minimal codex_gate parser fix (identical double-blocks resolve, 343 tests); cut v0.14.0 (VERSION + CHANGELOG + CLAUDE.md decision log). Release gate green: 343 passed, AST NONE, 4 LOCKED files byte-unchanged.",
+    "failed": "",
+    "needed": "Run the Phase 14 gate (/run-gate or /next-phase): the refreshed codex-wired run-gate should now write a backend:codex verdict for phase-14-attempt-1; then /phase-compact and cut tag v0.14.0."
   }
 }

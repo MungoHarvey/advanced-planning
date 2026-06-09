@@ -81,8 +81,13 @@ def extract_verdict_json(stdout: str) -> Optional[str]:
     Strategy:
     1. Look for fenced ```json ... ``` blocks.
     2. If exactly one fenced block is found, return its content.
-    3. If zero fenced blocks, try the brace fallback (first { to last }).
-    4. If multiple fenced blocks, return None (ambiguous).
+    3. If multiple fenced blocks are found but they are all structurally
+       identical (parse to the same JSON object), return the last one --
+       the codex CLI sometimes echoes the same verdict block twice, which
+       is not genuine ambiguity.
+    4. If zero fenced blocks, try the brace fallback (first { to last }).
+    5. If multiple fenced blocks genuinely differ (or any is malformed),
+       return None (ambiguous).
     """
     if not stdout or not stdout.strip():
         return None
@@ -99,7 +104,18 @@ def extract_verdict_json(stdout: str) -> Optional[str]:
             return None
 
     if len(fenced_matches) > 1:
-        # Ambiguous: multiple fenced blocks
+        # Multiple fenced blocks. The codex CLI sometimes echoes the same
+        # verdict block twice; that is not genuine ambiguity. Parse them all
+        # and, if they are structurally identical, return the last block.
+        # Only treat as ambiguous when the blocks differ (or any is malformed).
+        parsed_blocks = []
+        for match in fenced_matches:
+            try:
+                parsed_blocks.append(json.loads(match.strip()))
+            except json.JSONDecodeError:
+                return None
+        if all(block == parsed_blocks[0] for block in parsed_blocks):
+            return fenced_matches[-1].strip()
         return None
 
     # Zero fenced blocks: try brace fallback

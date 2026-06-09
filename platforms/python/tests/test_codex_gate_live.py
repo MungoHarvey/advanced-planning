@@ -205,19 +205,21 @@ class TestHappyPath:
 # ===========================================================================
 
 class TestRealCapturedStdout:
-    """Real codex stdout behavior: double-block emission triggers degrade path.
+    """Real codex stdout behavior: identical double-block resolves to a verdict.
 
     The real codex CLI (exec / exec review, codex-cli 0.124.0, gpt-5.5 model)
     emits the response twice in non-interactive mode: once as part of the
     conversation transcript and once as a final standalone message. This
-    produces two identical fenced JSON blocks in stdout.
+    produces two *identical* fenced JSON blocks in stdout.
 
-    extract_verdict_json returns None for multiple fenced blocks (ambiguity
-    guard), so extract_and_validate returns ok=False. This triggers the
-    gate_codex_skipped degrade path in run-gate.md.
+    As of the Phase 14 parser hardening, extract_verdict_json treats multiple
+    structurally-identical fenced blocks as non-ambiguous (returns the last
+    block), so extract_and_validate produces a schema-valid backend:codex
+    verdict from real codex stdout. Genuinely-differing blocks still degrade
+    (see test_differing_double_block_still_degrades).
 
-    This is documented as a friction finding in docs/tool-friction-log.md
-    (2026-06-09 entry: codex double-block emission).
+    Origin: docs/tool-friction-log.md (2026-06-09 codex double-block entry);
+    fix applied in ralph-loop-058.
     """
 
     def test_real_fixture_exists(self):
@@ -232,18 +234,17 @@ class TestRealCapturedStdout:
         stdout = _REAL_STDOUT_FIXTURE.read_text(encoding="utf-8")
         assert "```json" in stdout, "Real fixture should contain fenced json blocks"
 
-    def test_real_fixture_double_block_triggers_degrade(self):
-        """Real codex stdout (double fenced block) -> extract_and_validate ok=False.
+    def test_real_fixture_identical_double_block_resolves(self):
+        """Real codex stdout (identical double block) -> schema-valid codex verdict.
 
-        This is the KNOWN and EXPECTED behaviour for codex-cli 0.124.0.
-        The double-block is emitted by the CLI wrapper, not by the model.
-        The ambiguity guard in extract_verdict_json correctly returns None.
-        This causes the degrade path (gate_codex_skipped) to activate.
+        codex-cli 0.124.0 emits the verdict block twice (identical content).
+        The Phase 14 parser hardening recognises identical duplicates as
+        non-ambiguous and returns the last block, so extract_and_validate
+        yields ok=True with backend == "codex".
         """
         stdout = _REAL_STDOUT_FIXTURE.read_text(encoding="utf-8")
         import re
         fenced_count = len(re.findall(r"```json", stdout))
-        # The known behavior: real stdout has 2 blocks
         assert fenced_count >= 2, (
             f"Expected >= 2 fenced json blocks in real fixture, found {fenced_count}. "
             "If this changed, update the friction log entry and this test."
@@ -251,8 +252,39 @@ class TestRealCapturedStdout:
         result = extract_and_validate(
             stdout, expected_phase="phase-14", expected_attempt=1
         )
+        assert result["ok"] is True, (
+            f"Expected ok=True for identical double-block fixture, got: {result}"
+        )
+        assert result["verdict"].get("backend") == "codex", (
+            f"Expected backend=='codex', got: {result['verdict'].get('backend')}"
+        )
+
+    def test_differing_double_block_still_degrades(self):
+        """Two *different* fenced blocks remain genuinely ambiguous -> degrade.
+
+        The parser hardening only collapses identical duplicates. Blocks that
+        disagree (e.g. pass vs fail) must still return ok=False so a real
+        ambiguity never silently resolves to one arbitrary verdict.
+        """
+        import json as _json
+        block_pass = _json.dumps({
+            "phase": "phase-14", "attempt": 1, "agent": "codex",
+            "backend": "codex", "verdict": "pass", "confidence": 90,
+            "timestamp": "2026-06-09T14:00:00Z", "findings": [],
+            "loops_to_revert": [], "failure_notes": [],
+        })
+        block_fail = _json.dumps({
+            "phase": "phase-14", "attempt": 1, "agent": "codex",
+            "backend": "codex", "verdict": "fail", "confidence": 90,
+            "timestamp": "2026-06-09T14:00:00Z", "findings": [],
+            "loops_to_revert": [], "failure_notes": [],
+        })
+        stdout = f"```json\n{block_pass}\n```\n```json\n{block_fail}\n```"
+        result = extract_and_validate(
+            stdout, expected_phase="phase-14", expected_attempt=1
+        )
         assert result["ok"] is False, (
-            f"Expected ok=False for double-block fixture (degrade path), got: {result}"
+            f"Expected ok=False for differing double-block (genuine ambiguity), got: {result}"
         )
         assert "reason" in result
 
@@ -344,9 +376,26 @@ class TestDegradePathFull:
             # Assert: raw fallback WAS written
             assert raw_path.exists(), "raw stdout file should be written on degrade path"
 
-    def test_double_block_stdout_does_not_create_codex_json(self):
-        """Real double-block fixture -> no codex.json; raw stdout saved."""
-        stdout = _REAL_STDOUT_FIXTURE.read_text(encoding="utf-8")
+    def test_ambiguous_double_block_stdout_does_not_create_codex_json(self):
+        """Genuinely-ambiguous double-block (differing verdicts) -> no codex.json.
+
+        Post Phase 14 parser hardening, identical duplicates resolve; only
+        differing blocks remain ambiguous. This asserts the degrade path still
+        withholds codex.json for genuine ambiguity.
+        """
+        block_pass = json.dumps({
+            "phase": "phase-14", "attempt": 1, "agent": "codex",
+            "backend": "codex", "verdict": "pass", "confidence": 90,
+            "timestamp": "2026-06-09T14:00:00Z", "findings": [],
+            "loops_to_revert": [], "failure_notes": [],
+        })
+        block_fail = json.dumps({
+            "phase": "phase-14", "attempt": 1, "agent": "codex",
+            "backend": "codex", "verdict": "fail", "confidence": 90,
+            "timestamp": "2026-06-09T14:00:00Z", "findings": [],
+            "loops_to_revert": [], "failure_notes": [],
+        })
+        stdout = f"```json\n{block_pass}\n```\n```json\n{block_fail}\n```"
         with tempfile.TemporaryDirectory() as tmp_dir:
             gate_verdicts_dir = Path(tmp_dir) / "gate-verdicts"
             gate_verdicts_dir.mkdir()
@@ -354,14 +403,14 @@ class TestDegradePathFull:
             result = extract_and_validate(
                 stdout, expected_phase="phase-14", expected_attempt=1
             )
-            assert result["ok"] is False, "Real double-block fixture should trigger degrade"
+            assert result["ok"] is False, "Differing double-block should trigger degrade"
 
             raw_path = gate_verdicts_dir / "phase-14-attempt-1-codex.raw.txt"
             raw_path.write_text(stdout, encoding="utf-8")
 
             codex_json = gate_verdicts_dir / "phase-14-attempt-1-codex.json"
             assert not codex_json.exists(), (
-                "codex.json must NOT be written when extraction fails"
+                "codex.json must NOT be written when extraction is ambiguous"
             )
 
     def test_gate_codex_skipped_event_shape(self):

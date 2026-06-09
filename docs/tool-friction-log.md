@@ -575,3 +575,13 @@ entries from here.
   changing the semantics for genuinely ambiguous (different) blocks.
   Note: this loop does NOT modify `codex_gate.py` (hard constraint); the fix
   is deferred to a future loop.
+
+  **RESOLVED (Loop 058, 2026-06-09):** applied option (c) — `extract_verdict_json`
+  now parses all fenced blocks when more than one is present and, if they are
+  structurally identical, returns the last block; genuinely-differing or
+  malformed blocks still return `None` (degrade). Covered by new unit tests
+  (`test_collapses_identical_duplicate_fenced_blocks`,
+  `test_returns_none_on_malformed_among_multiple_blocks`) and the live test
+  (`test_real_fixture_identical_double_block_resolves`,
+  `test_differing_double_block_still_degrades`). Logged as a CLAUDE.md Phase 14
+  decision (minimal scoped fix for a blocking bug found during the exercise).

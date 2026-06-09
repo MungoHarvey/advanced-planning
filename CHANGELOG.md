@@ -11,6 +11,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.14.0] - 2026-06-09
+
+Phase 14 — Install & Exercise Codex Gate + Self-Heal in Runtime (Loops 055–058, 4 loops).
+Wires the Phase 12 codex gate and Phase 13 self-heal — built and tested in source but never
+installed — into this repo's own `.claude/` runtime, then proves both via automated tests
+**and** a witnessed live exercise, closing the framework's check-build-correct recursion.
+
+### Added
+
+- `platforms/python/tests/test_codex_gate_live.py` — live codex-gate proof: a real
+  `codex exec` stdout fixture parses via `extract_and_validate` into a schema-valid
+  `backend: codex` verdict, the graceful-degrade path is asserted (genuine ambiguity →
+  no `codex.json`, `gate_codex_skipped`), and the codex preflight is smoke-tested.
+- `platforms/python/tests/fixtures/` — real captured `codex-cli 0.124.0` stdout (+ provenance
+  README) used by the live test.
+- `platforms/python/tests/test_self_heal_integration.py` — 26 sandboxed integration tests
+  driving `remediation_controller` triage → diff-allowlist NEVER-TOUCH breach escalation,
+  sentinel/criteria-hash guards, cycle-bound escalation, and a full synthetic remediation
+  trace — all in `tmp_path`, touching no real file or git history.
+- `.claude/agents/codex-reviewer.md` — parity copy of the `core/agents/` codex contract doc.
+- `.advanced-plans/phases/phase-14/exercise-058-transcript.md` — captured transcript of the
+  witnessed live self-heal run (induced gate fail → triage → allowlisted fix → re-gate pass),
+  executed in a throwaway git worktree and discarded, leaving `main` pristine.
+
+### Changed
+
+- `.claude/commands/run-gate.md`, `.claude/commands/next-phase.md` — refreshed byte-identical
+  from `platforms/claude-code/commands/` source, installing the codex gate (92 codex refs) and
+  the self-correcting gate / remediation flow (46 remediation refs) into the live runtime.
+- `platforms/python/codex_gate.py` — `extract_verdict_json` now treats multiple *structurally
+  identical* fenced JSON blocks as non-ambiguous (returns the last block), since `codex exec`
+  echoes its verdict block twice. Genuinely-differing blocks still degrade. Minimal scoped fix
+  for a blocking bug surfaced during the live exercise (Loop 056 finding); the runtime codex
+  live-run criterion is now achievable.
+- `CONTRIBUTING.md` — added a runtime-drift note: `.claude/commands/*` are copied (not
+  symlinked) from source at install time, with the explicit `cp` re-sync commands.
+
+---
+
 ## [0.13.0] - 2026-06-09
 
 Phase 13 — Self-Correcting Gate (Loops 051–054, 4 loops). Gate PASSED (attempt 1).

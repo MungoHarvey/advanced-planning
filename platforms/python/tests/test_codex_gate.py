@@ -82,11 +82,31 @@ class TestExtractVerdictJson:
         parsed = json.loads(result)
         assert parsed["verdict"] == "fail"
 
-    def test_returns_none_on_multiple_fenced_blocks(self):
-        """Path 4: multiple fenced json blocks -> ambiguous, returns None"""
+    def test_returns_none_on_multiple_differing_fenced_blocks(self):
+        """Path 4: multiple *differing* fenced json blocks -> ambiguous, returns None"""
         block1 = json.dumps({"verdict": "pass"})
         block2 = json.dumps({"verdict": "fail"})
         stdout = f"```json\n{block1}\n```\n```json\n{block2}\n```"
+        result = extract_verdict_json(stdout)
+        assert result is None
+
+    def test_collapses_identical_duplicate_fenced_blocks(self):
+        """Path 4b: multiple *identical* fenced json blocks -> returns the block.
+
+        The codex CLI echoes the same verdict block twice; identical duplicates
+        are not genuine ambiguity (Phase 14 parser hardening).
+        """
+        block = json.dumps({"verdict": "pass", "agent": "codex"})
+        stdout = f"```json\n{block}\n```\n```json\n{block}\n```"
+        result = extract_verdict_json(stdout)
+        assert result is not None
+        parsed = json.loads(result)
+        assert parsed["verdict"] == "pass"
+
+    def test_returns_none_on_malformed_among_multiple_blocks(self):
+        """Path 4c: a malformed block among several -> ambiguous/unsafe, returns None"""
+        good = json.dumps({"verdict": "pass"})
+        stdout = f"```json\n{good}\n```\n```json\n{{not valid json}}\n```"
         result = extract_verdict_json(stdout)
         assert result is None
 

@@ -4,10 +4,10 @@ status: in_progress
 last_updated: 2026-06-09
 
 current_phase: 14
-current_loop: 058
-gate_status: not_started
+current_loop: null
+gate_status: ready_for_gate
 released: v0.13.0
-next_action: "Phase 14 in progress: loops 055-056 complete (runtime install + codex gate proof, 314 tests). FINDING: real codex stdout emits double-fenced blocks -> extract_and_validate degrades; happy-path backend:codex proven on synthesized single-block only (logged docs/tool-friction-log.md). Affects phase-gate codex-live criterion. Next: loop-057 (Self-Heal Proof), then 058."
+next_action: "Phase 14 loops 055-058 ALL COMPLETE. Codex gate + self-heal installed to runtime; proven via 343 tests + a witnessed worktree-isolated self-heal exercise (main untouched); codex double-block parser fix applied (real codex output now yields backend:codex). v0.14.0 staged (VERSION/CHANGELOG/CLAUDE.md). Run /next-phase (or /run-gate) for the Phase 14 gate — codex should write a backend:codex verdict for phase-14-attempt-1. Then /phase-compact + tag v0.14.0."
 
 active_branches:
   - branch: main

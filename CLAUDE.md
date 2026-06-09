@@ -101,6 +101,23 @@ Changes to either schema require an explicit decision logged in this file.
   rides the worker-only `retry-context.json` sidecar rather than `loops.md` frontmatter,
   keeping re-gate agents blind to failure context. `hashlib` added to the stdlib allow-set
   in `core/constraints.json` (used by `remediation_controller.compute_criteria_hash`).
+- Phase 14 (2026-06-09): Codex gate (Phase 12) and self-heal (Phase 13) — built and tested
+  in source but never installed — wired into this repo's own `.claude/` runtime and proven
+  via a two-track strategy: automated tests **plus** a witnessed live exercise. Runtime
+  command bodies (`.claude/commands/{run-gate,next-phase}.md`) are refreshed byte-identical
+  from `platforms/claude-code/commands/` source (install is plain `cp`, no token
+  substitution, so byte-identity is the correct criterion); a `CONTRIBUTING.md` drift note
+  documents the copy-not-symlink re-sync. Decision: `codex_gate.extract_verdict_json` was
+  given a **minimal scoped fix** — multiple structurally-identical fenced blocks now resolve
+  to the last block rather than degrading, because `codex exec` echoes its verdict block
+  twice (Loop 056 finding); genuinely-differing blocks still degrade. This was permitted as
+  the in-scope "blocking bug found during the exercise gets a minimal scoped fix" path and
+  makes the runtime codex live-run criterion achievable. The witnessed self-heal exercise
+  (Loop 058) ran a deliberately-induced gate fail through the real remediation guards
+  (`triage_findings`, `validate_diff_allowlist`, frozen-criteria hash verify) inside a
+  throwaway git **worktree**, emitting `gate_remediation` + `passed_after_remediation`
+  events, then discarded the worktree — `main` history untouched. No new gate features;
+  no logic change to `remediate.py` / `remediation_controller.py`.
 
 ## Platform Adapters
 

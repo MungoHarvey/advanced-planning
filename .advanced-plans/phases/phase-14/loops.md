@@ -364,9 +364,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "Witnessed self-heal exercise ran a deliberately-induced gate fail through the real remediation guards (triage_findings, validate_diff_allowlist, frozen-criteria hash) in a throwaway git worktree, emitting gate_remediation + passed_after_remediation, then discarded it (main history 20->20, no leaks; transcript saved to phase-14/exercise-058-transcript.md); folded in the minimal codex_gate parser fix (identical double-blocks resolve); cut v0.14.0 (VERSION + CHANGELOG + CLAUDE.md decision log)."
   failed: ""
-  needed: ""
+  needed: "Run the Phase 14 gate (/run-gate or /next-phase) — the refreshed codex-wired run-gate should now write a backend:codex verdict for phase-14-attempt-1; then phase-compact + tag v0.14.0."
 
 todos:
   - id: "loop-058-1"
@@ -374,7 +374,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "A worktree run produces gate_remediation and/or passed_after_remediation events + a captured transcript showing the bounded triage->fix->re-gate loop executing live"
-    status: pending
+    status: completed
     complexity: high
     priority: high
   - id: "loop-058-2"
@@ -382,7 +382,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "git worktree list shows the throwaway worktree removed; git status on main is clean; no contrived-fail artefacts remain on main"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-058-3"
@@ -390,7 +390,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "VERSION reads 0.14.0; CHANGELOG.md has a [0.14.0] section listing the install + two-track proof; CLAUDE.md decision log has a Phase 14 entry"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-058-4"
@@ -398,7 +398,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "pytest all pass; ast_check reports NONE; the 4 LOCKED files (phase-complete/manifest/handoff schemas + phase-9/complete.md) are byte-unchanged vs HEAD"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
 
