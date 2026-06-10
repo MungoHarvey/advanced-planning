@@ -1,5 +1,5 @@
 ---
-description: Run the gate review sub-phase. Spawns configured gate agents sequentially, runs Codex in parallel with the final subagent, reads verdicts, aggregates pass/fail, writes gate_pass or gate_fail to history.jsonl, and on a pass for the current phase closes the phase out (marks it complete and advances the programme pointer).
+description: Run the gate review sub-phase. Spawns configured gate agents sequentially, runs Codex in parallel with the final subagent, reads verdicts, aggregates pass/fail, writes gate_pass or gate_fail to history.jsonl, and on a pass for the current phase closes the phase out (marks it complete, advances the programme pointer, and writes compaction artefacts automatically — complete.md, manifest entry, handoff.md).
 allowed-tools: Read, Write, Glob, Bash, Edit, Agent
 argument-hint: "[--phase N] [--agents code-review-agent,phase-goals-agent,security-agent,test-agent]"
 ---
@@ -12,10 +12,13 @@ Codex subprocess runs as an independent cross-model reviewer in parallel with th
 in-house subagent.
 
 On a **pass for the current phase**, the gate is the natural end of the phase, so `/run-gate`
-**closes the phase out automatically** (Step 10.4): it marks the phase complete, advances the
-`current_phase` pointer, and directs you to `/phase-compact`. No separate `/next-phase` call is
-needed just to advance. (`/next-phase` remains for the gate-not-yet-run path and for `--auto`
-cross-boundary chaining, and it detects an already-closed phase to avoid double work.)
+**closes the phase out and compacts automatically** (Step 10.4): it marks the phase complete,
+advances the `current_phase` pointer, writes compaction artefacts (`complete.md`, PLANS-INDEX
+manifest entry, `handoff.md`) and commits them. No separate `/phase-compact` or `/next-phase`
+call is needed just to advance or produce artefacts. The conversation-context `/compact` consent
+gate is unchanged — artefacts are automatic, `/compact` is user-consented only. (`/next-phase`
+remains for the gate-not-yet-run path and for `--auto` cross-boundary chaining, and it detects
+an already-closed phase to avoid double work.)
 
 ## Steps
 
@@ -493,7 +496,32 @@ after the `gate_pass` event is written (Step 10.3):
    git add -A && git commit -m "close: phase-[N] gate passed -- advancing to phase-[N+1]"
    ```
 
-Print: `-> Phase [N] closed out (gate pass): marked complete, programme advanced to Phase [N+1].`
+4. Compact the closed phase (artefact steps, idempotent): run `/phase-compact`'s artefact
+   pipeline for phase [N] inline — resolve anchor/end SHAs, read the phase-goals verdict,
+   write/update `.advanced-plans/phases/phase-[N]/complete.md`, append/update the ≤8-line
+   PLANS-INDEX manifest entry, generate `handoff.md` via:
+
+   ```bash
+   python platforms/python/handoff_digest.py .advanced-plans/phases/phase-[N]
+   ```
+
+   and commit the artefacts:
+
+   ```bash
+   git add -A && git commit -m "compact: phase-[N] -- cold artefact, manifest entry, handoff digest"
+   ```
+
+   **Consent gate unchanged:** artefacts are written and committed automatically (idempotent,
+   same logic as `/phase-compact` Steps 2–13). The conversation-context `/compact` line is
+   still only offered to the user, never self-invoked — see Step 11.
+
+   **Push reminder:** after the compact commit, print:
+
+   ```
+   NEXT: git push origin main --follow-tags
+   ```
+
+Print: `-> Phase [N] closed and compacted: complete.md + manifest + handoff.md written; run the offered /compact line to compact context when ready.`
 
 **If the gate failed, or `--phase` targeted a non-current phase:** skip closeout entirely
 (no PLANNING.md advance, no `phase_closed` event). A fail is routed through `/next-phase`
@@ -501,17 +529,22 @@ retry logic as before.
 
 ### 11. Print summary
 
-If gate **passes** (current phase — closeout performed in Step 10.4):
+If gate **passes** (current phase — closeout + compaction performed in Step 10.4):
 ```
-Gate PASSED — Phase [N] approved and closed out.
+Gate PASSED — Phase [N] approved, closed out, and compacted.
   Agents:    [comma-separated list (including codex if contributed)]
   Attempt:   [N]
   Verdicts:  [verdict file paths]
   Conflicts: [None | list]
   Advanced:  programme pointer is now Phase [N+1].
+  Artefacts: complete.md + PLANS-INDEX entry + handoff.md written automatically.
 
-Run /phase-compact [N] to compact the completed phase, then /plan-and-phase
+Compaction artefacts were written automatically (Step 10.4.4). To compact
+the conversation context, run the /compact line offered at the end of
+/phase-compact — copy and run it when ready. Then /plan-and-phase
 (or /next-phase --auto) to begin Phase [N+1].
+
+NEXT: git push origin main --follow-tags
 ```
 
 If gate **passes** but `--phase` targeted a non-current/historical phase (no closeout):

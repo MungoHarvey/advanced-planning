@@ -152,6 +152,19 @@ Changes to either schema require an explicit decision logged in this file.
   checkpoint commits remain in history; no rewriting. **`execution.log` untracked**: added to
   `.gitignore`; `git rm --cached` applied — file stays on disk, rotate/truncate freely (see
   `.advanced-plans/README.md` logs section).
+  **Install-sync upgrade pathway**: `install_audit.py` + `/sync-install` command + CI drift
+  step (job 5) make the three install layers (source/project/global) auditable and
+  one-command refreshable; the CI job blocks on source↔project drift.
+  **Trustworthy audit record**: `history_log.py` + event wiring in `next-loop.md` Step 9 and
+  planning-path commands; Hard Contract guards (no commit / Write-Edit only / no Windows
+  absolute paths) structurally embedded in all four agent definitions (source + installed).
+  **Compaction backfill**: 9 `complete.md` artefacts + 10 manifest entries written for phases
+  1–4, 6–8, 10–12; all 15 phases now covered in `PLANS-INDEX.md`.
+  **Auto-compact at close** (`run-gate.md` Step 10.4 sub-step 4): on a current-phase gate
+  pass, `/run-gate` now also runs the `/phase-compact` artefact pipeline inline —
+  `complete.md`, manifest entry, `handoff.md` — and commits them automatically; the
+  conversation-context `/compact` consent gate is unchanged (artefacts automatic, `/compact`
+  user-consented only).
 
 ## Platform Adapters
 

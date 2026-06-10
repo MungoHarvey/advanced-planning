@@ -1,14 +1,14 @@
 {
   "phase": "phase-16",
-  "loop_name": "ralph-loop-067",
+  "loop_name": "ralph-loop-068",
   "loop_file": ".advanced-plans/phases/phase-16/loops.md",
-  "task_name": "Compaction Backfill x9",
+  "task_name": "Auto-Compact at Close + Release",
   "todos_count": 5,
-  "prepared_at": "2026-06-10T22:23:17.611650+00:00",
+  "prepared_at": "2026-06-10T22:47:38.658254+00:00",
   "status": "ready",
   "handoff_injected": {
-    "done": "prepare_loop_ready + 6 tests (403 total green, AST NONE); next-loop.md Step 4 conditional fast-path + Step 3 checkpoint tags (source + byte-identical runtime copy); execution.log untracked (.gitignore + git rm --cached); rotation note in README.md; CLAUDE.md decision log updated; path_audit CLEAN; install_audit current.",
+    "done": "9 schema-valid complete.md artefacts written (phases 1-4, 7, 8, 10-12) + phase-7/ dir created; 10 manifest entries appended to PLANS-INDEX.md (phases 1-4, 6, 7, 8, 10-12, all <=8 lines, ascending); manifest header caveat updated to 'All phases 1-15 now backfilled'; all SHAs resolve, commit counts verified within +-1 of rev-list.",
     "failed": "",
-    "needed": "Continue with loop-067: Compaction Backfill x9 (complete.md + manifest entries for phases 1-4, 7, 8, 10-12)."
+    "needed": "Continue with loop-068: auto-compact at close + release v0.16.0."
   }
 }

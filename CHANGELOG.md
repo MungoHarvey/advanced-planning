@@ -11,6 +11,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.16.0] - 2026-06-10
+
+Phase 16 — Trust the Machinery (Loops 064–068, 5 loops).
+Wires the install-layer upgrade pathway, a trustworthy audit-log record, the orchestrator
+fast-path for populated loops, a full 15-phase compaction backfill, and auto-compact at
+gate close — then cuts the release.
+
+### Added
+
+- `platforms/python/install_audit.py` — stdlib-only drift auditor; compares source
+  (`platforms/claude-code/{commands,agents}/` + `core/schemas/`) vs project (`.claude/`)
+  vs global (`~/.claude/`, USERPROFILE-first on Windows) by EOL-insensitive content hash;
+  per-file report current/stale/missing; `--layers` flag; exits non-zero on drift.
+- `platforms/claude-code/commands/sync-install.md` (+ `.claude/` runtime copy) — `/sync-install`
+  command; runs `install_audit`, then refreshes stale copies source→outward (plain `cp`);
+  `--check` = audit only; never syncs backwards; CLAUDE.md Command Surface row added.
+- `.github/workflows/ci.yml` job 5 — runs `install_audit --layers source,project` on push/PR;
+  blocks on source↔project drift.
+- `platforms/python/history_log.py` — `append_event(history_path, event_dict)`: compact JSON
+  separators, ISO-8601 UTC timestamp injected if absent, append-only, parent dir auto-created;
+  plus a tiny CLI (`python -m platforms.python.history_log <path> '<json>'`).
+- `platforms/python/state_manager.prepare_loop_ready` — Python fast-path for `/next-loop`
+  Step 4: parses the next pending loop's frontmatter and writes `loop-ready.json` directly when
+  the loop is already fully populated (todos non-empty, every todo has id/content/outcome/status),
+  skipping the ralph-orchestrator spawn; signals agent-needed on stub/partial loops.
+- 9 backfilled `complete.md` artefacts — phases 1–4, 7, 8, 10–12 — all schema-valid per the
+  LOCKED `docs/phase-complete.schema.md`; sentinel verdict form where pre-gate-review; SHAs
+  anchored and verified; `phase-7/` directory created.
+- 10 manifest entries in `PLANS-INDEX.md` — phases 1–4, 6–8, 10–12; all ≤8 lines; all 15
+  phases now fully covered.
+- `run-gate.md` Step 10.4 sub-step 4 — on a current-phase gate pass, `/run-gate` now also runs
+  the `/phase-compact` artefact pipeline inline (cold artefact, manifest entry, `handoff.md` via
+  `handoff_digest.py`) and commits the compaction artefacts automatically. Consent gate for
+  conversation `/compact` is unchanged — artefacts are automatic; `/compact` is user-consented
+  only.
+
+### Changed
+
+- `platforms/claude-code/commands/next-loop.md` Step 4 (+ `.claude/` copy) — conditional
+  fast-path: fully-populated loop → Python fast-path (orchestrator skipped); stub or `--full` →
+  orchestrator as before.
+- `platforms/claude-code/commands/next-loop.md` Step 3 (+ `.claude/` copy) — checkpoint commits
+  replaced by lightweight tags (`checkpoint/loop-NNN`); rollback documented as
+  `git reset --hard checkpoint/loop-NNN`; old checkpoint commits preserved in history.
+- `.advanced-plans/logs/execution.log` — added to `.gitignore`; `git rm --cached` applied; file
+  stays on disk for the operator to rotate/truncate freely.
+- `platforms/claude-code/agents/ralph-loop-worker.md`, `ralph-orchestrator.md`,
+  `core/agents/worker.md`, `core/agents/orchestrator.md` — `## Hard Contract (non-negotiable)`
+  section added to all four: (a) never commit, (b) Write/Edit tools only — no shell redirects,
+  (c) no absolute Windows paths in shell commands. Installed copies refreshed byte-identical.
+- `platforms/claude-code/commands/next-loop.md` Step 9 (+ `.claude/` copy) — `loop_complete`
+  event wired via `history_log` CLI; `plan-and-phase.md` Step 8 and `new-phase.md` Step 12 emit
+  `phase_planned` events.
+- `run-gate.md` frontmatter description and Step 11 pass summary updated to reflect that
+  compaction artefacts are written automatically at close; "Run /phase-compact [N]" guidance
+  replaced by "artefacts written automatically; run the offered /compact line when ready".
+
+---
+
 ## [0.15.0] - 2026-06-09
 
 Phase 15 — Automation-Surface Audit (Loops 059–063, 5 loops).

@@ -210,7 +210,7 @@ entries from here.
   archive the old file to `.claude/state/archive/` before writing.
 - **RESOLVED (Loop 059, 2026-06-09):** `archive_cross_phase_state()` wired into `/next-loop` as new Step 3a; stale prior-phase `loop-ready.json`/`loop-complete.json` are archived to `.advanced-plans/state/archive/` before resume-detection; regression test added and full suite green (344 tests).
 
-### [Git checkpoint pattern] — In-flight planning work gets bundled with execution checkpoint
+### ~~[Git checkpoint pattern] — In-flight planning work gets bundled with execution checkpoint~~
 
 - **Observed**: /next-loop step 3 does `git add -A && git commit -m "checkpoint:
   before next-loop cycle"`. At this moment the working tree has both this
@@ -225,6 +225,10 @@ entries from here.
   Or: prompt to commit planning work under its own message first. This is a
   candidate for the future automation surface phase's "prerequisites guard"
   pattern.
+- **RESOLVED (Loop 066, 2026-06-10):** `/next-loop` Step 3 now runs a lightweight
+  `git tag checkpoint/loop-NNN` instead of a checkpoint commit; the working tree is
+  not touched and no bundling occurs. Rollback documented as `git reset --hard
+  checkpoint/loop-NNN`. Old checkpoint commits remain in history; no rewriting.
 
 ### [Canonical todo schema] — Orchestrator added non-canonical `complexity:` field
 
@@ -544,7 +548,7 @@ entries from here.
   established and documented so framework developers can exercise the live
   command surface.
 
-- 2026-06-08 /next-loop: double complete-commit per loop — loop prompt on-completion commit AND /next-loop Step 9 main-thread commit both fire (e.g. 047 -> fac46a9 + 87fd2ce). Harmless but noisy; pick one owner.
+- ~~2026-06-08 /next-loop: double complete-commit per loop — loop prompt on-completion commit AND /next-loop Step 9 main-thread commit both fire (e.g. 047 -> fac46a9 + 87fd2ce). Harmless but noisy; pick one owner.~~ **RESOLVED (Loop 065/066, 2026-06-10):** Hard Contract guards in all four agent definitions explicitly prohibit worker self-commits; Loop 066 replaced the main-thread checkpoint commit with a lightweight tag — only one commit per loop now (Step 9 closing commit).
 
 - 2026-06-08 /brainstorming: default spec save path .claude/plans/ is gitignored in the framework self-host repo (.claude/* excluded). Design specs land untracked. Mirror to .advanced-plans/specs/ for version control.
 

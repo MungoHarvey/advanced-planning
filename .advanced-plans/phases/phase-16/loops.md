@@ -397,7 +397,7 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "run-gate.md Step 10.4 sub-step 4 added (auto-compact artefacts inline: complete.md + manifest + handoff.md + compact commit + push reminder); source + byte-identical runtime copy; dry-run confirmed (handoff_digest.py phase-15 exits 0); verification sweep: 403 tests green, AST NONE, path_audit CLEAN, install_audit all-current, LOCKED docs + protected modules byte-unchanged vs 5ffaa64; VERSION=0.16.0, CHANGELOG [0.16.0] added, CLAUDE.md Phase 16 decision log extended; friction log: git-checkpoint-pattern + double-commit entries struck through."
   failed: ""
   needed: ""
 
@@ -407,7 +407,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "run-gate.md Step 10.4 produces compaction artefacts on a current-phase pass without a separate /phase-compact call; consent semantics for conversation compaction untouched"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-068-2"
@@ -415,7 +415,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Evidence that a gate-pass closeout yields complete.md + manifest + handoff.md unprompted"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-068-3"
@@ -423,7 +423,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "All checks green/CLEAN/current; byte-unchanged confirmations recorded"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-068-4"
@@ -431,7 +431,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "VERSION=0.16.0; CHANGELOG + decision log consistent with shipped work"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-068-5"
@@ -439,7 +439,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "Friction log reconciled with strikethrough + Loop notes; push reminder present in the close path output"
-    status: pending
+    status: completed
     complexity: low
     priority: medium
 

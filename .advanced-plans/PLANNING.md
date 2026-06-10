@@ -4,10 +4,10 @@ status: in_progress
 last_updated: 2026-06-09
 
 current_phase: 16
-current_loop: ralph-loop-068
+current_loop: null
 gate_status: pending
 released: v0.15.0
-next_action: "Phase 16 (Trust the Machinery) PLANNED — 5 loops (064-068), anchor 5ffaa64, target v0.16.0, from the 2026-06-09 retro's six gaps + 2026-06-10 brainstorming decisions. Scope: install-sync + drift guard (064); history events + worker-contract guards (065); orchestrator fast-path + checkpoint tags (066); compaction backfill x9 (067); auto-compact at close + release (068). Spec: specs/2026-06-10-phase-16-trust-the-machinery-design.md. Tags v0.11-v0.15 all cut locally. Next: /next-loop to begin loop-064 (NOTE: todo 064-5, the live global sync, is main-thread/operator-supervised). Operator still to push: `git push origin main --follow-tags`."
+next_action: "Phase 16 (Trust the Machinery) — ALL 5 LOOPS COMPLETE (064-068). Delivered: install_audit + /sync-install + live 3-layer sync (gap 1); history_log + live loop_complete events (gap 2); Hard Contract in agent defs (gap 4); prepare_loop_ready fast-path USED LIVE for loops 067/068 + checkpoint tags + log untracked (gaps 5+6); all 15 phases backfilled with complete.md + manifest entries (gap 3a); run-gate Step 10.4 auto-compact wired (gap 3b). v0.16.0 staged. 403 tests, AST NONE, all audits green, LOCKED docs unchanged. Gate NOT yet run — /run-gate will be the LIVE proof of the close->compact wiring. Then tag v0.16.0 + operator push (git push origin main --follow-tags)."
 
 active_branches:
   - branch: main
