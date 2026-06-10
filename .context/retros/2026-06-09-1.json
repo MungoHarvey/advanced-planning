@@ -1,0 +1,45 @@
+{
+  "date": "2026-06-09",
+  "window": "7d",
+  "metrics": {
+    "commits": 64,
+    "contributors": 1,
+    "prs_merged": 0,
+    "pushes": 0,
+    "unpushed_commits": 64,
+    "insertions": 12012,
+    "deletions": 864,
+    "net_loc": 11148,
+    "test_loc": 3601,
+    "test_ratio": 0.29,
+    "active_days": 2,
+    "sessions": 4,
+    "deep_sessions": 3,
+    "avg_session_minutes": 107,
+    "feat_pct": 0.02,
+    "fix_pct": 0.02,
+    "framework_lifecycle_commit_pct": 0.88,
+    "peak_hour": 14,
+    "ai_assisted_commits": 64,
+    "tests_total": 366,
+    "phases_gated": ["phase-12", "phase-13", "phase-14", "phase-15"],
+    "releases_staged": ["v0.13.0", "v0.14.0", "v0.15.0"],
+    "tags_pushed": 0
+  },
+  "authors": {
+    "Mungo Harvey": { "commits": 64, "insertions": 12012, "deletions": 864, "test_ratio": 0.29, "top_area": ".advanced-plans/" }
+  },
+  "version_range": ["0.12.0", "0.15.0"],
+  "streak_days": 2,
+  "planning_system_health": {
+    "phases_complete": 15,
+    "loops_complete": 63,
+    "history_events_total": 23,
+    "loop_complete_events": 10,
+    "loop_complete_coverage": "10/63 (phases 10-11 only)",
+    "compaction_coverage": "complete.md 6/15 phases; handoff.md 4/15 phases",
+    "friction_log": { "open_headers": 28, "struck_headers": 6 },
+    "command_layers": { "source": "current", "project_claude": "current", "user_global": "STALE (no codex, no closeout)" }
+  },
+  "tweetable": "Jun 8-9: 64 commits, +12.0k LOC, 29% tests, 4 phases gated (12-15), 3 releases staged, 366 tests | 0 pushed"
+}
