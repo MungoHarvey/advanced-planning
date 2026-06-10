@@ -668,3 +668,20 @@ override rationale in `history.jsonl`.
   on-completion instructions entirely — the main thread's Step 9 already handles
   the commit.
 - **RESOLVED (Loop 065, 2026-06-10):** Same Hard Contract guards as above; guard (a) explicitly states "NEVER commit — the main thread owns all commits" citing loops 056/061 as precedents; applied to all four agent definition files (source + installed).
+
+## 2026-06-10 — Phase 16 Loop 066 execution
+
+### [Worker contract] — Hard Contract in agent definition did NOT fully prevent absolute-path junk file
+
+- **Observed**: the loop-066 worker (spawned WITH the new Hard Contract section in
+  ralph-loop-worker.md, installed by loop-065) still produced a mangled fullwidth-colon junk
+  file (`C：Users...execution.log`) during its execution.log untracking work. Main thread
+  caught and removed it post-commit.
+- **Friction**: prompt/definition-level guards reduce but do not eliminate the failure mode;
+  the model can still emit an absolute-path redirect under pressure. One junk file was even
+  swept into a commit by the main thread's `git add -A` before removal.
+- **Suggested fix**: structural enforcement — a PreToolUse hook (settings.json) that blocks
+  Bash commands containing `> C:\` / `> /c/` redirect patterns, and/or a main-thread
+  pre-commit junk scan (`git status --porcelain | grep` for the fullwidth-colon signature)
+  before any `git add -A`. Candidate for a small follow-on; the per-loop main-thread junk
+  check is the cheap interim guard.
