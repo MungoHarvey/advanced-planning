@@ -1,14 +1,14 @@
 {
   "phase": "phase-16",
-  "loop_name": "ralph-loop-064",
+  "loop_name": "ralph-loop-065",
   "loop_file": ".advanced-plans/phases/phase-16/loops.md",
-  "task_name": "Install-Sync + Drift Guard",
+  "task_name": "Trustworthy Record",
   "todos_count": 5,
   "prepared_at": "2026-06-10T00:00:00Z",
   "status": "ready",
   "handoff_injected": {
-    "done": "Phase 15 closed (gate passed attempt 1); v0.15.0 staged; /run-gate now closes phases on pass",
+    "done": "install_audit.py (EOL-insensitive, USERPROFILE-first) + 18 tests (384 green, AST NONE); /sync-install command; CI drift step; run-gate Step 1 preflight; LIVE SYNC DONE main-thread: project (2 stale fixed) + global (14 commands/8 agents/5 schemas) refreshed -- install_audit reports all layers current; global run-gate now codex+closeout wired.",
     "failed": "",
-    "needed": "Begin Phase 16 loop-064: install_audit.py + tests + /sync-install + CI drift step (live global sync is main-thread-only, todo 064-5)"
+    "needed": "Begin loop-065: history_log.py + event wiring + worker-contract guards in agent definitions."
   }
 }

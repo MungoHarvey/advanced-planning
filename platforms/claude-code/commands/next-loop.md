@@ -249,11 +249,22 @@ Read `.advanced-plans/PLANNING.md` and update:
 If all loops are now complete:
 - Set `status: complete` on the current phase in PLANNING.md
 
-### 9. Git commit
+### 9. Git commit and history event
 
 ```bash
 git add -A && git commit -m "complete: [loop_name] - [loop_complete.handoff.done]" 2>/dev/null || true
 ```
+
+After the commit, append a `loop_complete` event to the audit log:
+
+```bash
+python -m platforms.python.history_log .advanced-plans/state/history.jsonl \
+  "{\"event\":\"loop_complete\",\"phase\":\"[phase]\",\"loop\":\"[loop_name]\",\"todos_done\":[todos_done],\"todos_count\":[todos_count],\"todos_failed\":[todos_failed],\"commit\":\"$(git rev-parse --short HEAD)\"}"
+```
+
+**Convention — release-staging loops**: when a loop cuts a release (bumps VERSION, writes
+CHANGELOG), append a `release_staged` event with fields `event`, `phase`, `version`.
+This is a convention note; no new machinery is required — use the same `history_log` CLI.
 
 ### 10. Print cycle summary
 

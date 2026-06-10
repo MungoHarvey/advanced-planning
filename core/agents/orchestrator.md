@@ -122,6 +122,23 @@ Return to the main thread. Do not proceed to execute tasks.
 
 ---
 
+## Hard Contract (non-negotiable)
+
+These three guards apply to all platform implementations of the orchestrator role:
+
+**(a) NEVER commit.** The main thread owns all git sequencing. The orchestrator
+prepares loop metadata and writes `loop-ready.json`; it never issues `git commit`.
+
+**(b) Create and edit files via the platform's write/edit tools only.** Never create or
+append to files using shell redirects (`>`, `>>`). Shell redirects can silently write to
+the wrong location on some platforms, producing garbage files in the working tree.
+
+**(c) NEVER use absolute platform-native paths in shell commands.** Always use relative
+paths for any file touched from a shell call.
+
+**(d) Do not execute todos.** Preparation and handoff only — executing todos is the
+worker's exclusive responsibility.
+
 ## What the Orchestrator Does NOT Do
 
 | Action | Why Not |

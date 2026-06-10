@@ -131,7 +131,14 @@ Read `.advanced-plans/PLANNING.md` and update:
 - `status:` — set to `in_progress`
 - `last_updated:` — today's date
 
-### Step 8: Print Completion Summary and Auto-Execute
+### Step 8: Emit phase_planned event and print completion summary
+
+Append a `phase_planned` event to the audit log:
+
+```bash
+python -m platforms.python.history_log .advanced-plans/state/history.jsonl \
+  "{\"event\":\"phase_planned\",\"phase\":\"phase-[N]\",\"loops\":[loop count],\"todos\":[total todos]}"
+```
 
 If `AUTO_EXECUTE` is false:
 ```

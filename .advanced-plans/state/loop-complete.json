@@ -1,5 +1,5 @@
 {
-  "loop_name": "ralph-loop-064",
+  "loop_name": "ralph-loop-065",
   "loop_file": ".advanced-plans/phases/phase-16/loops.md",
   "status": "completed",
   "todos_done": 5,
@@ -7,8 +7,8 @@
   "todos_failed": 0,
   "completed_at": "2026-06-10T00:00:00Z",
   "handoff": {
-    "done": "install_audit.py (EOL-insensitive, USERPROFILE-first), 18 tests (full suite 384 green, AST NONE), /sync-install command (source+runtime copy), CI drift step, and run-gate.md Step 1 preflight warning all delivered. LIVE SYNC DONE (main thread): all three layers current; global run-gate codex+closeout wired.",
+    "done": "history_log.py (append_event + CLI, compact/greppable, stdlib-only, AST NONE); 13 tests added (397 total green); loop_complete event wired into next-loop.md Step 9, phase_planned into plan-and-phase.md Step 8 and new-phase.md Step 12 (source + byte-identical runtime copies); Hard Contract guards (no commit / Write-Edit only / no Windows absolute paths) added to ralph-loop-worker.md, ralph-orchestrator.md, core/agents/worker.md, core/agents/orchestrator.md; both Phase 15 friction-log entries struck through.",
     "failed": "",
-    "needed": "Begin loop-065: history_log.py + event wiring + worker-contract guards in agent definitions."
+    "needed": "Continue with loop-066: prepare_loop_ready fast-path + checkpoint tags + execution.log untracking."
   }
 }

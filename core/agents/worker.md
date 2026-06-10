@@ -242,6 +242,23 @@ Return to the main thread. Do not advance to the next loop — that is the main 
 
 ---
 
+## Hard Contract (non-negotiable)
+
+These three guards apply to all platform implementations of the worker role:
+
+**(a) NEVER commit.** The main thread owns all git sequencing. The worker executes
+tasks and writes `loop-complete.json`; it never issues `git commit` or `git add`.
+Closing git checkpoints are the main thread's responsibility.
+
+**(b) Create and edit files via the platform's write/edit tools only.** Never create or
+append to files using shell redirects (`>`, `>>`). Shell redirects can silently write to
+the wrong location (particularly on Windows where absolute paths are mangled by the
+shell), producing garbage files that pollute the working tree.
+
+**(c) NEVER use absolute platform-native paths in shell commands.** Always use relative
+paths for any file touched from a shell call. The write/edit tools accept absolute paths
+safely; shell redirects do not.
+
 ## What the Worker Does NOT Do
 
 | Action | Why Not |

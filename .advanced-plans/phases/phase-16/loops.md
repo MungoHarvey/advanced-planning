@@ -111,9 +111,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "history_log.py (append_event + CLI, compact/greppable, stdlib-only, AST NONE); 13 tests added (397 total green); loop_complete event wired into next-loop.md Step 9, phase_planned into plan-and-phase.md Step 8 and new-phase.md Step 12 (source + byte-identical runtime copies); Hard Contract guards (no commit / Write-Edit only / no Windows absolute paths) added to ralph-loop-worker.md, ralph-orchestrator.md, core/agents/worker.md, core/agents/orchestrator.md; both Phase 15 friction-log entries struck through."
   failed: ""
-  needed: ""
+  needed: "Continue with loop-066: prepare_loop_ready fast-path + checkpoint tags + execution.log untracking."
 
 todos:
   - id: "loop-065-1"
@@ -121,7 +121,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "history_log.py exists; events written compact (no spaces) and greppable ('\"phase\":\"phase-N\"' matches); append-only proven"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-065-2"
@@ -129,7 +129,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Tests cover the five behaviours; full suite green"
-    status: pending
+    status: completed
     complexity: low
     priority: high
   - id: "loop-065-3"
@@ -137,7 +137,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "next-loop.md Step 9 emits loop_complete; planning paths emit phase_planned; runtime copies content-identical; path_audit CLEAN"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-065-4"
@@ -145,7 +145,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "All three guards present in both agent files (source + installed); core/agents/ role updated; no .claude/ paths added to core files"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-065-5"
@@ -153,7 +153,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "Both entries struck through per the log convention"
-    status: pending
+    status: completed
     complexity: low
     priority: medium
 

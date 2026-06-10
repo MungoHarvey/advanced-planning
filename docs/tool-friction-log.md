@@ -624,7 +624,7 @@ override rationale in `history.jsonl`.
 
 ## 2026-06-09 — Phase 15 execution (Loops 059–063)
 
-### [Worker tooling] — Bash redirect to Windows absolute path creates garbage file in repo root
+### ~~[Worker tooling] — Bash redirect to Windows absolute path creates garbage file in repo root~~
 
 - **Observed**: workers occasionally issue a shell redirect to a Windows absolute
   path (e.g. `echo "..." > C:\Users\...` or `> /c/Users/...`) inside a Bash
@@ -643,8 +643,9 @@ override rationale in `history.jsonl`.
   TOOLING GUARD in the worker prompt header should be treated as a hard constraint,
   not a note. Consider adding a preflight grep in the main thread's loop-complete
   check: `git status --short | grep '^?? C:'` and warn if any such files exist.
+- **RESOLVED (Loop 065, 2026-06-10):** Three Hard Contract guards (no commit, Write/Edit tools only, no absolute Windows paths in shell) added as a `## Hard Contract (non-negotiable)` section to `platforms/claude-code/agents/ralph-loop-worker.md`, `ralph-orchestrator.md`, `core/agents/worker.md`, and `core/agents/orchestrator.md`; installed copies refreshed byte-identical.
 
-### [Worker tooling] — Workers occasionally self-commit despite "do not commit" instruction
+### ~~[Worker tooling] — Workers occasionally self-commit despite "do not commit" instruction~~
 
 - **Observed**: workers sometimes issue a `git add -A && git commit` at the end
   of loop execution even when the worker prompt includes an explicit "do NOT commit"
@@ -666,3 +667,4 @@ override rationale in `history.jsonl`.
   fix: the worker prompt should omit the "closing git checkpoint" step from its
   on-completion instructions entirely — the main thread's Step 9 already handles
   the commit.
+- **RESOLVED (Loop 065, 2026-06-10):** Same Hard Contract guards as above; guard (a) explicitly states "NEVER commit — the main thread owns all commits" citing loops 056/061 as precedents; applied to all four agent definition files (source + installed).

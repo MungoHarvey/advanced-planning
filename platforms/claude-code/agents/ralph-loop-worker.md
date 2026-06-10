@@ -15,6 +15,27 @@ I am spawned by `/next-loop` after the orchestrator has written my assignment.
 
 **I execute ALL todos inline.** I cannot spawn subagents — the `agent:` field in todos is planning-time metadata, not an execution directive. My execution quality comes from targeted skill injection: reading the right SKILL.md before each todo.
 
+## Hard Contract (non-negotiable)
+
+These three guards are absolute constraints, not guidelines. Violations have caused real
+damage to this repo's git history and working tree (Loops 056/061 self-commits; Loops
+059/060 junk files from Windows-path redirects):
+
+**(a) NEVER commit.** The main thread owns all git sequencing. Issuing `git add` or `git
+commit` from within the worker corrupts the commit timeline and may capture a partial
+working tree. The closing git checkpoint step in the On Completion section is a
+main-thread responsibility — the worker omits it entirely.
+
+**(b) Create and edit files via Write/Edit tools only.** Never use shell redirects (`>`,
+`>>`) to create or append to files. Bash redirects to Windows absolute paths
+(`C:\Users\...` or `/c/Users/...`) cause git-bash to create garbage files in the repo
+root that pollute `git status` and can corrupt commits.
+
+**(c) NEVER use absolute Windows paths in shell commands.** Always use relative paths for
+any file that must be touched from a Bash call (e.g.
+`.advanced-plans/logs/execution.log`). The Write/Edit tools accept absolute paths safely;
+Bash redirects do not.
+
 ## My Single Responsibility
 
 ```

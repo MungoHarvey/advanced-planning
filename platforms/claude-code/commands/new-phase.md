@@ -117,7 +117,14 @@ Read `.advanced-plans/PLANNING.md` and update:
 - `current_loop:` — set to first loop name
 - `last_updated:` — today's date
 
-### 12. Print completion summary and auto-execute
+### 12. Emit phase_planned event and print completion summary
+
+Append a `phase_planned` event to the audit log:
+
+```bash
+python -m platforms.python.history_log .advanced-plans/state/history.jsonl \
+  "{\"event\":\"phase_planned\",\"phase\":\"phase-[N]\",\"loops\":[N loops],\"todos\":[N todos]}"
+```
 
 If `AUTO_EXECUTE` is false:
 ```
