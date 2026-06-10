@@ -4,10 +4,10 @@ status: in_progress
 last_updated: 2026-06-09
 
 current_phase: 16
-current_loop: null
+current_loop: ralph-loop-064
 gate_status: pending
-released: v0.14.0
-next_action: "Phase 15 CLOSED (gate passed attempt 1; code-review 95, phase-goals 93). Closed out via the new /run-gate-pass progression (gate→close). Delivered: state-archiving wired into next-loop.md; CI path-convention audit; /sync-plans; /next-loop --full; gate-override-policy.md + codex guard; AND the /run-gate closeout-on-pass improvement folded in. v0.15.0 staged. Next: /phase-compact 15 to compact; tag v0.15.0; then /plan-and-phase (or /next-phase --auto) for Phase 16. Operator still to push: `git push origin main --follow-tags` (no SSH key in env)."
+released: v0.15.0
+next_action: "Phase 16 (Trust the Machinery) PLANNED — 5 loops (064-068), anchor 5ffaa64, target v0.16.0, from the 2026-06-09 retro's six gaps + 2026-06-10 brainstorming decisions. Scope: install-sync + drift guard (064); history events + worker-contract guards (065); orchestrator fast-path + checkpoint tags (066); compaction backfill x9 (067); auto-compact at close + release (068). Spec: specs/2026-06-10-phase-16-trust-the-machinery-design.md. Tags v0.11-v0.15 all cut locally. Next: /next-loop to begin loop-064 (NOTE: todo 064-5, the live global sync, is main-thread/operator-supervised). Operator still to push: `git push origin main --follow-tags`."
 
 active_branches:
   - branch: main

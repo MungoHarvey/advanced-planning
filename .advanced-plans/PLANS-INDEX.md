@@ -30,6 +30,8 @@ Tracking document for the **Advanced Planning System — Open-Source Restructure
 | 12 | Codex Cross-Model Second-Opinion Gate Reviewer | [`phase-12/plan.md`](phases/phase-12/plan.md) | **complete** | 047–050 | Add OpenAI Codex as an independent cross-model second opinion on the phase-goals gate check (augment mode: gate = AND of all; degrades to today's two-agent gate when Codex absent). "B+" approach: tested zero-dep `codex_gate.py` (extract/validate/aggregate) + portable `core/agents/codex-reviewer.md` contract + run-gate parallel-independent wiring. Office-hours design + /plan-eng-review CLEARED. Gate PASSED attempt 1 (code-review 95, phase-goals 95); v0.12.0 staged. Design: [`2026-06-08-phase-12-codex-gate-reviewer-design.md`](specs/2026-06-08-phase-12-codex-gate-reviewer-design.md). |
 | 13 | Self-Correcting Gate (Gate-Remediation Loop) | [`phase-13/complete.md`](phases/phase-13/complete.md) | **complete** | 051–054 | Turn the gate-fail dead-end into a bounded, guard-railed self-heal under `/next-phase --auto`: triage findings (structural→re-run loop, localized→focused fix), remediate, re-gate with fresh blind agents, bounded 2 cycles then escalate. Safety spine (anti gate-gaming): diff allowlist + frozen criteria + full criteria_outcomes; git-state policy; composition rules. Brainstorming + /plan-eng-review CLEARED + /codex guardrails folded in. Gate PASSED attempt 1 (both agents); v0.13.0. Post-gate fix: criteria_outcomes array parsing (300 tests). Design: [`2026-06-08-self-correcting-gate-design.md`](specs/2026-06-08-self-correcting-gate-design.md). |
 | 14 | Install & Exercise Codex Gate + Self-Heal in Runtime | [`phase-14/plan.md`](phases/phase-14/plan.md) | **complete** | 055–058 | Wire the Phase 12 codex gate + Phase 13 self-heal (both built in source, never installed) into this repo's project `.claude/` runtime, then prove both via a two-track strategy: automated tests (codex extract/validate + degrade; sandboxed self-heal triage→escalation) AND a witnessed live exercise (codex fires on Phase 14's own gate; self-heal via a deliberately-induced, worktree-isolated, reverted gate fail). Refresh stale command bodies (run-gate 0→codex, next-phase 0→remediation); copy codex-reviewer to `.claude/agents/` for parity (no `platforms/` duplicate — run-gate resolves the `core/agents/` path in-repo); CONTRIBUTING drift note. Adversarial review resolved F1 (project `.claude/` is the live target) + F2 (no codex-reviewer packaging) empirically. Brainstorming + design spec approved. Target v0.14.0. Design: [`2026-06-09-phase-14-install-exercise-codex-self-heal-design.md`](specs/2026-06-09-phase-14-install-exercise-codex-self-heal-design.md). |
+| 15 | Automation-Surface Audit | [`phase-15/plan.md`](phases/phase-15/plan.md) | **complete** | 059–063 | Friction paydown from the tool-friction-log backlog: state-archiving wired into `/next-loop` Step 3a; CI path-convention audit (`path_audit.py` + job 4, catches the Phase-9 corruption class); `/sync-plans` command; `/next-loop --full` one-pass stub population; formal gate-override policy + codex version-coupling guard. Gate PASSED attempt 1 (code-review 95, phase-goals 93); 366 tests. Follow-on: `/run-gate` closes the phase out on a current-phase pass (gate→close seam removed). Released v0.15.0. Scope source: [`exploration-notes.md`](exploration-notes.md) + friction log. |
+| 16 | Trust the Machinery | [`phase-16/plan.md`](phases/phase-16/plan.md) | **draft** | 064–068 | Make the framework's execution surfaces trustworthy and cheap, from the 2026-06-09 retro's six gaps: install-layer sync + drift guard (`install_audit.py` + `/sync-install` — the upgrade pathway for all consuming projects); history.jsonl event coverage (`history_log.py` + wiring); worker-contract guards moved into agent definitions; conditional orchestrator fast-path for populated loops; checkpoint tags + execution.log untracked; compaction backfill ×9 + auto-compact at gate-close. Target v0.16.0. Design: [`2026-06-10-phase-16-trust-the-machinery-design.md`](specs/2026-06-10-phase-16-trust-the-machinery-design.md). |
 
 ---
 
@@ -139,11 +141,16 @@ section existed — their cold artefacts exist but manifest entries are not yet 
 | 056 | 14 | Codex Gate Proof | `phases/phase-14/loops.md` | **complete** | — | 1 |
 | 057 | 14 | Self-Heal Proof | `phases/phase-14/loops.md` | **complete** | — | 1 |
 | 058 | 14 | Witnessed Exercise + v0.14.0 Release | `phases/phase-14/loops.md` | **complete** | — | 1 |
-| 059 | 15 | Doc-Hygiene + Wire State-Archiving | `phases/phase-15/loops.md` | **pending** | — | 1 |
-| 060 | 15 | CI Path-Convention Audit | `phases/phase-15/loops.md` | **pending** | — | 1 |
-| 061 | 15 | /sync-plans Command | `phases/phase-15/loops.md` | **pending** | — | 1 |
-| 062 | 15 | /next-loop --full One-Pass Population | `phases/phase-15/loops.md` | **pending** | — | 1 |
-| 063 | 15 | Gate-Override Policy + codex Guard + Release | `phases/phase-15/loops.md` | **pending** | — | 1 |
+| 059 | 15 | Doc-Hygiene + Wire State-Archiving | `phases/phase-15/loops.md` | **complete** | — | 1 |
+| 060 | 15 | CI Path-Convention Audit | `phases/phase-15/loops.md` | **complete** | — | 1 |
+| 061 | 15 | /sync-plans Command | `phases/phase-15/loops.md` | **complete** | — | 1 |
+| 062 | 15 | /next-loop --full One-Pass Population | `phases/phase-15/loops.md` | **complete** | — | 1 |
+| 063 | 15 | Gate-Override Policy + codex Guard + Release | `phases/phase-15/loops.md` | **complete** | — | 1 |
+| 064 | 16 | Install-Sync + Drift Guard | `phases/phase-16/loops.md` | **pending** | — | 1 |
+| 065 | 16 | Trustworthy Record | `phases/phase-16/loops.md` | **pending** | — | 1 |
+| 066 | 16 | Loop-Flow Economy | `phases/phase-16/loops.md` | **pending** | — | 1 |
+| 067 | 16 | Compaction Backfill x9 | `phases/phase-16/loops.md` | **pending** | — | 1 |
+| 068 | 16 | Auto-Compact at Close + Release | `phases/phase-16/loops.md` | **pending** | — | 1 |
 
 ---
 
