@@ -1,14 +1,14 @@
 {
-  "phase": "phase-15",
-  "loop_name": "ralph-loop-063",
-  "loop_file": ".advanced-plans/phases/phase-15/loops.md",
-  "task_name": "Gate-Override Policy + codex Guard + Release",
+  "phase": "phase-16",
+  "loop_name": "ralph-loop-064",
+  "loop_file": ".advanced-plans/phases/phase-16/loops.md",
+  "task_name": "Install-Sync + Drift Guard",
   "todos_count": 5,
-  "prepared_at": "2026-06-09T00:00:00Z",
+  "prepared_at": "2026-06-10T00:00:00Z",
   "status": "ready",
   "handoff_injected": {
-    "done": "/next-loop --full added as Step 3c in next-loop.md (source + byte-identical .claude/ copy); CLAUDE.md --full flag documented; demo fixture shows stub→3-todos chain via plan-todos→plan-skill-identification→plan-subagent-identification; [Workflow chaining] friction-log entry struck through; path_audit CLEAN.",
+    "done": "Phase 15 closed (gate passed attempt 1); v0.15.0 staged; /run-gate now closes phases on pass",
     "failed": "",
-    "needed": "Begin loop-063: gate-override policy + codex version-coupling guard + v0.15.0 release."
+    "needed": "Begin Phase 16 loop-064: install_audit.py + tests + /sync-install + CI drift step (live global sync is main-thread-only, todo 064-5)"
   }
 }

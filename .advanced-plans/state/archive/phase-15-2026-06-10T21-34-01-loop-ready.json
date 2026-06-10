@@ -1,0 +1,14 @@
+{
+  "phase": "phase-15",
+  "loop_name": "ralph-loop-063",
+  "loop_file": ".advanced-plans/phases/phase-15/loops.md",
+  "task_name": "Gate-Override Policy + codex Guard + Release",
+  "todos_count": 5,
+  "prepared_at": "2026-06-09T00:00:00Z",
+  "status": "ready",
+  "handoff_injected": {
+    "done": "/next-loop --full added as Step 3c in next-loop.md (source + byte-identical .claude/ copy); CLAUDE.md --full flag documented; demo fixture shows stub→3-todos chain via plan-todos→plan-skill-identification→plan-subagent-identification; [Workflow chaining] friction-log entry struck through; path_audit CLEAN.",
+    "failed": "",
+    "needed": "Begin loop-063: gate-override policy + codex version-coupling guard + v0.15.0 release."
+  }
+}

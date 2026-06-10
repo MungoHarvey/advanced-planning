@@ -105,3 +105,12 @@ jobs:
         #   - wrong nesting:   .claude/.advanced-plans
         #   - deprecated token: .claude/plans/
         # Exits non-zero (fails the build) if any violation is found.
+
+      - name: Audit install-layer drift (source vs project)
+        run: |
+          python -m platforms.python.install_audit --layers source,project
+        # Compares platforms/claude-code/commands+agents/ and core/schemas/ against
+        # .claude/commands/, .claude/agents/, .claude/schemas/ in this repo.
+        # CI cannot see a developer's global ~/.claude/ dir so only the source<->project
+        # pair is checked. Exits non-zero if any stale or missing files are found.
+        # Fix drift by running /sync-install (or cp from source to .claude/ manually).

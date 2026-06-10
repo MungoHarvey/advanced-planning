@@ -14,9 +14,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "install_audit.py (EOL-insensitive, USERPROFILE-first) + 18 tests (384 green, AST NONE); /sync-install command; CI drift step; run-gate Step 1 preflight; LIVE SYNC DONE main-thread: project (2 stale fixed) + global (14 commands/8 agents/5 schemas) refreshed -- install_audit reports all layers current; global run-gate now codex+closeout wired."
   failed: ""
-  needed: ""
+  needed: "Begin loop-065: history_log.py + event wiring + worker-contract guards in agent definitions."
 
 todos:
   - id: "loop-064-1"
@@ -24,7 +24,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "install_audit.py exists; exits 0 when layers match, non-zero with a per-file report on drift; EOL-only differences do not trip it; global dir resolved via USERPROFILE before HOME"
-    status: pending
+    status: completed
     complexity: high
     priority: high
   - id: "loop-064-2"
@@ -32,7 +32,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Tests cover all four behaviours; full suite green under pytest"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-064-3"
@@ -40,7 +40,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "sync-install.md exists (source + content-identical runtime copy); documents source->outward direction and --check; CLAUDE.md Command Surface row added; path_audit stays CLEAN"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-064-4"
@@ -48,7 +48,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "ci.yml runs the source<->project drift check and blocks on drift; run-gate.md Step 1 warns when the project copy is stale"
-    status: pending
+    status: completed
     complexity: medium
     priority: medium
   - id: "loop-064-5"
@@ -56,7 +56,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "install_audit reports all three layers current on this machine; the stale global run-gate/next-loop now carry codex/closeout/--full/archive content"
-    status: pending
+    status: completed
     complexity: low
     priority: high
 

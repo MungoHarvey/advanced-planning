@@ -28,6 +28,23 @@ active phase.
 
 Print: `-> Gate review: Phase [N]`
 
+**Install-layer drift preflight (informational):**
+
+Run a quick source-vs-project drift check:
+
+```bash
+python -m platforms.python.install_audit --layers source,project
+```
+
+If the command exits non-zero (drift detected), print a one-line warning and
+continue — this does **not** block the gate:
+
+```
+WARN: .claude/ copies are stale vs source — run /sync-install to refresh
+```
+
+If the command exits 0 or the module is not found, proceed silently.
+
 ### 2. Verify all loops in the phase are complete
 
 Read the active loop file at `.advanced-plans/phases/phase-[N]/loops.md`. Check all todos:

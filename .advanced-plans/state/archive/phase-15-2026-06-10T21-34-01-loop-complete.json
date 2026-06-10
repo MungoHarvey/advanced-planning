@@ -1,0 +1,14 @@
+{
+  "loop_name": "ralph-loop-063",
+  "loop_file": ".advanced-plans/phases/phase-15/loops.md",
+  "status": "completed",
+  "todos_done": 5,
+  "todos_count": 5,
+  "todos_failed": 0,
+  "completed_at": "2026-06-09T00:00:00Z",
+  "handoff": {
+    "done": "docs/gate-override-policy.md written + CLAUDE.md cross-referenced; no gate-verdict.schema.json change (override on history.jsonl gate_pass event, logged in CLAUDE.md decision log); 6 codex capture-contract version-guard tests added to test_codex_gate_live.py (366 total green); VERSION=0.15.0, CHANGELOG [0.15.0] added, Phase 15 CLAUDE.md decision log entry written; AST NONE, path_audit CLEAN, LOCKED schema docs byte-unchanged; two new Phase 15 worker-tooling friction entries added.",
+    "failed": "",
+    "needed": ""
+  }
+}
