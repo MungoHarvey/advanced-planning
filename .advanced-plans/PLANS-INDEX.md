@@ -38,8 +38,79 @@ Tracking document for the **Advanced Planning System — Open-Source Restructure
 ## Phase Compaction Manifest
 
 Hot manifest entries written by `/phase-compact` at gate pass (locked schema:
-`docs/phase-manifest-entry.schema.md`). Phases 6/7 were compacted before this
-section existed — their cold artefacts exist but manifest entries are not yet backfilled.
+`docs/phase-manifest-entry.schema.md`). All phases 1–15 are now backfilled.
+
+- phase: 1
+  title: "Core Architecture Design"
+  status: passed
+  commits: 5ec7168..5ec7168
+  detail: .advanced-plans/phases/phase-1/complete.md
+  highlights:
+    - Schemas, skills, agent roles, and state bus delivered in initial release commit
+    - Targeted skill injection protocol formalised in core/agents/worker.md
+
+- phase: 2
+  title: "Claude Code Adapter"
+  status: passed
+  commits: 5ec7168..08b15ac
+  detail: .advanced-plans/phases/phase-2/complete.md
+  highlights:
+    - Six slash commands, three agents, settings.json hooks, install.sh/install.ps1
+    - Global skill fallback and Windows PowerShell installer added post-initial-release
+
+- phase: 3
+  title: "Cowork Adapter"
+  status: passed
+  commits: 5ec7168..5ec7168
+  detail: .advanced-plans/phases/phase-3/complete.md
+  highlights:
+    - Routing SKILL.md + orchestrator/worker prompts + checkpoint.sh delivered
+    - Zero .claude/ references; snapshot-based checkpointing replaces git commits
+
+- phase: 4
+  title: "Generic Adapter, Documentation & Release"
+  status: passed
+  commits: 5ec7168..698ef1a
+  detail: .advanced-plans/phases/phase-4/complete.md
+  highlights:
+    - Python API (state_manager, plan_io, handoff) + full docs suite + CI workflow
+    - MIT licence, CONTRIBUTING, portability scan clean; complexity field added
+
+- phase: 5
+  title: "Gate Review Sub-Phase & Invocation Improvements"
+  status: passed
+  commits: 2214691..9e1aef4
+  detail: .advanced-plans/phases/phase-5/complete.md
+  highlights:
+    - Gate review machinery built: verdict schemas, 5 gate agents, /run-gate + /next-phase + versioning.py (70/70 tests)
+    - Pre-gate-review phase (sentinel verdict form); plugin packaging deferred to phase 7
+
+- phase: 6
+  title: "Compaction Schema Audit & Lock"
+  status: passed
+  commits: 84a0e86..724e7d6
+  detail: .advanced-plans/phases/phase-6/complete.md
+  highlights:
+    - phase-complete.schema.md + phase-manifest-entry.schema.md locked (LOCKED 2026-05-13)
+    - phase-5-complete.md produced as worked example; anchor SHA mechanism decided
+
+- phase: 7
+  title: "/phase-compact Slash Command"
+  status: passed
+  commits: 72cd5f3..be24cb7
+  detail: .advanced-plans/phases/phase-7/complete.md
+  highlights:
+    - /phase-compact command + verdict schema (criteria_outcomes, phase_title) implemented
+    - Phase 6 compacted end-to-end; PLANS-INDEX.md Phase Completions section established
+
+- phase: 8
+  title: "Framework Consistency Remediation"
+  status: passed
+  commits: fdf96cb..05e5626
+  detail: .advanced-plans/phases/phase-8/complete.md
+  highlights:
+    - Loop 027: planning-mode hook allowlist + phase-goals-agent tool cleanup + settings.json
+    - Loops 028-031 absorbed into Phase 9 (.advanced-plans/ restructure)
 
 - phase: 9
   title: ".advanced-plans/ Restructure"
@@ -49,6 +120,33 @@ section existed — their cold artefacts exist but manifest entries are not yet 
   highlights:
     - Data home migrated to .advanced-plans/; all 12 success criteria met (verdict attempt-2 PASS)
     - PLANNING.md YAML dashboard introduced for cold-start orientation
+
+- phase: 10
+  title: "/phase-compact Context-Compaction Reframe"
+  status: passed
+  commits: 6384f80..e881997
+  detail: .advanced-plans/phases/phase-10/complete.md
+  highlights:
+    - /phase-compact reframed to write handoff.md digest + transparency report (attempt-1 PASS)
+    - PreCompact hook + CLAUDE.md ## Compaction Instructions + AskUserQuestion consent gate
+
+- phase: 11
+  title: "Friction Remediation & v0.x Pre-Release"
+  status: passed
+  commits: 1bb073c..dc94b1b
+  detail: .advanced-plans/phases/phase-11/complete.md
+  highlights:
+    - 9 friction items resolved; AST zero-dep checker + path-conventions.md (attempt-1 PASS, 189 tests)
+    - v0.11.0 released; dogfood self-install verified; IRON-RULE resume-detection regression test
+
+- phase: 12
+  title: "Codex Cross-Model Second-Opinion Gate Reviewer"
+  status: passed
+  commits: fa799d3..68ab217
+  detail: .advanced-plans/phases/phase-12/complete.md
+  highlights:
+    - codex_gate.py (extract/validate/aggregate) + run-gate parallel Codex wiring (attempt-1 PASS)
+    - Degrade path: gate proceeds with two in-house agents when Codex absent
 
 - phase: 13
   title: "Self-Correcting Gate (Gate-Remediation Loop)"

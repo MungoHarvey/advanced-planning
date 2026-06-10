@@ -302,9 +302,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "9 schema-valid complete.md artefacts written (phases 1-4, 7, 8, 10-12) + phase-7/ dir created; 10 manifest entries appended to PLANS-INDEX.md (phases 1-4, 6, 7, 8, 10-12, all <=8 lines, ascending); manifest header caveat updated to 'All phases 1-15 now backfilled'; all SHAs resolve, commit counts verified within +-1 of rev-list."
   failed: ""
-  needed: ""
+  needed: "Continue with loop-068: auto-compact at close + release v0.16.0."
 
 todos:
   - id: "loop-067-1"
@@ -312,7 +312,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "phases 1-4 each have a schema-valid complete.md with sentinel verdict form and SHA-anchored bullets"
-    status: pending
+    status: completed
     complexity: high
     priority: high
   - id: "loop-067-2"
@@ -320,7 +320,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "phase-7/ and phase-8/ each have a schema-valid complete.md; phase-7's reconstruction is SHA-anchored; phase-8 records the 028-031 absorption"
-    status: pending
+    status: completed
     complexity: high
     priority: high
   - id: "loop-067-3"
@@ -328,7 +328,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "phases 10-12 each have a schema-valid complete.md referencing their real verdict files"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-067-4"
@@ -336,7 +336,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "All 15 phases have manifest entries; each <=8 lines, max 2 highlights; manifest section header caveat updated"
-    status: pending
+    status: completed
     complexity: medium
     priority: medium
   - id: "loop-067-5"
@@ -344,7 +344,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "All 9 artefacts + 9 manifest entries pass the schema checklists; evidence recorded"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
 

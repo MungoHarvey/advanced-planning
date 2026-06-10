@@ -1,14 +1,14 @@
 {
   "phase": "phase-16",
-  "loop_name": "ralph-loop-066",
+  "loop_name": "ralph-loop-067",
   "loop_file": ".advanced-plans/phases/phase-16/loops.md",
-  "task_name": "Loop-Flow Economy",
+  "task_name": "Compaction Backfill x9",
   "todos_count": 5,
-  "prepared_at": "2026-06-10T00:00:00Z",
+  "prepared_at": "2026-06-10T22:23:17.611650+00:00",
   "status": "ready",
   "handoff_injected": {
-    "done": "history_log.py (append_event + CLI, compact/greppable, stdlib-only, AST NONE); 13 tests added (397 total green); loop_complete event wired into next-loop.md Step 9, phase_planned into plan-and-phase.md Step 8 and new-phase.md Step 12 (source + byte-identical runtime copies); Hard Contract guards (no commit / Write-Edit only / no Windows absolute paths) added to ralph-loop-worker.md, ralph-orchestrator.md, core/agents/worker.md, core/agents/orchestrator.md; both Phase 15 friction-log entries struck through.",
+    "done": "prepare_loop_ready + 6 tests (403 total green, AST NONE); next-loop.md Step 4 conditional fast-path + Step 3 checkpoint tags (source + byte-identical runtime copy); execution.log untracked (.gitignore + git rm --cached); rotation note in README.md; CLAUDE.md decision log updated; path_audit CLEAN; install_audit current.",
     "failed": "",
-    "needed": "Continue with loop-066: prepare_loop_ready fast-path + checkpoint tags + execution.log untracking."
+    "needed": "Continue with loop-067: Compaction Backfill x9 (complete.md + manifest entries for phases 1-4, 7, 8, 10-12)."
   }
 }
