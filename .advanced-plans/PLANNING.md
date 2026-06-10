@@ -4,7 +4,7 @@ status: in_progress
 last_updated: 2026-06-09
 
 current_phase: 16
-current_loop: ralph-loop-066
+current_loop: ralph-loop-067
 gate_status: pending
 released: v0.15.0
 next_action: "Phase 16 (Trust the Machinery) PLANNED — 5 loops (064-068), anchor 5ffaa64, target v0.16.0, from the 2026-06-09 retro's six gaps + 2026-06-10 brainstorming decisions. Scope: install-sync + drift guard (064); history events + worker-contract guards (065); orchestrator fast-path + checkpoint tags (066); compaction backfill x9 (067); auto-compact at close + release (068). Spec: specs/2026-06-10-phase-16-trust-the-machinery-design.md. Tags v0.11-v0.15 all cut locally. Next: /next-loop to begin loop-064 (NOTE: todo 064-5, the live global sync, is main-thread/operator-supervised). Operator still to push: `git push origin main --follow-tags`."

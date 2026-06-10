@@ -207,9 +207,9 @@ max_iterations: 3
 on_max_iterations: escalate
 
 handoff_summary:
-  done: ""
+  done: "prepare_loop_ready + 6 tests (403 total green, AST NONE); next-loop.md Step 4 conditional fast-path + Step 3 checkpoint tags (source + byte-identical runtime copy); execution.log untracked (.gitignore + git rm --cached); rotation note in README.md; CLAUDE.md decision log updated; path_audit CLEAN; install_audit current."
   failed: ""
-  needed: ""
+  needed: "Continue with loop-067: Compaction Backfill x9 (complete.md + manifest entries for phases 1-4, 7, 8, 10-12)."
 
 todos:
   - id: "loop-066-1"
@@ -217,7 +217,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "prepare_loop_ready exists; populated loop -> valid loop-ready.json (loop_name, loop_file, task_name, todos_count, status ready, handoff_injected x3); stub/partial loop -> agent-needed signal, no file written"
-    status: pending
+    status: completed
     complexity: high
     priority: high
   - id: "loop-066-2"
@@ -225,7 +225,7 @@ todos:
     skill: "verification-before-completion"
     agent: "NA"
     outcome: "Four test cases green; full suite green; AST NONE"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-066-3"
@@ -233,7 +233,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "next-loop.md Step 4 documents the conditional; all existing steps intact; runtime copy content-identical; path_audit CLEAN"
-    status: pending
+    status: completed
     complexity: medium
     priority: high
   - id: "loop-066-4"
@@ -241,7 +241,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "next-loop.md Step 3 tags instead of committing; execution.log untracked and ignored; rollback + rotation documented"
-    status: pending
+    status: completed
     complexity: medium
     priority: medium
   - id: "loop-066-5"
@@ -249,7 +249,7 @@ todos:
     skill: "NA"
     agent: "NA"
     outcome: "CLAUDE.md decision log updated; friction log reconciled"
-    status: pending
+    status: completed
     complexity: low
     priority: medium
 

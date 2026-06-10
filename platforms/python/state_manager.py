@@ -25,6 +25,7 @@ Typical usage::
 """
 
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
@@ -100,6 +101,173 @@ def write_loop_ready(
     path = _state_path(state_dir, "loop-ready.json")
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     return path
+
+
+def prepare_loop_ready(
+    loops_md_path: Path | str,
+    prior_handoff: dict[str, str],
+    state_dir: Path | str = ".advanced-plans/state",
+) -> dict[str, Any]:
+    """Parse a loops.md file and write ``loop-ready.json`` for the first pending loop.
+
+    Applies a conservative *populated predicate*: the loop's ``todos[]`` must be
+    non-empty AND every todo must have non-empty ``id``, ``content``, ``outcome``,
+    and a ``status`` field.  If the predicate fails the file is **not** written.
+
+    The ``phase`` field is derived from the loops.md path (e.g.
+    ``…/phases/phase-16/loops.md`` → ``"phase-16"``).  If the path does not
+    contain a ``phase-N`` segment the field is set to ``"unknown"``.
+
+    Parameters
+    ----------
+    loops_md_path:
+        Path to a ``loops.md`` file containing one or more loop YAML blocks.
+    prior_handoff:
+        Dict with keys ``done``, ``failed``, ``needed`` from the previous loop's
+        handoff_summary.  Missing keys are filled with empty strings.
+    state_dir:
+        Directory where state files live (created if absent).
+
+    Returns
+    -------
+    dict
+        One of three shapes:
+
+        ``{"ok": True, "loop_ready": <dict>}``
+            Loop was populated; ``loop-ready.json`` has been written.
+
+        ``{"ok": False, "reason": "all_complete"}``
+            No loop with any pending todos was found in the file.
+
+        ``{"ok": False, "reason": "agent_needed", "loop_name": <str>}``
+            First pending loop was found but failed the populated predicate;
+            ``loop-ready.json`` was **not** written.
+    """
+    # ── Inline minimal YAML parsing (mirrors plan_io._parse_simple_yaml_block) ──
+    _LOOP_BLOCK_RE = re.compile(
+        r"```yaml\n(?P<yaml_block>.*?)```",
+        re.DOTALL,
+    )
+    _NAME_RE = re.compile(r'^name:\s*"?(?P<name>[^"\n]+)"?', re.MULTILINE)
+    _TASK_RE = re.compile(r'^task_name:\s*"?(?P<v>[^"\n]+)"?', re.MULTILINE)
+
+    def _parse_todos_inline(yaml_text: str) -> list[dict[str, str]]:
+        """Extract the todos[] array from a YAML block."""
+        todos: list[dict[str, str]] = []
+        lines = yaml_text.splitlines()
+        in_todos = False
+        current: dict[str, str] = {}
+        for line in lines:
+            if re.match(r"^todos:\s*$", line):
+                in_todos = True
+                continue
+            if in_todos:
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                # Exit todos block when we hit an unindented non-list line
+                if line and not line.startswith(" ") and not line.startswith("\t") and not stripped.startswith("-"):
+                    break
+                if stripped.startswith("- id:"):
+                    if current:
+                        todos.append(current)
+                    current = {}
+                    m = re.match(r'-\s+id:\s*"?([^"]+)"?', stripped)
+                    if m:
+                        current["id"] = m.group(1)
+                elif stripped and not stripped.startswith("-") and current is not None:
+                    m = re.match(r'(\w[\w_]*):\s*"?(.*?)"?\s*$', stripped)
+                    if m:
+                        current[m.group(1)] = m.group(2)
+        if current:
+            todos.append(current)
+        return todos
+
+    def _populated(todos: list[dict[str, str]]) -> bool:
+        """Return True if todos is non-empty and every todo has the required fields."""
+        if not todos:
+            return False
+        required = {"id", "content", "outcome", "status"}
+        for todo in todos:
+            for field in required:
+                if not todo.get(field, "").strip():
+                    return False
+        return True
+
+    # ── Derive phase from path ────────────────────────────────────────────────
+    loops_md_path = Path(loops_md_path)
+    phase_match = re.search(r"(phase-\d+)", str(loops_md_path).replace("\\", "/"))
+    phase = phase_match.group(1) if phase_match else "unknown"
+    # Relative loop_file for portability (forward-slash)
+    try:
+        loop_file_rel = loops_md_path.as_posix()
+    except Exception:
+        loop_file_rel = str(loops_md_path).replace("\\", "/")
+
+    # ── Normalise prior_handoff ───────────────────────────────────────────────
+    handoff: dict[str, str] = {
+        "done": prior_handoff.get("done", "") or "",
+        "failed": prior_handoff.get("failed", "") or "",
+        "needed": prior_handoff.get("needed", "") or "",
+    }
+
+    # ── Scan loops in document order ─────────────────────────────────────────
+    content = loops_md_path.read_text(encoding="utf-8")
+    first_pending_loop_name: str | None = None
+    first_pending_loop_task: str = ""
+    first_pending_todos: list[dict[str, str]] = []
+
+    for block_match in _LOOP_BLOCK_RE.finditer(content):
+        yaml_block = block_match.group("yaml_block")
+        name_m = _NAME_RE.search(yaml_block)
+        if not name_m:
+            continue
+        loop_name = name_m.group("name").strip()
+        todos = _parse_todos_inline(yaml_block)
+        done_statuses = {"completed", "cancelled"}
+        # A loop is "fully done" only when it has at least one todo AND every
+        # todo is completed or cancelled.  An empty todos[] is an unpopulated
+        # stub — it counts as "needs work" (not done).
+        all_done = (
+            len(todos) > 0
+            and all(t.get("status", "") in done_statuses for t in todos)
+        )
+        if all_done:
+            continue  # This loop is complete — skip
+        # Found a loop that needs work (empty stub or has pending todos)
+        task_m = _TASK_RE.search(yaml_block)
+        first_pending_loop_name = loop_name
+        first_pending_loop_task = task_m.group("v").strip() if task_m else ""
+        first_pending_todos = todos
+        break
+
+    if first_pending_loop_name is None:
+        return {"ok": False, "reason": "all_complete"}
+
+    # Filter to only pending todos for the count and predicate check
+    pending_todos = [t for t in first_pending_todos if t.get("status") == "pending"]
+
+    if not _populated(pending_todos):
+        return {
+            "ok": False,
+            "reason": "agent_needed",
+            "loop_name": first_pending_loop_name,
+        }
+
+    # ── Build and write loop-ready.json ──────────────────────────────────────
+    payload: dict[str, Any] = {
+        "phase": phase,
+        "loop_name": first_pending_loop_name,
+        "loop_file": loop_file_rel,
+        "task_name": first_pending_loop_task,
+        "todos_count": len(pending_todos),
+        "prepared_at": _now_iso(),
+        "status": "ready",
+        "handoff_injected": handoff,
+    }
+    path = _state_path(state_dir, "loop-ready.json")
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return {"ok": True, "loop_ready": payload}
 
 
 def read_loop_ready(state_dir: Path | str) -> Optional[dict[str, Any]]:

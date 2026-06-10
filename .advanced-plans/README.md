@@ -33,8 +33,14 @@ settings) remains under `.claude/` as a Claude Code platform adapter.
 │   ├── loop-complete.json       ← worker → main thread signal
 │   └── history.jsonl            ← append-only audit log
 └── logs/
-    └── execution.log            ← session + agent event log
+    └── execution.log            ← session + agent event log (untracked by git)
 ```
+
+> **Log rotation note**: `logs/execution.log` is excluded from git (see `.gitignore`)
+> because it grows unboundedly during active development. Rotate or truncate freely —
+> e.g. `> .advanced-plans/logs/execution.log` to clear, or `cp execution.log
+> execution.log.bak && > execution.log` to archive before clearing.
+> The file is recreated automatically on the next loop run.
 
 ---
 

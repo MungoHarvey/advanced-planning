@@ -40,9 +40,25 @@ print `All loops complete. Phase finished.` and stop.
 
 ### 3. Git checkpoint
 
+Create a lightweight rollback tag before the loop begins.  No commit is made here —
+the tag points at the current HEAD so you can always return with:
+
 ```bash
-git add -A && git commit -m "checkpoint: before next-loop cycle" 2>/dev/null || true
+git reset --hard checkpoint/next-loop
 ```
+
+```bash
+git tag -f checkpoint/next-loop HEAD 2>/dev/null || true
+```
+
+After the loop name is known (Step 5), also set a named per-loop tag:
+
+```bash
+git tag -f checkpoint/loop-NNN HEAD 2>/dev/null || true
+# where NNN is the loop number from loop_name (e.g. 066 for ralph-loop-066)
+```
+
+Old checkpoint commits from earlier runs remain in git history; no rewriting occurs.
 
 ### 3a. Archive cross-phase stale state
 
@@ -157,16 +173,71 @@ Then continue to Step 4 (the orchestrator will see the now-populated loop).
 
 If `FULL_MODE = false`: skip this step entirely. Behaviour is **unchanged**.
 
-### 4. Spawn ralph-orchestrator
+### 4. Prepare the loop: fast-path or orchestrator
 
-Spawn the `ralph-orchestrator` subagent (Sonnet model).
+First, attempt the Python fast-path. Read the prior handoff from
+`.advanced-plans/state/loop-complete.json` if it exists (fields `handoff.done`,
+`handoff.failed`, `handoff.needed`), otherwise use empty strings.
 
-The orchestrator will:
-- Identify the next pending loop
-- Populate todos/skills/agents if the loop stubs are not yet fully specified
-- Write `.advanced-plans/state/loop-ready.json`
+```bash
+python -c "
+import json, pathlib, re
 
-Wait for the orchestrator to complete before proceeding.
+# Determine the active loops.md path
+planning = pathlib.Path('.advanced-plans/PLANNING.md').read_text(encoding='utf-8')
+m = re.search(r'^current_phase:\s*(\S+)', planning, re.MULTILINE)
+phase_raw = m.group(1).strip('\"') if m else None
+if not phase_raw:
+    print('FAST_PATH_RESULT=error: could not determine current_phase')
+    raise SystemExit(1)
+phase = phase_raw if phase_raw.startswith('phase-') else f'phase-{phase_raw}'
+loops_md = pathlib.Path(f'.advanced-plans/phases/{phase}/loops.md')
+if not loops_md.exists():
+    print(f'FAST_PATH_RESULT=error: {loops_md} not found')
+    raise SystemExit(1)
+
+# Read prior handoff from loop-complete.json if present
+prior = {'done': '', 'failed': '', 'needed': ''}
+complete_path = pathlib.Path('.advanced-plans/state/loop-complete.json')
+if complete_path.exists():
+    d = json.loads(complete_path.read_text(encoding='utf-8'))
+    h = d.get('handoff', {})
+    prior = {'done': h.get('done',''), 'failed': h.get('failed',''), 'needed': h.get('needed','')}
+
+from platforms.python.state_manager import prepare_loop_ready
+result = prepare_loop_ready(loops_md, prior)
+
+if result.get('ok'):
+    lr = result['loop_ready']
+    print(f'FAST_PATH_RESULT=ok')
+    print(f'-> fast-path: loop already populated, orchestrator skipped')
+    print(f'   Loop: {lr[\"loop_name\"]} — {lr[\"task_name\"]}')
+    print(f'   Todos: {lr[\"todos_count\"]}')
+elif result.get('reason') == 'all_complete':
+    print(f'FAST_PATH_RESULT=all_complete')
+else:
+    print(f'FAST_PATH_RESULT=agent_needed loop={result.get(\"loop_name\",\"unknown\")}')
+"
+```
+
+**Decision based on `FAST_PATH_RESULT`:**
+
+- **`ok`** — fast-path succeeded; `loop-ready.json` was written. Print the
+  `-> fast-path` message and continue to Step 5. Do NOT spawn the orchestrator.
+
+- **`all_complete`** — no pending loops remain. Print `All loops complete.` and stop.
+
+- **`agent_needed`** (stub loop, partial todos, or `--full` mode) — spawn the
+  `ralph-orchestrator` subagent (Sonnet model) exactly as described below.
+  The orchestrator will identify the next pending loop, populate todos/skills/agents
+  if the loop stubs are not yet fully specified, and write
+  `.advanced-plans/state/loop-ready.json`. Wait for the orchestrator to complete
+  before proceeding.
+
+- **`error`** — print the error, stop, and investigate manually.
+
+If `FULL_MODE = true`, always take the `agent_needed` path (spawn orchestrator) so
+it can run the full three-skill population pipeline from Step 3c.
 
 ### 5. Read and validate loop-ready.json
 
@@ -190,6 +261,15 @@ Print:
 -> Preparing: [loop_name] — [task_name]
   Todos:         [todos_count]
   Prior context: [handoff_injected.done, or "first loop" if empty]
+```
+
+Now that the loop name is known, set the named per-loop checkpoint tag:
+
+```bash
+# Extract NNN from loop_name (e.g. "ralph-loop-066" -> "066")
+LOOP_NUM=$(python -c "import json,re; d=json.loads(open('.advanced-plans/state/loop-ready.json').read()); m=re.search(r'(\d+)$', d['loop_name']); print(m.group(1) if m else 'unknown')")
+git tag -f "checkpoint/loop-${LOOP_NUM}" HEAD 2>/dev/null || true
+echo "-> checkpoint tag: checkpoint/loop-${LOOP_NUM} (rollback: git reset --hard checkpoint/loop-${LOOP_NUM})"
 ```
 
 ### 5c. Prepare worker context

@@ -39,7 +39,7 @@ powershell setup/claude-code/install.ps1 -Project /path/to/your/project  # Windo
 - `core/agents/` — Abstract orchestrator, worker, and gate-reviewer role definitions
 - `core/state/` — JSON schemas for the filesystem state bus
 
-**Two-agent pattern**: Main thread spawns Orchestrator (Sonnet), which writes `loop-ready.json`. Main thread then spawns Worker (Sonnet), which executes todos and writes `loop-complete.json`. Neither agent spawns the other — main thread controls all sequencing.
+**Two-agent pattern**: Main thread spawns Orchestrator (Sonnet), which writes `loop-ready.json`. Main thread then spawns Worker (Sonnet), which executes todos and writes `loop-complete.json`. Neither agent spawns the other — main thread controls all sequencing. For fully-populated loops, `/next-loop` Step 4 applies a Python fast-path (`state_manager.prepare_loop_ready`) that writes `loop-ready.json` directly and skips the orchestrator spawn; the two-agent pattern remains the documented architecture and is always used for stubs, partial loops, and `--full` mode.
 
 **Targeted skill injection**: Worker loads a `SKILL.md` immediately before each todo that has one assigned, then discards it. No skill persists across todo boundaries.
 
@@ -140,6 +140,18 @@ Changes to either schema require an explicit decision logged in this file.
   edits the framework source (`platforms/claude-code/commands/{run-gate,next-phase}.md`) + this
   repo's `.claude/` runtime copies; the machine-global `~/.claude/commands/` copies are a separate
   install surface and are intentionally left to the operator to refresh.
+- Phase 16 (2026-06-10): **Orchestrator fast-path** — `/next-loop` Step 4 now first tries a Python
+  fast-path (`state_manager.prepare_loop_ready`) to write `loop-ready.json` directly from the
+  loops.md file when the loop is already fully populated (todos non-empty, every todo has id/content/
+  outcome/status). This skips the ralph-orchestrator spawn for the common case of populated loops
+  (~26–32k tokens saved per loop). The two-agent pattern **remains the documented architecture** —
+  the orchestrator is still spawned for stubs, partially-populated todos, and `--full` mode.
+  **Checkpoint commits replaced by lightweight tags**: `/next-loop` Step 3 now runs
+  `git tag -f checkpoint/next-loop HEAD` (no commit); a named `checkpoint/loop-NNN` tag is also set
+  after the loop name is known in Step 5. Rollback: `git reset --hard checkpoint/loop-NNN`. Old
+  checkpoint commits remain in history; no rewriting. **`execution.log` untracked**: added to
+  `.gitignore`; `git rm --cached` applied — file stays on disk, rotate/truncate freely (see
+  `.advanced-plans/README.md` logs section).
 
 ## Platform Adapters
 

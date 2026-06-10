@@ -68,3 +68,6 @@ yarn-error.log*
 
 # ── Pytest session artefacts ──────────────────────────────────────────────────
 pytest-cache-files-*
+
+# ── Planning logs (untracked; rotate/truncate freely) ─────────────────────────
+.advanced-plans/logs/execution.log
