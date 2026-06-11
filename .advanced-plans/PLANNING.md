@@ -1,21 +1,21 @@
 ---
 programme: "Advanced Planning Framework"
 status: in_progress
-last_updated: 2026-06-09
+last_updated: 2026-06-11
 
-current_phase: 16
+current_phase: 17
 current_loop: null
 gate_status: pending
-released: v0.15.0
-next_action: "Phase 16 (Trust the Machinery) — ALL 5 LOOPS COMPLETE (064-068). Delivered: install_audit + /sync-install + live 3-layer sync (gap 1); history_log + live loop_complete events (gap 2); Hard Contract in agent defs (gap 4); prepare_loop_ready fast-path USED LIVE for loops 067/068 + checkpoint tags + log untracked (gaps 5+6); all 15 phases backfilled with complete.md + manifest entries (gap 3a); run-gate Step 10.4 auto-compact wired (gap 3b). v0.16.0 staged. 403 tests, AST NONE, all audits green, LOCKED docs unchanged. Gate NOT yet run — /run-gate will be the LIVE proof of the close->compact wiring. Then tag v0.16.0 + operator push (git push origin main --follow-tags)."
+released: v0.16.0
+next_action: "Phase 16 CLOSED (gate passed attempt 1, operator override on the codex bootstrap-checkpoint finding -- see gate_pass event). Closed + auto-compacted via the new run-gate Step 10.4 pipeline (live proof). v0.16.0 tagged on e8843c7. Phase 17 not yet planned. Follow-ups logged: extend gate-override-policy.md with the criterion-bootstrap category; fix worker agent numbered steps that still say 'git commit' (contradicts Hard Contract); structural junk-file guard (PreToolUse hook). Operator push pending: git push origin main --follow-tags."
 
 active_branches:
   - branch: main
-    phase: 16
+    phase: 17
     session: primary
 
 phases:
-  complete: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+  complete: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
   pending: []
   failed: []
 
@@ -49,30 +49,32 @@ current phase, loop, gate state, and recommended next action.
 
 ## What to do next
 
-Phase 15 is **closed** — gate passed (attempt 1; code-review 95, phase-goals 93),
-and closed out via the new `/run-gate`-pass progression (gate → close). **Not yet
-compacted or released externally.** Next: `/phase-compact 15` to write the cold
-artefact + handoff digest, then tag `v0.15.0`. `main` (+ tags `v0.11/0.13/0.14` and
-the forthcoming `v0.15.0`) still needs `git push origin main --follow-tags` by the
-operator (this environment has no SSH key). Phase 16 is **not yet planned** — run
-`/plan-and-phase` (or `/next-phase --auto`) to scope it.
+Phase 16 is **closed and compacted** — gate passed attempt 1 (code-review 95,
+phase-goals 90; codex 92 FAIL on the bootstrap-checkpoint criterion, operator
+override recorded on the `gate_pass` event). First codex-included gate via the
+synced command surface; closeout + compaction ran automatically via the new
+run-gate Step 10.4 pipeline. `v0.16.0` tagged. Phase 17 is **not yet planned**.
+Operator push still pending: `git push origin main --follow-tags` (tags
+v0.11/0.13/0.14/0.15/0.16 + ~85 commits). Follow-ups for Phase 17 scoping:
+extend `docs/gate-override-policy.md` with the criterion-bootstrap category;
+fix worker agent numbered steps that still instruct `git commit` (contradicts
+the Hard Contract — code-review finding); structural junk-file guard
+(PreToolUse hook).
 
 ---
 
-## Phase 15 Progress
+## Phase 16 Progress
 
-Phase 15 — Automation-Surface Audit, 5 loops:
+Phase 16 — Trust the Machinery, 5 loops:
 
 | Loop | Task | Status |
 |---|---|---|
-| ralph-loop-059 | Doc-hygiene + wire state-archiving | completed |
-| ralph-loop-060 | CI path-convention audit | completed |
-| ralph-loop-061 | /sync-plans command | completed |
-| ralph-loop-062 | /next-loop --full one-pass population | completed |
-| ralph-loop-063 | Gate-override policy + codex guard + v0.15.0 | completed |
+| ralph-loop-064 | Install-sync + drift guard (live 3-layer sync) | completed |
+| ralph-loop-065 | Trustworthy record (history events + Hard Contract) | completed |
+| ralph-loop-066 | Loop-flow economy (fast-path + checkpoint tags) | completed |
+| ralph-loop-067 | Compaction backfill — all 15 phases covered | completed |
+| ralph-loop-068 | Auto-compact at close + v0.16.0 | completed |
 
-Follow-on (same session): `/run-gate` closeout-on-pass (Step 10.4) + `/next-phase`
-already-closed detection (Step 1a) — the "gated but not closed" seam fix.
-
-Loop file: `.advanced-plans/phases/phase-15/loops.md`
-Gate verdicts: `.advanced-plans/gate-verdicts/phase-15-attempt-1-*.json`
+Loop file: `.advanced-plans/phases/phase-16/loops.md`
+Gate verdicts: `.advanced-plans/gate-verdicts/phase-16-attempt-1-*.json`
+Compaction: `.advanced-plans/phases/phase-16/complete.md` + `handoff.md`
