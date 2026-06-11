@@ -175,6 +175,15 @@ Hot manifest entries written by `/phase-compact` at gate pass (locked schema:
     - Friction paydown: state-archiving wired, CI path-audit guard, /sync-plans, /next-loop --full (gate PASS attempt 1, 366 tests)
     - /run-gate now closes the phase out on pass (gate->close seam removed); gate-override policy formalised
 
+- phase: 16
+  title: "Trust the Machinery"
+  status: passed
+  commits: 5ffaa64..e5b351b
+  detail: .advanced-plans/phases/phase-16/complete.md
+  highlights:
+    - Six retro gaps closed: install-layer sync (live), history events, Hard Contract, fast-path, backfill x15, auto-compact (gate PASS attempt 1, override on codex bootstrap finding)
+    - First codex-included gate via synced commands; close->compact pipeline proven on its own closeout
+
 ---
 
 ## Ralph Loops
