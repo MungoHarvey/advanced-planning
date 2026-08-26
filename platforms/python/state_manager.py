@@ -13,7 +13,7 @@ to the directory that contains these files. The directory is created if absent.
 
 Typical usage::
 
-    from pathlib import Path
+    from pathlib import Path, PurePosixPath
     from platforms.python.state_manager import write_loop_ready, read_loop_complete
 
     state = Path(".advanced-plans/state")
@@ -27,7 +27,7 @@ Typical usage::
 import json
 import re
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Optional
 
 
@@ -46,6 +46,20 @@ def _now_iso() -> str:
 
 
 # ── loop-ready.json ────────────────────────────────────────────────────────────
+
+def _phase_from_loop_file(loop_file: str) -> str:
+    """Return the ``phase-N`` component of a loop file path, or "".
+
+    Both writers of loop-ready.json must agree on the ``phase`` key, because
+    archive_cross_phase_state() uses it to decide whether a state file belongs
+    to a finished phase. The path always carries the phase, so derive it rather
+    than requiring every caller to pass it.
+    """
+    for part in PurePosixPath(str(loop_file).replace("\\", "/")).parts:
+        if part.startswith("phase-"):
+            return part
+    return ""
+
 
 def write_loop_ready(
     state_dir: Path | str,
@@ -86,6 +100,7 @@ def write_loop_ready(
         Absolute path to the written file.
     """
     payload: dict[str, Any] = {
+        "phase": _phase_from_loop_file(loop_file),
         "loop_name": loop_name,
         "loop_file": loop_file,
         "task_name": task_name,
@@ -438,10 +453,16 @@ def archive_cross_phase_state(
         return None
 
     data = json.loads(ready_path.read_text(encoding="utf-8"))
-    old_phase = data.get("phase", "")
+    # Fall back to the loop_file path when "phase" is absent. State files
+    # written before both writers agreed on the key have no "phase", and
+    # trusting the key alone made this guard a silent no-op for exactly the
+    # files it exists to catch.
+    old_phase = data.get("phase", "") or _phase_from_loop_file(
+        data.get("loop_file", "")
+    )
 
     if not old_phase or old_phase == current_phase:
-        # Phase matches or field absent -- nothing to archive.
+        # Phase matches, or the file records no phase anywhere -- nothing to do.
         return None
 
     # Build archive directory and timestamp.

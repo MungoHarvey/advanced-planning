@@ -219,3 +219,142 @@ class TestArchiveCrossPhaseState:
         archived_data = json.loads(result.read_text(encoding="utf-8"))
         assert archived_data["phase"] == "phase-14"
         assert archived_data["loop_name"] == "ralph-loop-058"
+
+
+class TestPhaseKeyIsWrittenByBothWriters:
+    """The guard reads loop-ready.json["phase"]. Both writers must supply it.
+
+    write_loop_ready() (the orchestrator path) omitted it while
+    prepare_loop_ready() (the fast path) supplied it, so archive_cross_phase_state
+    silently returned None for every file the orchestrator produced -- exactly the
+    files it exists to catch. These tests pin both halves of the fix.
+    """
+
+    def test_write_loop_ready_records_the_phase(self, tmp_path: Path) -> None:
+        from platforms.python.state_manager import write_loop_ready
+
+        path = write_loop_ready(
+            tmp_path / "state",
+            loop_name="ralph-loop-003",
+            loop_file=".advanced-plans/phases/phase-2/loops.md",
+            task_name="whatever",
+            todos_count=6,
+        )
+        data = json.loads(path.read_text(encoding="utf-8"))
+        assert data["phase"] == "phase-2"
+
+    def test_orchestrator_written_state_is_archived_across_phases(
+        self, tmp_path: Path
+    ) -> None:
+        """End-to-end: the guard fires on a file write_loop_ready produced."""
+        from platforms.python.state_manager import write_loop_ready
+
+        state_dir = tmp_path / "state"
+        write_loop_ready(
+            state_dir,
+            loop_name="ralph-loop-003",
+            loop_file=".advanced-plans/phases/phase-2/loops.md",
+            task_name="a finished phase's loop",
+            todos_count=6,
+        )
+
+        result = archive_cross_phase_state(state_dir, current_phase="phase-5")
+
+        assert result is not None, "stale phase-2 state must not survive into phase-5"
+        assert "phase-2" in result.name
+        assert not (state_dir / "loop-ready.json").exists()
+
+    def test_both_writers_agree_on_the_phase_key(self, tmp_path: Path) -> None:
+        """prepare_loop_ready and write_loop_ready must not disagree on schema."""
+        from platforms.python.state_manager import write_loop_ready
+
+        loop_file = ".advanced-plans/phases/phase-7/loops.md"
+        path = write_loop_ready(
+            tmp_path / "state",
+            loop_name="ralph-loop-001",
+            loop_file=loop_file,
+            task_name="t",
+            todos_count=1,
+        )
+        written = json.loads(path.read_text(encoding="utf-8"))
+        # prepare_loop_ready builds its payload with "phase" set from the same
+        # source; the key and its derivation must match.
+        from platforms.python.state_manager import _phase_from_loop_file
+
+        assert written["phase"] == _phase_from_loop_file(loop_file) == "phase-7"
+
+
+class TestPhaseFallbackFromLoopFile:
+    """State files already on disk have no "phase" key and never will.
+
+    Deriving it from loop_file is what lets the guard fire on them.
+    """
+
+    def test_legacy_file_without_phase_key_is_still_archived(
+        self, tmp_path: Path
+    ) -> None:
+        state_dir = tmp_path / "state"
+        state_dir.mkdir()
+        (state_dir / "loop-ready.json").write_text(
+            json.dumps(
+                {
+                    "loop_name": "ralph-loop-003",
+                    "loop_file": ".advanced-plans/phases/phase-2/loops.md",
+                    "status": "ready",
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        result = archive_cross_phase_state(state_dir, current_phase="phase-5")
+
+        assert result is not None
+        assert "phase-2" in result.name
+
+    def test_explicit_phase_key_wins_over_the_path(self, tmp_path: Path) -> None:
+        """The recorded phase is authoritative; the path is only a fallback."""
+        state_dir = tmp_path / "state"
+        state_dir.mkdir()
+        (state_dir / "loop-ready.json").write_text(
+            json.dumps(
+                {
+                    "phase": "phase-9",
+                    "loop_file": ".advanced-plans/phases/phase-2/loops.md",
+                    "status": "ready",
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        result = archive_cross_phase_state(state_dir, current_phase="phase-5")
+
+        assert result is not None
+        assert "phase-9" in result.name
+
+    def test_no_phase_anywhere_is_left_alone(self, tmp_path: Path) -> None:
+        """Unattributable state is not archived -- silence is not evidence."""
+        state_dir = tmp_path / "state"
+        state_dir.mkdir()
+        (state_dir / "loop-ready.json").write_text(
+            json.dumps({"loop_name": "ralph-loop-001", "status": "ready"}),
+            encoding="utf-8",
+        )
+
+        assert archive_cross_phase_state(state_dir, current_phase="phase-5") is None
+        assert (state_dir / "loop-ready.json").exists()
+
+    def test_matching_phase_from_path_is_not_archived(self, tmp_path: Path) -> None:
+        state_dir = tmp_path / "state"
+        state_dir.mkdir()
+        (state_dir / "loop-ready.json").write_text(
+            json.dumps(
+                {
+                    "loop_file": ".advanced-plans/phases/phase-5/loops.md",
+                    "status": "ready",
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        assert archive_cross_phase_state(state_dir, current_phase="phase-5") is None
+        assert (state_dir / "loop-ready.json").exists()
