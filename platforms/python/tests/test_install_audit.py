@@ -10,6 +10,7 @@ Covers:
   6. --layers pair selection -- source,project vs source,global vs all
 """
 
+import os
 import pathlib
 
 import pytest
@@ -34,6 +35,17 @@ def _make_surface(base: pathlib.Path, subdir: str, files: dict) -> None:
     d.mkdir(parents=True, exist_ok=True)
     for name, content in files.items():
         (d / name).write_text(content, encoding="utf-8")
+
+
+def _age(path: pathlib.Path, seconds: int = 3600) -> None:
+    """Back-date *path* so a file written now is provably newer than it.
+
+    stale-vs-diverged is decided by mtime. A fixture that writes both copies in
+    the same instant is a tie, and a tie is diverged by design -- so a test that
+    means "the installed copy is behind" has to say so.
+    """
+    stamp = path.stat().st_mtime - seconds
+    os.utime(path, (stamp, stamp))
 
 
 def _make_repo(tmp_path: pathlib.Path, commands_src: dict, agents_src: dict, schemas_src: dict):
@@ -95,6 +107,7 @@ class TestStaleDetection:
         )
         installed = tmp_path / "project" / ".claude"
         _make_surface(installed, "commands", {"cmd.md": "# MODIFIED\n"})
+        _age(installed / "commands" / "cmd.md")
 
         result = audit_pair(repo, installed, "source -> project")
         v = result.verdicts[0]
@@ -226,6 +239,7 @@ class TestEOLInsensitivity:
         crlf = "version B\r\n"
         (installed / "commands").mkdir(parents=True, exist_ok=True)
         (installed / "commands" / "cmd.md").write_bytes(crlf.encode("utf-8"))
+        _age(installed / "commands" / "cmd.md")
 
         result = audit_pair(repo, installed, "source -> project")
         v = result.verdicts[0]
@@ -312,6 +326,7 @@ class TestLayersSelection:
         project = tmp_path / "project" / ".claude"
         _make_surface(project, "commands", {"cmd.md": "# cmd\n"})
         _make_surface(project, "agents", {"agent.md": "# STALE\n"})
+        _age(project / "agents" / "agent.md")
         _make_surface(project, "schemas", {"s.md": "# schema\n"})
         return repo, project
 
@@ -366,3 +381,158 @@ class TestLayersSelection:
         captured = capsys.readouterr()
         assert "project" not in captured.out
         assert rc == 0
+
+
+# ---------------------------------------------------------------------------
+# 7. diverged detection
+#
+# "stale" and "diverged" both mean the two copies differ. They differ in which
+# copy is behind, and that decides whether /sync-install may overwrite. These
+# tests pin the direction, because collapsing diverged back into stale would
+# silently arm the very command that destroys the newer copy.
+# ---------------------------------------------------------------------------
+
+class TestDivergedDetection:
+    def test_newer_installed_copy_is_diverged_not_stale(self, tmp_path):
+        repo = _make_repo(
+            tmp_path,
+            commands_src={"cmd.md": "# source version\n"},
+            agents_src={},
+            schemas_src={},
+        )
+        _age(repo / "platforms" / "claude-code" / "commands" / "cmd.md")
+        installed = tmp_path / "project" / ".claude"
+        _make_surface(installed, "commands", {"cmd.md": "# newer local work\n"})
+
+        result = audit_pair(repo, installed, "source -> project")
+        v = result.verdicts[0]
+        assert v.verdict == "diverged"
+        assert v.source_hash != v.installed_hash
+
+    def test_equal_mtimes_resolve_to_diverged(self, tmp_path):
+        """A tie is not evidence the source is ahead, so it must not be stale."""
+        repo = _make_repo(
+            tmp_path,
+            commands_src={"cmd.md": "# a\n"},
+            agents_src={},
+            schemas_src={},
+        )
+        installed = tmp_path / "project" / ".claude"
+        _make_surface(installed, "commands", {"cmd.md": "# b\n"})
+
+        src = repo / "platforms" / "claude-code" / "commands" / "cmd.md"
+        inst = installed / "commands" / "cmd.md"
+        stamp = src.stat().st_mtime
+        os.utime(src, (stamp, stamp))
+        os.utime(inst, (stamp, stamp))
+
+        result = audit_pair(repo, installed, "source -> project")
+        assert result.verdicts[0].verdict == "diverged"
+
+    def test_diverged_triggers_has_drift(self, tmp_path):
+        repo = _make_repo(
+            tmp_path,
+            commands_src={"cmd.md": "# source\n"},
+            agents_src={},
+            schemas_src={},
+        )
+        _age(repo / "platforms" / "claude-code" / "commands" / "cmd.md")
+        installed = tmp_path / "project" / ".claude"
+        _make_surface(installed, "commands", {"cmd.md": "# local\n"})
+
+        assert has_drift(audit_pair(repo, installed, "source -> project"))
+
+    def test_report_never_lists_a_diverged_file_under_stale(self, tmp_path, capsys):
+        """/sync-install parses STALE lines into its copy list. A diverged file
+        printed as STALE would be copied over and its changes lost."""
+        repo = _make_repo(
+            tmp_path,
+            commands_src={"local-work.md": "# source\n"},
+            agents_src={},
+            schemas_src={},
+        )
+        _age(repo / "platforms" / "claude-code" / "commands" / "local-work.md")
+        project = repo / ".claude"
+        _make_surface(project, "commands", {"local-work.md": "# local\n"})
+
+        rc = main(argv=["--root", str(repo), "--layers", "source,project"], env={})
+        out = capsys.readouterr().out
+        assert rc == 1
+        stale_lines = [ln for ln in out.splitlines() if "STALE" in ln]
+        assert not any("local-work.md" in ln for ln in stale_lines)
+        assert any(
+            "DIVERGED" in ln and "local-work.md" in ln for ln in out.splitlines()
+        )
+
+
+# ---------------------------------------------------------------------------
+# 8. the core/agents surface
+#
+# core/agents/ and platforms/claude-code/agents/ are two source directories
+# that both install into .claude/agents/. "extra" must be computed against the
+# union of what every such surface claims, or each denounces the other's files.
+# ---------------------------------------------------------------------------
+
+class TestCoreAgentsSurface:
+    def _repo(self, tmp_path, platform_agents, core_agents):
+        repo = _make_repo(tmp_path, {}, platform_agents, {})
+        _make_surface(repo / "core", "agents", core_agents)
+        return repo
+
+    def test_core_agents_file_is_audited_not_ignored(self, tmp_path):
+        repo = self._repo(tmp_path, {}, {"worker.md": "# worker\n"})
+        installed = tmp_path / "project" / ".claude"
+        _make_surface(installed, "agents", {"worker.md": "# worker\n"})
+
+        result = audit_pair(repo, installed, "source -> project")
+        v = next(vd for vd in result.verdicts if vd.filename == "worker.md")
+        assert v.verdict == "current"
+
+    def test_core_agents_drift_is_detected(self, tmp_path):
+        repo = self._repo(tmp_path, {}, {"worker.md": "# worker v2\n"})
+        installed = tmp_path / "project" / ".claude"
+        _make_surface(installed, "agents", {"worker.md": "# worker v1\n"})
+        _age(installed / "agents" / "worker.md")
+
+        result = audit_pair(repo, installed, "source -> project")
+        v = next(vd for vd in result.verdicts if vd.filename == "worker.md")
+        assert v.verdict == "stale"
+        assert has_drift(result)
+
+    def test_neither_agent_surface_calls_the_others_file_extra(self, tmp_path):
+        repo = self._repo(
+            tmp_path,
+            {"gate-reviewer.md": "# gate\n"},
+            {"worker.md": "# worker\n"},
+        )
+        installed = tmp_path / "project" / ".claude"
+        _make_surface(
+            installed,
+            "agents",
+            {"gate-reviewer.md": "# gate\n", "worker.md": "# worker\n"},
+        )
+
+        result = audit_pair(repo, installed, "source -> project")
+        assert not [v for v in result.verdicts if v.verdict == "extra"]
+        assert not has_drift(result)
+
+    def test_file_claimed_by_no_agent_surface_is_still_extra(self, tmp_path):
+        repo = self._repo(
+            tmp_path,
+            {"gate-reviewer.md": "# gate\n"},
+            {"worker.md": "# worker\n"},
+        )
+        installed = tmp_path / "project" / ".claude"
+        _make_surface(
+            installed,
+            "agents",
+            {
+                "gate-reviewer.md": "# gate\n",
+                "worker.md": "# worker\n",
+                "my-own-agent.md": "# project-specific\n",
+            },
+        )
+
+        result = audit_pair(repo, installed, "source -> project")
+        extras = [v.filename for v in result.verdicts if v.verdict == "extra"]
+        assert extras == ["my-own-agent.md"]

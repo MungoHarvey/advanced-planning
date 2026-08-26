@@ -11,7 +11,7 @@ A ralph loop is a bounded, self-contained unit of work with verifiable outcomes 
 .advanced-plans/phases/phase-{N}/loops.md          ← All loops for phase N in one file
 
 # Individual-file mode (for 10+ loops):
-.advanced-plans/phases/phase-{N}/loops.md              ← One file per loop
+.advanced-plans/phases/phase-{N}/ralph-loop-{NNN}.md   ← One file per loop
 ```
 
 Loop numbers are zero-padded to three digits (`001`, `002`, ...) and are globally unique across all phases in a programme.

@@ -10,7 +10,13 @@ Compares three surfaces for the command, agent, and schema files:
 Source directories compared (source_rel -> installed_name):
   platforms/claude-code/commands/  ->  commands/
   platforms/claude-code/agents/    ->  agents/
+  core/agents/                     ->  agents/
   core/schemas/                    ->  schemas/
+
+Two source dirs install into agents/. They are audited separately so a report
+names the source a file came from, but 'extra' is computed against the union of
+everything installing into a directory -- otherwise each surface denounces the
+other's files as extras, and core/agents/ drift is never seen at all.
 
 Per-file verdicts:
   current  -- file present in both layers, content hash matches (EOL-insensitive)
@@ -66,7 +72,7 @@ class FileVerdict(NamedTuple):
 
     surface: str           # e.g. "commands", "agents", "schemas"
     filename: str          # relative filename within the surface dir
-    verdict: str           # "current", "stale", "missing", "extra"
+    verdict: str           # "current", "stale", "diverged", "missing", "extra"
     source_hash: Optional[str]    # None when source file is absent (extra)
     installed_hash: Optional[str] # None when installed file is absent (missing)
 
@@ -149,8 +155,32 @@ def _file_hash(path: pathlib.Path) -> str:
 SURFACES = [
     ("platforms/claude-code/commands", "commands"),
     ("platforms/claude-code/agents",   "agents"),
+    ("core/agents",                     "agents"),
     ("core/schemas",                    "schemas"),
 ]
+
+#: Slack allowed between mtimes before source counts as strictly newer. A copy
+#: preserves neither mtime exactly across filesystems, so an exact comparison
+#: would flip verdicts on rounding alone.
+MTIME_TOLERANCE_SECONDS = 2.0
+
+
+def _direction(source: pathlib.Path, installed: pathlib.Path) -> str:
+    """Return "stale" or "diverged" for two files already known to differ.
+
+    Source strictly newer than the installed copy (beyond the tolerance) means
+    the copy is behind and refreshing it is safe: "stale". Anything else --
+    installed newer, or a tie, or an unreadable mtime -- means the installed
+    copy may hold work source has never seen, and the answer is "diverged".
+    """
+    try:
+        src_mtime = source.stat().st_mtime
+        inst_mtime = installed.stat().st_mtime
+    except OSError:
+        return "diverged"
+    if src_mtime > inst_mtime + MTIME_TOLERANCE_SECONDS:
+        return "stale"
+    return "diverged"
 
 
 # ---------------------------------------------------------------------------
@@ -209,6 +239,11 @@ def audit_pair(
     """
     verdicts: List[FileVerdict] = []
 
+    # Every name any surface contributes to a given installed dir. More than one
+    # source dir may install into the same place, so an "extra" is what is
+    # installed there and claimed by none of them -- not merely by this surface.
+    claimed: Dict[str, set] = {}
+
     for source_rel, installed_name in SURFACES:
         source_dir = repo_root / source_rel
         installed_dir = installed_base / installed_name
@@ -223,32 +258,20 @@ def audit_pair(
                 rel = f.relative_to(source_dir).as_posix()
                 source_files[rel] = f
 
-        installed_files: Dict[str, pathlib.Path] = {}
-        if installed_dir.exists():
-            for f in sorted(installed_dir.rglob("*")):
-                if f.is_file():
-                    rel = f.relative_to(installed_dir).as_posix()
-                    installed_files[rel] = f
+        claimed.setdefault(installed_name, set()).update(source_files)
 
-        all_names = set(source_files) | set(installed_files)
-
-        for name in sorted(all_names):
-            in_source = name in source_files
-            in_installed = name in installed_files
-
-            if in_source and in_installed:
-                sh = _file_hash(source_files[name])
-                ih = _file_hash(installed_files[name])
-                v = "current" if sh == ih else "stale"
-            elif in_source and not in_installed:
-                sh = _file_hash(source_files[name])
+        for name in sorted(source_files):
+            installed_file = installed_dir / name
+            sh = _file_hash(source_files[name])
+            if installed_file.is_file():
+                ih = _file_hash(installed_file)
+                if sh == ih:
+                    v = "current"
+                else:
+                    v = _direction(source_files[name], installed_file)
+            else:
                 ih = None
                 v = "missing"
-            else:
-                # in_installed but not in_source — extra (informational)
-                sh = None
-                ih = _file_hash(installed_files[name])
-                v = "extra"
 
             verdicts.append(
                 FileVerdict(
@@ -260,6 +283,27 @@ def audit_pair(
                 )
             )
 
+    # Second pass: extras, against the union of names claimed per installed dir.
+    for installed_name, source_names in sorted(claimed.items()):
+        installed_dir = installed_base / installed_name
+        if not installed_dir.exists():
+            continue
+        for f in sorted(installed_dir.rglob("*")):
+            if not f.is_file():
+                continue
+            rel = f.relative_to(installed_dir).as_posix()
+            if rel in source_names:
+                continue
+            verdicts.append(
+                FileVerdict(
+                    surface=installed_name,
+                    filename=rel,
+                    verdict="extra",
+                    source_hash=None,
+                    installed_hash=_file_hash(f),
+                )
+            )
+
     return LayerPairResult(
         pair_label=pair_label,
         installed_dir=installed_base,
@@ -268,7 +312,7 @@ def audit_pair(
 
 
 def has_drift(result: LayerPairResult) -> bool:
-    """Return True if *result* contains any stale or missing files.
+    """Return True if *result* contains any stale, diverged, or missing files.
 
     Parameters
     ----------
@@ -278,7 +322,9 @@ def has_drift(result: LayerPairResult) -> bool:
     -------
     bool
     """
-    return any(v.verdict in ("stale", "missing") for v in result.verdicts)
+    return any(
+        v.verdict in ("stale", "diverged", "missing") for v in result.verdicts
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -303,14 +349,24 @@ def _print_result(result: LayerPairResult, verbose: bool = False) -> None:
     for v in result.verdicts:
         by_verdict.setdefault(v.verdict, []).append(v)
 
-    # Always print stale and missing
-    for verdict_name in ("stale", "missing"):
+    # Always print stale, diverged and missing. DIVERGED is printed under its
+    # own name and never under STALE: /sync-install parses STALE and MISSING
+    # lines into a copy list, and copying source over a diverged file destroys
+    # changes the one-way sync cannot bring back.
+    for verdict_name in ("stale", "diverged", "missing"):
         for v in by_verdict.get(verdict_name, []):
             print(f"  {verdict_name.upper():8s}  {v.surface}/{v.filename}")
             if v.source_hash:
                 print(f"            source   sha256:{v.source_hash}")
             if v.installed_hash:
                 print(f"            installed sha256:{v.installed_hash}")
+
+    if by_verdict.get("diverged"):
+        print(
+            "  NOTE: DIVERGED files hold changes the source tree has never\n"
+            "        seen. /sync-install copies source -> installed only and\n"
+            "        cannot recover them. Reconcile by hand before syncing."
+        )
 
     if verbose:
         for verdict_name in ("current", "extra"):
@@ -323,6 +379,7 @@ def _print_result(result: LayerPairResult, verbose: bool = False) -> None:
     print(
         f"  Summary: {counts.get('current', 0)} current, "
         f"{counts.get('stale', 0)} stale, "
+        f"{counts.get('diverged', 0)} diverged, "
         f"{counts.get('missing', 0)} missing, "
         f"{counts.get('extra', 0)} extra  (total: {total})"
     )
