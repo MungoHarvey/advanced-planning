@@ -20,10 +20,46 @@ other's files as extras, and core/agents/ drift is never seen at all.
 
 Per-file verdicts:
   current  -- file present in both layers, content hash matches (EOL-insensitive)
-  stale    -- file present in both layers, content hash differs
+  stale    -- content differs AND source is strictly newer by mtime
+  diverged -- content differs AND the installed copy is same-age-or-newer
   missing  -- file present in source but absent in the installed layer
   extra    -- file present in the installed layer but absent in source
               (informational only; NOT a failure — projects may have custom files)
+
+WHY "diverged" EXISTS -- READ BEFORE COLLAPSING IT INTO "stale"
+
+  /sync-install parses STALE and MISSING lines out of this report into a copy
+  list, and copies source -> installed only. Reporting a difference as STALE is
+  therefore not a description, it is an instruction: overwrite the installed
+  copy. If the installed copy is the newer one, that instruction destroys work
+  the source tree has never seen, and there is no supported way back.
+
+  So the two questions are kept separate. "Do they differ?" is answered by
+  hash. "Which one is behind?" is answered by mtime. Only a difference where
+  source is provably ahead earns the verdict that arms the copy.
+
+  A tie resolves to "diverged" deliberately: a tie is not evidence that source
+  is ahead, and the cautious answer costs an operator one manual reconciliation
+  while the confident answer costs them their file.
+
+LIMITATION -- mtime is a proxy, and git rewrites it
+
+  This check is only as good as the mtimes, and git sets a file's mtime to the
+  moment it wrote the file, not the moment the content was authored. A fresh
+  clone, a branch switch, or any checkout that touches a file stamps it with
+  "now" -- so immediately afterwards the whole source tree looks newer than
+  every installed file, and genuine divergence is reported as STALE again.
+
+  Observed in practice: after one branch switch, 30 of 34 source files carried
+  mtimes from the switch, and two installed files holding real local
+  customisation flipped from DIVERGED to STALE on that basis alone.
+
+  So this guards the common case -- edit source, sync, and do not clobber an
+  installed file someone edited later -- and is not a guarantee. The robust fix
+  is a sync manifest recording the hash this tool last wrote to each installed
+  path; divergence is then "installed hash != last-written hash", which no
+  checkout can disturb. Until that exists, treat a STALE verdict on a file you
+  know to be customised as unproven, and diff before syncing.
 
 Exit codes:
   0  -- all compared files are current

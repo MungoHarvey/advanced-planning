@@ -120,5 +120,29 @@ reports all ten as `DIVERGED` and copies none of them, leaving the operator to
 make exactly the distinction above by hand.
 
 After reconciliation the global layer audits as 25 current, 2 diverged, 0
-missing — the two being the customisations, correctly and permanently flagged
-as needing a human decision rather than a copy.
+missing — the two being the customisations, correctly flagged as needing a
+human decision rather than a copy.
+
+### …and the limit of that protection
+
+"Correctly" held at the moment of the audit. It is not permanent, and the
+reason is worth stating plainly rather than discovering later.
+
+`diverged` is decided by mtime, and **git sets a file's mtime to the moment it
+wrote the file, not the moment the content was authored.** A checkout that
+touches a file stamps it `now`. Immediately after a branch switch in this very
+repository, 30 of the 34 audited source files carried mtimes from that switch —
+and the two customised global files flipped from `DIVERGED` back to `STALE` on
+that basis alone, because the source tree now looked uniformly newer than
+everything installed.
+
+So the verdict guards the case it was built for — you edit a source file, you
+sync, and an installed file that someone edited *later* is not clobbered — and
+it does not survive a fresh clone. It is a meaningful reduction in a data-loss
+path, not a closure of it.
+
+The robust fix is a **sync manifest**: `/sync-install` records the hash it last
+wrote to each installed path, and divergence becomes `installed hash !=
+last-written hash`. That is a statement about what this tool actually did,
+which no checkout can disturb. Until it exists, a `STALE` verdict on a file you
+know to be customised should be treated as unproven — diff before syncing.
