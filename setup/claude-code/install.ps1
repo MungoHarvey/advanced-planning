@@ -215,6 +215,43 @@ if (Test-Path $ApDir) {
 }
 
 # ---------------------------------------------------------------------------
+# Shared Python runtime: launcher + recorded source path
+#
+# The commands shell out to platforms\python\<module>, which no install ships.
+# Rather than copy that tree into every project, record where the checkout is
+# and hand the project a launcher that reads the record. See
+# platforms/python/ap_launcher.py for why this shape and not the other three.
+#
+# Deliberately OUTSIDE the scaffold guard above: that guard skips everything
+# when .advanced-plans\ already exists, and an upgrade-in-place is exactly the
+# case where the recorded path most needs refreshing.
+# ---------------------------------------------------------------------------
+Say "Recording the shared Python runtime..."
+$ApBinDir = Join-Path $ApDir "bin"
+Do-MkDir $ApBinDir
+Do-Copy (Join-Path $RepoRoot "platforms\python\ap_launcher.py") (Join-Path $ApBinDir "ap.py")
+if (-not $DryRun) {
+    $apVersionFile = Join-Path $RepoRoot "VERSION"
+    $apVersion = if (Test-Path $apVersionFile) { (Get-Content $apVersionFile -Raw).Trim() } else { "unknown" }
+    $runtime = [ordered]@{
+        schema_version = 1
+        source_root    = $RepoRoot
+        version        = $apVersion
+        written_by     = "setup/claude-code/install.ps1"
+        written_at     = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    } | ConvertTo-Json -Depth 3
+    # UTF-8 without BOM: json.loads tolerates a BOM only via utf-8-sig, and the
+    # launcher deliberately reads plain utf-8 so a BOM here would be a stale
+    # manifest that reports itself as malformed JSON.
+    $utf8NoBomRt = [System.Text.UTF8Encoding]::new($false)
+    [System.IO.File]::WriteAllText((Join-Path $ApDir "runtime.json"), $runtime, $utf8NoBomRt)
+    Say "  + .advanced-plans\runtime.json -> $RepoRoot"
+    Say "  + .advanced-plans\bin\ap.py"
+} else {
+    Write-Host "  [dry-run] write $(Join-Path $ApDir 'runtime.json') recording $RepoRoot"
+}
+
+# ---------------------------------------------------------------------------
 # Runtime dirs: self-install uses junctions; normal install copies
 # ---------------------------------------------------------------------------
 if ($SelfInstall) {

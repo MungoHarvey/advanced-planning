@@ -278,6 +278,45 @@ READEOF
 fi
 
 # ---------------------------------------------------------------------------
+# Shared Python runtime: launcher + recorded source path
+#
+# The commands shell out to platforms/python/<module>, which no install ships.
+# Rather than copy that tree into every project, record where the checkout is
+# and hand the project a launcher that reads the record. See
+# platforms/python/ap_launcher.py for why this shape and not the other three.
+#
+# Deliberately OUTSIDE the scaffold guard above: that guard skips everything
+# when .advanced-plans/ already exists, and an upgrade-in-place is exactly the
+# case where the recorded path most needs refreshing.
+# ---------------------------------------------------------------------------
+say "Recording the shared Python runtime..."
+do_mkdir "$AP_DIR/bin"
+do_cp "$REPO_ROOT/platforms/python/ap_launcher.py" "$AP_DIR/bin/ap.py"
+if [ "$DRY_RUN" = false ]; then
+    # Under Git Bash / MSYS on Windows, $REPO_ROOT is a POSIX path
+    # (/c/Users/...) that the native Python interpreter cannot open. Record
+    # a path the interpreter that will read it can actually resolve.
+    # cygpath -m gives C:/Users/... - native, and forward slashes so it
+    # needs no JSON escaping. Absent off Windows, where $REPO_ROOT is right.
+    AP_SOURCE_ROOT="$(cygpath -m "$REPO_ROOT" 2>/dev/null || echo "$REPO_ROOT")"
+    AP_VERSION="$(cat "$REPO_ROOT/VERSION" 2>/dev/null || echo unknown)"
+    AP_STAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)"
+    cat > "$AP_DIR/runtime.json" <<RUNTIMEEOF
+{
+  "schema_version": 1,
+  "source_root": "$AP_SOURCE_ROOT",
+  "version": "$AP_VERSION",
+  "written_by": "setup/claude-code/install.sh",
+  "written_at": "$AP_STAMP"
+}
+RUNTIMEEOF
+    say "  + .advanced-plans/runtime.json -> $AP_SOURCE_ROOT"
+    say "  + .advanced-plans/bin/ap.py"
+else
+    echo "  [dry-run] write $AP_DIR/runtime.json recording $REPO_ROOT"
+fi
+
+# ---------------------------------------------------------------------------
 # Runtime dirs: self-install uses symlinks; normal install copies
 # ---------------------------------------------------------------------------
 if [ "$SELF_INSTALL" = true ]; then

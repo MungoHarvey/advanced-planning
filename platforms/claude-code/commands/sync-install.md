@@ -43,7 +43,7 @@ Stop.
 Run:
 
 ```bash
-python -m platforms.python.install_audit --layers [resolved_layers]
+python .advanced-plans/bin/ap.py install_audit --layers [resolved_layers]
 ```
 
 Capture the output and exit code.
@@ -110,7 +110,7 @@ visually distinct:
 After all copies are done, run the audit again:
 
 ```bash
-python -m platforms.python.install_audit --layers [resolved_layers]
+python .advanced-plans/bin/ap.py install_audit --layers [resolved_layers]
 ```
 
 - Exit 0 → success. Print:
@@ -148,7 +148,7 @@ After editing any file under `platforms/claude-code/commands/`,
 propagate the change to the project and global installed copies.
 
 For CI (which cannot see the developer's global dir), use:
-`python -m platforms.python.install_audit --layers source,project`
+`python .advanced-plans/bin/ap.py install_audit --layers source,project`
 
 ## Error Modes
 

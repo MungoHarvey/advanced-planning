@@ -6,9 +6,9 @@ The Cowork adapter is used as a worked example throughout.
 
 ---
 
-## The Five Adapter Contracts
+## The Six Adapter Contracts
 
-Every compliant adapter must fulfil five contracts:
+Every compliant adapter must fulfil six contracts:
 
 ### Contract 1 — Entry Point
 
@@ -74,6 +74,60 @@ How is state preserved before and after each loop?
 
 ---
 
+### Contract 6 — Shared Python Runtime
+
+Where does the adapter's tooling find `platforms/python/`?
+
+Nowhere, unless the adapter arranges it. No installer ships that tree into a
+project, so `python -m platforms.python.<module>` resolves only when the working
+directory happens to be the source checkout. Until 2026-08-27 the Claude Code
+adapter did exactly that at thirteen call sites, and every one of them failed in
+every installed project.
+
+The framework's answer is to record where the checkout is and read the record:
+
+| | |
+|---|---|
+| Manifest | `.advanced-plans/runtime.json`, written by the adapter's installer |
+| Key | `source_root` — an absolute path the *interpreter that will read it* can open |
+| Launcher | `.advanced-plans/bin/ap.py`, copied from `platforms/python/ap_launcher.py` |
+| Module call | `python .advanced-plans/bin/ap.py <module> [args]` |
+| In-line call | `runpy.run_path('.advanced-plans/bin/ap.py')['bootstrap']()` before the import |
+| Escape hatch | `$ADVANCED_PLANNING_ROOT`, which overrides the manifest |
+
+The manifest sits in `.advanced-plans/`, not in any adapter's own directory,
+because every adapter resolves the runtime by this same route. An adapter that
+put it under `.claude/` or `.codex/` would make the next adapter write a second
+one.
+
+**Your adapter must define**: that its installer writes `runtime.json` and
+copies the launcher, and that it does both **outside** any "planning data
+already exists, skip the scaffold" guard. Upgrading a project in place is
+precisely when a stale `source_root` most needs refreshing, and it is the one
+failure the guard below cannot diagnose, because nothing looks wrong.
+
+**Two traps, both found by running it:**
+
+*A path the shell can open is not always a path the interpreter can open.* Under
+Git Bash on Windows, `$REPO_ROOT` is `/c/Users/...`; native Python cannot open
+it. `install.sh` normalises with `cygpath -m`. Any adapter installer that runs
+under MSYS needs the same.
+
+*The recorded path is absolute, so it breaks when the checkout moves.* That is
+the accepted cost of this mechanism, and it is why the launcher's guard is not
+optional: every failure names the manifest, the key, and the repair, and exits
+`3` so a caller can tell an unreachable runtime from a module that ran and
+returned non-zero. An adapter that swallows exit 3 has removed the only thing
+that makes the mechanism supportable.
+
+The alternatives, and why not: copying `platforms/python/` into each project
+puts an N-th copy of executable code where it can drift, policed by an
+`install_audit` that compares by mtime; a console-script shim adds a packaging
+system and mutates PATH for what is a search-path problem. Both were costed at
+the phase-6 loop-001 gate.
+
+---
+
 ## Minimum Adapter Checklist
 
 A new adapter is ready when all of the following are true:
@@ -85,13 +139,15 @@ A new adapter is ready when all of the following are true:
 - [ ] Skills directory path in the worker prompt matches the actual installed skills location
 - [ ] Opening and closing checkpoint steps are in the worker prompt
 - [ ] No `.claude/` paths in a non-Claude Code adapter (or equivalent platform-internal paths)
+- [ ] Installer writes `.advanced-plans/runtime.json` and copies the launcher, both outside the scaffold guard
+- [ ] Every call site reaches the runtime through the launcher; none uses bare `-m` or `sys.path.insert(0, '.')`
 - [ ] An adapter README exists covering setup, quick-start, and the top 3 failure modes
 
 ---
 
 ## Worked Example: Cowork Adapter
 
-The Cowork adapter (`platforms/cowork/`) demonstrates all five contracts for an environment with no git and no CLI.
+The Cowork adapter (`platforms/cowork/`) demonstrates contracts 1-5 for an environment with no git and no CLI. It is also the one adapter that satisfies contract 6 by not needing it: `platforms/cowork/checkpoint.sh` is POSIX shell and invokes no Python at all.
 
 ### Contract 1 — Entry Point
 

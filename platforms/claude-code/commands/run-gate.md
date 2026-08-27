@@ -36,7 +36,7 @@ Print: `-> Gate review: Phase [N]`
 Run a quick source-vs-project drift check:
 
 ```bash
-python -m platforms.python.install_audit --layers source,project
+python .advanced-plans/bin/ap.py install_audit --layers source,project
 ```
 
 If the command exits non-zero (drift detected), print a one-line warning and
@@ -322,7 +322,7 @@ clean fenced block):
 ```python
 import sys
 from pathlib import Path
-sys.path.insert(0, ".")
+import runpy; runpy.run_path('.advanced-plans/bin/ap.py')['bootstrap']()
 from platforms.python.codex_gate import extract_and_validate
 
 codex_last = Path(f".advanced-plans/gate-verdicts/phase-[N]-attempt-[attempt]-codex.lastmsg.txt")
@@ -382,7 +382,7 @@ Call `aggregate_verdicts` on the collected paths:
 
 ```python
 import sys
-sys.path.insert(0, ".")
+import runpy; runpy.run_path('.advanced-plans/bin/ap.py')['bootstrap']()
 from platforms.python.codex_gate import aggregate_verdicts
 from pathlib import Path
 

@@ -74,6 +74,12 @@ class TestLoadAllowedImports:
             "textwrap",
             "argparse",
             "asyncio",
+            # Added for platforms/python/ap_launcher.py: it reproduces
+            # `python -m <module>` semantics for the slash commands, which
+            # can no longer use -m because the runtime is not on the path
+            # of an installed project. Standard library, so the stdlib-only
+            # policy is unchanged. See core/constraints.json notes.
+            "runpy",
         }
         result = load_allowed_imports()
         assert expected == result, (
