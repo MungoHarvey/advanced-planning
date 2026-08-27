@@ -105,6 +105,34 @@ visually distinct:
   [GLOBAL] REFRESHED  global <surface>/<filename>
 ```
 
+### 4b. Refresh the shared-runtime record
+
+`install_audit` compares `.claude/` surfaces only, so it is blind to
+`.advanced-plans/runtime.json` and `.advanced-plans/bin/ap.py`. Those are what
+every command uses to reach `platforms/python/`, and a `source_root` left
+pointing at a moved checkout is exactly the drift this command exists to
+repair. The launcher's own diagnostic names `/sync-install` as a repair, so it
+has to actually be one.
+
+For each project layer included in `--layers`:
+
+```bash
+python .advanced-plans/bin/ap.py --check
+```
+
+- Exit 0: the record resolves. Print the line it produced and move on.
+- Exit 3: it does not. The diagnostic names the file and the key. Rewrite
+  `source_root` in `.advanced-plans/runtime.json` to the absolute path of the
+  source checkout `/sync-install` is running from, and re-copy
+  `platforms/python/ap_launcher.py` to `.advanced-plans/bin/ap.py`.
+- The launcher is missing entirely (`can't open file`): copy it, then write
+  `runtime.json` with `schema_version: 1` and that same `source_root`.
+
+Record the path as one the *interpreter* can open, not only the shell: under
+Git Bash on Windows that means `C:/Users/...`, not `/c/Users/...`. Re-running
+the installer does this correctly and is the better repair when it is
+available; this step exists for the case where it is not.
+
 ### 5. Verify the refresh
 
 After all copies are done, run the audit again:

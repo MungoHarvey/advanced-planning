@@ -152,8 +152,9 @@ def resolve(start=None):
                 "%s records %s = %r, but there is no %s under it - the "
                 "checkout has most likely been moved, renamed or deleted"
                 % (manifest, MANIFEST_KEY, root, PACKAGE_MARKER),
-                "run /sync-install, or re-run the installer from the "
-                "checkout's new location, or edit %s so %r points at it."
+                "re-run the installer from the checkout's new location "
+                "(setup/claude-code/install.ps1 or install.sh), or run "
+                "/sync-install, or edit %s so %r points at it."
                 % (manifest, MANIFEST_KEY))
         return os.path.abspath(root), manifest
 

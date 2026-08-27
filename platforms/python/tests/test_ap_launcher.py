@@ -313,6 +313,28 @@ def test_installer_records_the_runtime_outside_the_scaffold_guard(installer):
         "inside the guard" % installer)
 
 
+def test_the_guard_only_names_repairs_that_exist():
+    """The guard's value is that its suggested repair works.
+
+    The first draft told the reader to run `/sync-install`, which refreshes
+    `.claude/` surfaces from install_audit's file lists and is blind to
+    `.advanced-plans/runtime.json` -- it would have reported CLEAN and changed
+    nothing. A guard that names a no-op repair is worse than a raw traceback,
+    because it costs the reader a round of trust before they find out.
+    """
+    launcher = io.open(str(LAUNCHER_SRC), encoding="utf-8").read()
+    sync = io.open(str(COMMANDS_DIR / "sync-install.md"),
+                   encoding="utf-8", newline="").read()
+    if "/sync-install" in launcher:
+        assert "runtime.json" in sync, (
+            "the launcher tells the reader to run /sync-install, but "
+            "sync-install.md never touches runtime.json, so that repair is a "
+            "no-op. Either make it one, or stop naming it.")
+        assert "ap.py --check" in sync or "ap_launcher.py" in sync, (
+            "sync-install.md mentions runtime.json but never checks or "
+            "rewrites it through the launcher")
+
+
 def test_install_sh_records_a_path_the_interpreter_can_open():
     """Found by running it: under Git Bash on Windows $REPO_ROOT is a POSIX
     path (/c/Users/...) and the native Python cannot open it, so the guard
