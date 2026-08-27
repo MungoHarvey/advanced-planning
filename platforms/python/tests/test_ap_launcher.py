@@ -60,6 +60,14 @@ EXIT_UNREACHABLE = 3
 # Helpers
 # ---------------------------------------------------------------------------
 
+def _clean_env():
+    """os.environ without the two things that would mask a resolution failure."""
+    environ = dict(os.environ)
+    environ.pop("ADVANCED_PLANNING_ROOT", None)
+    environ.pop("PYTHONPATH", None)
+    return environ
+
+
 def make_project(tmp_path, source_root, name="proj"):
     """A project with the launcher installed and a manifest, and nothing else.
 
@@ -133,6 +141,55 @@ def test_bare_dash_m_still_fails_there(tmp_path):
 def test_path_prints_the_resolved_root(tmp_path):
     proj = make_project(tmp_path, _REPO_ROOT)
     r = run_launcher(proj, ["--path"])
+    assert r.returncode == 0, r.stderr
+    assert pathlib.Path(r.stdout.strip()) == _REPO_ROOT
+
+
+def test_the_walk_stops_at_a_project_that_has_no_manifest(tmp_path):
+    """A vendored project must not borrow its host's checkout.
+
+    Found by a cross-vendor review panel and reproduced before being fixed:
+    an inner project with its own `.advanced-plans/` but no manifest walked
+    straight past itself, adopted the OUTER project's manifest, and ran that
+    checkout - exit 0, no diagnostic. Silent resolution to the wrong runtime
+    is the failure this whole design is most exposed to, so it is now the one
+    case the walk refuses.
+    """
+    outer = make_project(tmp_path, _REPO_ROOT, name="outer")
+    inner = outer / "vendor" / "inner"
+    (inner / ".advanced-plans").mkdir(parents=True)
+
+    r = subprocess.run(
+        [sys.executable, str(outer / ".advanced-plans" / "bin" / "ap.py"),
+         "--path"],
+        cwd=str(inner), env=_clean_env(), stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, universal_newlines=True)
+
+    assert r.returncode == EXIT_UNREACHABLE, (
+        "the inner project resolved to something instead of refusing; it "
+        "borrowed the enclosing project's runtime:\nstdout=%s\nstderr=%s"
+        % (r.stdout, r.stderr))
+    assert "has no" in r.stderr and ".advanced-plans" in r.stderr
+    assert "fix:" in r.stderr
+    assert "Traceback" not in r.stderr
+
+
+def test_a_plain_subdirectory_still_walks_up(tmp_path):
+    """The boundary stop must not break the feature it guards.
+
+    Only a directory holding `.advanced-plans/` is a boundary. An ordinary
+    subdirectory - src/, tests/, docs/ - must still find the project's
+    manifest above it, or the stop has cured the disease by killing the
+    patient.
+    """
+    proj = make_project(tmp_path, _REPO_ROOT)
+    sub = proj / "src" / "deep" / "deeper"
+    sub.mkdir(parents=True)
+    r = subprocess.run(
+        [sys.executable, str(proj / ".advanced-plans" / "bin" / "ap.py"),
+         "--path"],
+        cwd=str(sub), env=_clean_env(), stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, universal_newlines=True)
     assert r.returncode == 0, r.stderr
     assert pathlib.Path(r.stdout.strip()) == _REPO_ROOT
 
@@ -461,9 +518,26 @@ def test_find_manifest_walks_up_and_stops(tmp_path):
     assert found is not None
     assert pathlib.Path(found) == proj / ".advanced-plans" / "runtime.json"
 
+    # The orphan case used to assert `is None`, on the assumption that a
+    # directory outside any project finds no manifest above it. That
+    # assumption is machine-dependent and was false on the machine this was
+    # written on, where ~/.advanced-plans/ exists (holding specs/) with no
+    # manifest - so the walk reached the HOME directory and treated it as a
+    # project. That is not a test artefact, it is the finding: without the
+    # boundary stop, any uninstalled project on such a machine would adopt
+    # whatever manifest the home directory came to hold.
     orphan = tmp_path / "unrelated"
     orphan.mkdir()
-    assert ap_launcher.find_manifest(str(orphan)) is None
+    try:
+        found = ap_launcher.find_manifest(str(orphan))
+    except ap_launcher.ProjectWithoutManifest as exc:
+        # A project directory above it, with no manifest: refused, not borrowed.
+        assert os.path.isdir(os.path.join(exc.project, ".advanced-plans"))
+        assert not os.path.isfile(
+            os.path.join(exc.project, ".advanced-plans", "runtime.json"))
+    else:
+        # Or genuinely nothing above it, on a machine with no such directory.
+        assert found is None
 
 
 def test_unreachable_carries_a_fix():

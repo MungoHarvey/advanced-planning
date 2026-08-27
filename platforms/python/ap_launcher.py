@@ -71,6 +71,7 @@ import sys
 EXIT_UNREACHABLE = 3
 
 MANIFEST_RELPATH = os.path.join(".advanced-plans", "runtime.json")
+PROJECT_MARKER = ".advanced-plans"
 MANIFEST_KEY = "source_root"
 ENV_VAR = "ADVANCED_PLANNING_ROOT"
 PACKAGE_MARKER = os.path.join("platforms", "python", "__init__.py")
@@ -90,18 +91,37 @@ class Unreachable(Exception):
         stream.write("advanced-planning: fix: %s\n" % self.fix)
 
 
+class ProjectWithoutManifest(Exception):
+    """A project directory was reached that has no manifest of its own."""
+
+    def __init__(self, project):
+        Exception.__init__(self, project)
+        self.project = project
+
+
 def find_manifest(start=None):
     """The nearest .advanced-plans/runtime.json at or above `start`.
 
     Walking up matters: a slash command is as likely to be run from a package
     subdirectory as from the project root, and a launcher that looked only in
     the working directory would fail there for no reason a user could see.
+
+    But the walk stops at a project boundary. A directory holding
+    ``.advanced-plans/`` IS a project; if it has no manifest of its own, the
+    answer is "this project is not installed", not "borrow the manifest of
+    whatever project happens to contain it". Without this stop, a project
+    vendored inside another silently resolved to the OUTER project's checkout
+    and ran it, exit 0, with no diagnostic - which is the one failure this
+    design was always most exposed to. Found by a cross-vendor review panel
+    and reproduced before being fixed.
     """
     here = os.path.abspath(start or os.getcwd())
     while True:
         candidate = os.path.join(here, MANIFEST_RELPATH)
         if os.path.isfile(candidate):
             return candidate
+        if os.path.isdir(os.path.join(here, PROJECT_MARKER)):
+            raise ProjectWithoutManifest(here)
         parent = os.path.dirname(here)
         if parent == here:
             return None
@@ -132,7 +152,17 @@ def resolve(start=None):
                 "and platforms/." % ENV_VAR)
         return os.path.abspath(env), "$" + ENV_VAR
 
-    manifest = find_manifest(start)
+    try:
+        manifest = find_manifest(start)
+    except ProjectWithoutManifest as exc:
+        raise Unreachable(
+            "%s is an Advanced Planning project (it has %s/) but has no %s"
+            % (exc.project, PROJECT_MARKER, MANIFEST_RELPATH),
+            "run this project's own installer from your advanced-planning "
+            "checkout (setup/claude-code/install.ps1 or install.sh). The walk "
+            "for a manifest deliberately stops here rather than borrowing an "
+            "enclosing project's, which would run the wrong checkout without "
+            "saying so.")
     if manifest is not None:
         try:
             data = json.loads(pathlib.Path(manifest).read_text(encoding="utf-8"))
