@@ -106,7 +106,15 @@ already exists, skip the scaffold" guard. Upgrading a project in place is
 precisely when a stale `source_root` most needs refreshing, and it is the one
 failure the guard below cannot diagnose, because nothing looks wrong.
 
-**Two traps, both found by running it:**
+****The call sites run from the project root.** `.advanced-plans/bin/ap.py` is
+a project-root-relative path, exactly like every other path an Advanced
+Planning command names. Invoked from a subdirectory the interpreter fails to
+open it and exits 2, before the launcher's guard can say anything useful — so
+an adapter must not `cd` between resolving the project and calling a command.
+The launcher's upward walk for `runtime.json` is what covers an adapter that
+names the launcher by an *absolute* path instead.
+
+Two traps, both found by running it:**
 
 *A path the shell can open is not always a path the interpreter can open.* Under
 Git Bash on Windows, `$REPO_ROOT` is `/c/Users/...`; native Python cannot open

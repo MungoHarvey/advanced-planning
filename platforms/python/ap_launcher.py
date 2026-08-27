@@ -142,7 +142,23 @@ def resolve(start=None):
                 "re-run this project's installer, or repair the file by hand: "
                 "it needs a %r key holding the absolute path to your "
                 "advanced-planning checkout." % MANIFEST_KEY)
-        root = (data.get(MANIFEST_KEY) or "").strip()
+        if not isinstance(data, dict):
+            # Valid JSON is not the same as a manifest. `[]` parses fine and
+            # then raises AttributeError on .get, which is the raw traceback
+            # this guard exists to replace.
+            raise Unreachable(
+                "%s parses as JSON but is a %s, not an object"
+                % (manifest, type(data).__name__),
+                "re-run this project's installer, or replace the file with an "
+                "object holding a %r key." % MANIFEST_KEY)
+        root = data.get(MANIFEST_KEY)
+        if root is not None and not isinstance(root, str):
+            raise Unreachable(
+                "%s records %s as a %s; it must be a string path"
+                % (manifest, MANIFEST_KEY, type(root).__name__),
+                "re-run this project's installer, or set %r to the absolute "
+                "path of your advanced-planning checkout." % MANIFEST_KEY)
+        root = (root or "").strip()
         if not root:
             raise Unreachable(
                 "%s has no %r" % (manifest, MANIFEST_KEY),

@@ -137,7 +137,20 @@ def test_path_prints_the_resolved_root(tmp_path):
     assert pathlib.Path(r.stdout.strip()) == _REPO_ROOT
 
 
-def test_manifest_is_found_from_a_subdirectory(tmp_path):
+def test_walk_up_works_when_the_launcher_is_named_by_absolute_path(tmp_path):
+    """find_manifest() walks upward, and this proves it -- but only for an
+    *absolute* launcher path.
+
+    Read the next test before believing this one covers subdirectories. The
+    shipped call sites say `python .advanced-plans/bin/ap.py`, which is
+    relative to the working directory, so from a subdirectory the interpreter
+    fails to open the file before any of this code runs. This test named
+    itself `..._from_a_subdirectory` in its first draft and was caught in
+    review overclaiming exactly that.
+
+    The walk-up is not dead code: it is what an absolute invocation needs, and
+    it is the route a launcher living outside the project would take.
+    """
     proj = make_project(tmp_path, _REPO_ROOT)
     sub = proj / "src" / "deep"
     sub.mkdir(parents=True)
@@ -147,6 +160,54 @@ def test_manifest_is_found_from_a_subdirectory(tmp_path):
         universal_newlines=True)
     assert r.returncode == 0, r.stderr
     assert pathlib.Path(r.stdout.strip()) == _REPO_ROOT
+
+
+def test_the_relative_call_site_form_requires_the_project_root(tmp_path):
+    """Pin the real limit of the shipped invocation, rather than hiding it.
+
+    Every path in every command -- `.advanced-plans/PLANNING.md`,
+    `.advanced-plans/state/history.jsonl`, and now the launcher -- is relative
+    to the project root, so requiring that cwd is consistent, not a new
+    constraint. What is not acceptable is claiming coverage of the other case.
+    If a future change makes the relative form work from a subdirectory, this
+    test fails and should be replaced with the positive assertion.
+    """
+    proj = make_project(tmp_path, _REPO_ROOT)
+    sub = proj / "src" / "deep"
+    sub.mkdir(parents=True)
+    environ = dict(os.environ)
+    environ.pop("ADVANCED_PLANNING_ROOT", None)
+    r = subprocess.run(
+        [sys.executable, os.path.join(".advanced-plans", "bin", "ap.py"), "--path"],
+        cwd=str(sub), env=environ, stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, universal_newlines=True)
+    assert r.returncode != 0
+    assert "ap.py" in r.stderr
+    # The interpreter, not the guard: exit 3 here would mean the launcher ran.
+    assert r.returncode != EXIT_UNREACHABLE, (
+        "the launcher ran from a subdirectory -- the relative form now works, "
+        "so replace this test with the positive assertion:" + r.stderr)
+
+
+def test_every_command_that_calls_the_launcher_runs_from_the_project_root():
+    """The constraint above only holds if the commands actually say so.
+
+    A call site that told the reader to `cd` somewhere first would break the
+    relative form silently, and the failure would be Python's `can't open
+    file`, which names neither the command nor the cause.
+    """
+    offenders = []
+    for md in sorted(COMMANDS_DIR.glob("*.md")):
+        text = io.open(str(md), encoding="utf-8", newline="").read()
+        if ".advanced-plans/bin/ap.py" not in text:
+            continue
+        for i, line in enumerate(text.splitlines(), 1):
+            stripped = line.strip()
+            if stripped.startswith("cd ") and not stripped.startswith("cd -"):
+                offenders.append("%s:%d: %s" % (md.name, i, stripped))
+    assert not offenders, (
+        "these commands invoke the launcher by a project-root-relative path "
+        "but also change directory: " + "; ".join(offenders))
 
 
 # ---------------------------------------------------------------------------
@@ -184,6 +245,30 @@ def test_missing_manifest_is_reported_as_such(tmp_path):
     proj = make_project(tmp_path, None)
     r = run_launcher(proj, ["history_log"])
     _assert_actionable(r, "runtime.json", "installer")
+
+
+@pytest.mark.parametrize("document,noun", [
+    ("[]", "list"),
+    ('{"source_root": 1}', "int"),
+    ('"a string"', "str"),
+    ("null", "NoneType"),
+])
+def test_valid_json_of_the_wrong_shape_is_reported_as_such(tmp_path, document,
+                                                           noun):
+    """Parsing is not validating, and the first draft conflated them.
+
+    Only a JSONDecodeError was caught, so a manifest holding `[]` reached
+    `data.get` and raised AttributeError -- a raw traceback naming a launcher
+    internal, which is precisely the failure mode the guard exists to replace.
+    A hand-edited or half-written manifest is the realistic source.
+    """
+    proj = make_project(tmp_path, _REPO_ROOT)
+    manifest = proj / ".advanced-plans" / "runtime.json"
+    io.open(str(manifest), "w", encoding="utf-8").write(document)
+    r = run_launcher(proj, ["--path"])
+    _assert_actionable(r, "runtime.json", "source_root")
+    assert noun in r.stderr, (
+        "the diagnostic does not say what shape it found: " + r.stderr)
 
 
 def test_manifest_without_the_key_is_reported_as_such(tmp_path):
@@ -333,6 +418,17 @@ def test_the_guard_only_names_repairs_that_exist():
         assert "ap.py --check" in sync or "ap_launcher.py" in sync, (
             "sync-install.md mentions runtime.json but never checks or "
             "rewrites it through the launcher")
+        # Ordering is the whole repair. Step 2 runs install_audit *through*
+        # the launcher, so a repair written after it can never be reached in
+        # either case it exists for: a stale manifest exits 3 and a missing
+        # launcher exits 2, and both stop the command before it arrives.
+        # Found in review, after the first draft placed it at step 4b.
+        repair = sync.index("Ensure the shared runtime is reachable")
+        audit = sync.index("python .advanced-plans/bin/ap.py install_audit")
+        assert repair < audit, (
+            "sync-install.md repairs the runtime record at offset %d but "
+            "first invokes the launcher at offset %d, so the repair is "
+            "unreachable in exactly the cases it is for." % (repair, audit))
 
 
 def test_install_sh_records_a_path_the_interpreter_can_open():
