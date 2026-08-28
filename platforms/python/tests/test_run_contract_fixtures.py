@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-from platforms.python.tests.minischema import validate, UnsupportedKeyword
+from platforms.python.minischema import validate, UnsupportedKeyword
 
 
 # Paths to schemas (loaded from disk, not copied)

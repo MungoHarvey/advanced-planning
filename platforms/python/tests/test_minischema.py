@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from platforms.python.tests.minischema import (
+from platforms.python.minischema import (
     UnsupportedKeyword,
     Error,
     validate,
@@ -535,7 +535,7 @@ class TestRealSchemas:
         with open(schema_path) as f:
             schema = json.load(f)
         # Should not raise
-        from platforms.python.tests.minischema import _check_schema_keywords
+        from platforms.python.minischema import _check_schema_keywords
         _check_schema_keywords(schema)
 
     def test_collected_evidence_schema_loads(self):
@@ -544,5 +544,5 @@ class TestRealSchemas:
         with open(schema_path) as f:
             schema = json.load(f)
         # Should not raise
-        from platforms.python.tests.minischema import _check_schema_keywords
+        from platforms.python.minischema import _check_schema_keywords
         _check_schema_keywords(schema)
