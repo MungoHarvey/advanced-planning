@@ -191,45 +191,50 @@ Rules:
 
 ### Step 3 — Write loop-complete.json
 
-Write `loop-complete.json` to the state directory via the runtime:
+Write `loop-complete.json` to the state directory using the library API:
 
-```bash
-python ".advanced-plans/bin/ap.py" state_manager .advanced-plans/state --write-loop-complete \
-  --loop_name "ralph-loop-NNN" \
-  --loop_file ".advanced-plans/phases/phase-N/loops.md" \
-  --status "completed" \
-  --todos_done N \
-  --todos_failed N \
-  --handoff_done "..." \
-  --handoff_failed "..." \
-  --handoff_needed "..."
-```
-
-Or use the library API:
 ```python
+import runpy
+runpy.run_path(r'.advanced-plans/bin/ap.py')['bootstrap']()
+
 from platforms.python.state_manager import write_loop_complete
-write_loop_complete(state_dir, loop_name="ralph-loop-NNN", ...)
+from pathlib import Path
+
+state_dir = Path(".advanced-plans/state")
+write_loop_complete(
+    state_dir,
+    loop_name="ralph-loop-NNN",
+    loop_file=".advanced-plans/phases/phase-N/loops.md",
+    status="completed",  # or "partial", "failed"
+    todos_done=N,
+    todos_failed=N,
+    handoff_done="...",
+    handoff_failed="...",
+    handoff_needed="..."
+)
 ```
+
+**Note:** `state_manager` is a library module — it has no CLI. Use the bootstrap form above.
 
 The `status` enum: `completed` (all todos done), `partial` (some cancelled), `failed` (escalate or rollback triggered).
 
 The formal JSON Schema is at `core/state/loop-complete.schema.json`.
 
-**Validation requirement**: Before returning, validate the file you just wrote:
+**Validation requirement**: Before returning, validate the file you just wrote (HAS CLI):
 ```bash
 python ".advanced-plans/bin/ap.py" state_validate loop-complete .advanced-plans/state/loop-complete.json
 ```
 
 ### Step 4 — Return
 
-Log the completion event:
+Log the completion event (HAS CLI):
 ```bash
 python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jsonl '{"event": "loop_completed", "loop": "ralph-loop-NNN"}'
 ```
 
 Return to the main thread. Do not advance to the next loop — that is the main thread's decision.
 
-**Exit code contract**: If the launcher exits `3`, the runtime is unreachable. Print the diagnostic and stop — do not write a partial file.
+**Exit code contract**: If the bootstrap call or any CLI exits `3`, the runtime is unreachable. Print the diagnostic and stop — do not write a partial file.
 
 ---
 

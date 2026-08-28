@@ -86,28 +86,33 @@ Run the three planning skills **in sequence** — each operates on the output of
 
 ### Step 4 — Write loop-ready.json
 
-Write `loop-ready.json` to the state directory via the runtime:
+Write `loop-ready.json` to the state directory using the library API:
 
-```bash
-python ".advanced-plans/bin/ap.py" state_manager .advanced-plans/state --write-loop-ready \
-  --loop_name "ralph-loop-NNN" \
-  --loop_file ".advanced-plans/phases/phase-N/loops.md" \
-  --task_name "Task Name" \
-  --todos_count N \
-  --handoff_done "..." \
-  --handoff_failed "..." \
-  --handoff_needed "..."
-```
-
-Or use the library API:
 ```python
+import runpy
+runpy.run_path(r'.advanced-plans/bin/ap.py')['bootstrap']()
+
 from platforms.python.state_manager import write_loop_ready
-write_loop_ready(state_dir, loop_name="ralph-loop-NNN", ...)
+from pathlib import Path
+
+state_dir = Path(".advanced-plans/state")
+write_loop_ready(
+    state_dir,
+    loop_name="ralph-loop-NNN",
+    loop_file=".advanced-plans/phases/phase-N/loops.md",
+    task_name="Task Name",
+    todos_count=N,
+    handoff_done="...",
+    handoff_failed="...",
+    handoff_needed="..."
+)
 ```
+
+**Note:** `state_manager` is a library module — it has no CLI. Use the bootstrap form above.
 
 This file is the contract between the orchestrator and the worker. The worker reads it as its sole source of assignment.
 
-**Exit code contract**: If the launcher exits `3`, the runtime is unreachable. Print the diagnostic and stop — do not write a partial file.
+**Exit code contract**: If the bootstrap call exits `3`, the runtime is unreachable. Print the diagnostic and stop — do not write a partial file.
 
 ### Step 5 — Return
 
