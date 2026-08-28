@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "run_id": "20260826T153012Z-superpowers-sync-7fd2",
+  "status": "review_required",
+  "agent": {
+    "provider": "codex",
+    "herdr_agent": "superpowers-sync",
+    "native_session_id": "reported-by-herdr-integration"
+  },
+  "git": {
+    "worktree": "C:/src/.worktrees/superpowers/sync-upstream-2026-08-26",
+    "base_sha": "b36e0829c6d0140e93cfef2ca599b1b07d4a7797",
+    "head_sha": "c47f1930d7e1251f04def3db609c2c1e8e5b88a8",
+    "dirty": false,
+    "changed_paths": ["skills/brainstorming/SKILL.md"]
+  },
+  "checks": [
+    {"command": "test", "exit_code": 0, "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}
+  ],
+  "policy": {
+    "path_scope_passed": true,
+    "tests_passed": true,
+    "independent_review_passed": false
+  },
+  "agent_summary": "Design §9.3 example verbatim - status 'review_required' is not in §10 lifecycle",
+  "collected_at": "2026-08-26T18:20:00Z"
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "run_id": "20260826T153012Z-release-task",
+  "project_id": "advanced-ai-workflows",
+  "task_id": "phase-01-loop-03-todo-01",
+  "title": "Release task with empty allowed_paths",
+  "kind": "release",
+  "duration": "short",
+  "isolation": "worktree",
+  "provider": "opencode",
+  "manager": "herdr",
+  "repository": "C:/src/repo",
+  "base_ref": "main",
+  "base_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "branch": "release/v1.0",
+  "allowed_paths": [],
+  "forbidden_paths": [".advanced-plans/state/"],
+  "spec_paths": [],
+  "acceptance_checks": ["test"],
+  "required_evidence": ["git_diff"],
+  "created_at": "2026-08-26T15:30:12Z"
+}
