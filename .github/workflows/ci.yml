@@ -107,11 +107,25 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Assert interpreters present (sh and pwsh)
+        run: |
+          set -e
+          command -v sh
+          command -v pwsh
+        # Fails the job if either interpreter is missing. This is the fast,
+        # legible failure path — the env-var backstop below is the structural
+        # guard if this step is ever edited away.
+
       - name: Install pytest
         run: pip install pytest
 
-      - name: Run tests
-        run: python -m pytest platforms/python/tests/ -v --tb=short
+      - name: Run tests (adapter interpreters required)
+        run: |
+          AP_REQUIRE_ADAPTER_INTERPRETERS=1 python -m pytest platforms/python/tests/ -v --tb=short
+        # AP_REQUIRE_ADAPTER_INTERPRETERS=1 escalates missing-interpreter from
+        # skip to fail. This is the backstop if the assertion step above is
+        # ever edited away. Both are needed: the assertion fails fast with a
+        # legible message; the env-var is a structural guard in the process.
 
       - name: Verify no external dependencies
         run: |

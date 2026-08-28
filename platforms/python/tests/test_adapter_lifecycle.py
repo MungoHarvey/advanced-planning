@@ -156,14 +156,26 @@ def pytest_generate_tests(metafunc):
 
 
 def _skip_if_no_sh():
-    """Skip if no POSIX sh available."""
+    """Skip if no POSIX sh available.
+    
+    When AP_REQUIRE_ADAPTER_INTERPRETERS=1, escalate to failure instead of skip.
+    """
+    import os
     if shutil.which("sh") is None:
+        if os.environ.get("AP_REQUIRE_ADAPTER_INTERPRETERS") == "1":
+            raise RuntimeError("AP_REQUIRE_ADAPTER_INTERPRETERS=1 but 'sh' interpreter not found")
         pytest.skip("no POSIX sh available")
 
 
 def _skip_if_no_pwsh():
-    """Skip if no PowerShell 7+ available."""
+    """Skip if no PowerShell 7+ available.
+    
+    When AP_REQUIRE_ADAPTER_INTERPRETERS=1, escalate to failure instead of skip.
+    """
     if shutil.which("pwsh") is None:
+        import os
+        if os.environ.get("AP_REQUIRE_ADAPTER_INTERPRETERS") == "1":
+            raise RuntimeError("AP_REQUIRE_ADAPTER_INTERPRETERS=1 but 'pwsh' interpreter not found")
         pytest.skip("no pwsh (PowerShell 7+) available")
 
 
