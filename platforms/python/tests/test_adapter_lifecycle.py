@@ -38,6 +38,11 @@ _ADAPTERS = [
      _REPO_ROOT / "setup" / "codex" / "install.ps1",
      _REPO_ROOT / "setup" / "codex" / "uninstall.sh",
      _REPO_ROOT / "setup" / "codex" / "uninstall.ps1"),
+    ("opencode",
+     _REPO_ROOT / "setup" / "opencode" / "install.sh",
+     _REPO_ROOT / "setup" / "opencode" / "install.ps1",
+     _REPO_ROOT / "setup" / "opencode" / "uninstall.sh",
+     _REPO_ROOT / "setup" / "opencode" / "uninstall.ps1"),
 ]
 
 # Names under .advanced-plans/ that are the user's planning record.
@@ -234,11 +239,11 @@ class TestInstallMerges:
         
         # Check adapter-owned skill
         owners = _owners(project, "phase-plan-creator")
-        assert owners == ["codex"], (
-            "phase-plan-creator should be owned only by codex, got %s" % owners)
+        assert owners == [name], (
+            "phase-plan-creator should be owned only by %s, got %s" % (name, owners))
     
     def test_idempotent_install_no_duplicates(self, tmp_path, adapter, lang):
-        """A.4: Installing twice does not produce ['codex','codex']."""
+        """A.4: Installing twice does not produce ['<adapter>','<adapter>']."""
         _skip_if_no_sh() if lang == "sh" else _skip_if_no_pwsh()
         
         name, install_sh, install_ps1, _, _ = adapter
@@ -255,10 +260,10 @@ class TestInstallMerges:
         
         # Check no duplicates - adapter should appear exactly once
         owners = _owners(project, "advanced-planning")
-        assert "codex" in owners, "codex should be an owner after install"
-        codex_count = owners.count("codex")
-        assert codex_count == 1, (
-            "installing twice produced %d codex entries: %s" % (codex_count, owners))
+        assert name in owners, "%s should be an owner after install" % name
+        adapter_count = owners.count(name)
+        assert adapter_count == 1, (
+            "installing twice produced %d %s entries: %s" % (adapter_count, name, owners))
 
 
 # =============================================================================
@@ -419,9 +424,10 @@ class TestUninstallPhase1:
         # Check AGENTS.md
         agents_file = project / "AGENTS.md"
         content = agents_file.read_text(encoding="utf-8")
-        fence_count = content.count("<!-- advanced-planning:codex:start -->")
+        fence_start = "<!-- advanced-planning:%s:start -->" % name
+        fence_count = content.count(fence_start)
         assert fence_count == 0, (
-            "AGENTS.md still has %d adapter fence(s)" % fence_count)
+            "AGENTS.md still has %d %s fence(s)" % (fence_count, name))
         assert "User content that must survive" in content, (
             "user content line was removed from AGENTS.md")
 
