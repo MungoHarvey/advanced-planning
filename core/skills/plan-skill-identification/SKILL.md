@@ -1,6 +1,6 @@
 ---
 name: plan-skill-identification
-description: "Read the todos[] array in a ralph loop's YAML frontmatter and update the skill: field for each todo in-place. Discovers available skills from both project-local (.claude/skills/) and global (~/.claude/skills/) directories. Assigns one skill, multiple skills (as an array), or NA per todo. Run after plan-todos and before plan-subagent-identification. Maintains canonical field order when editing. Triggers: assign skills, identify skills for todos, skill mapping, fill skill fields, match skills to tasks."
+description: "Read the todos[] array in a ralph loop's YAML frontmatter and update the skill: field for each todo in-place. Discovers available skills from both project-local and global skills directories. Assigns one skill, multiple skills (as an array), or NA per todo. Run after plan-todos and before plan-subagent-identification. Maintains canonical field order when editing. Triggers: assign skills, identify skills for todos, skill mapping, fill skill fields, match skills to tasks."
 ---
 
 # Plan Skill Identification
@@ -27,8 +27,8 @@ Provide:
 1. **Read the loop file** — extract all todos with `skill: NA`
 
 2. **Discover available skills from all locations:**
-   - **Project-local**: Glob `.claude/skills/*/SKILL.md` (or equivalent project skills path)
-   - **Global fallback**: Glob `~/.claude/skills/*/SKILL.md`
+   - **Project-local**: Glob `[skills_directory]/*/SKILL.md` (or equivalent project skills path)
+   - **Global fallback**: Glob `[global_skills_directory]/*/SKILL.md`
    - Merge results; project-local takes precedence for duplicate skill names
    - Read each SKILL.md's frontmatter `name` and `description` fields
    - Build a complete catalogue of available skills across both locations

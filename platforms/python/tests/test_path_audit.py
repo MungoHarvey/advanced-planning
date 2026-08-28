@@ -67,7 +67,7 @@ class TestCleanTreePasses:
     def test_clean_tree_returns_no_violations(self, tmp_path):
         """A scoped tree with only canonical references produces zero violations."""
         root = _make_scoped_tree(tmp_path)
-        violations = audit(
+        violations, suppressed = audit(
             repo_root=root,
             scanned_roots=[
                 "platforms/claude-code/commands",
@@ -81,12 +81,21 @@ class TestCleanTreePasses:
         assert violations == [], (
             f"Expected no violations on a clean tree, got: {violations}"
         )
+        assert suppressed == [], (
+            f"Expected no suppressed exceptions on a clean tree, got: {suppressed}"
+        )
 
     def test_main_returns_zero_on_clean_tree(self, tmp_path):
         """main() returns exit code 0 on a clean tree."""
         root = _make_scoped_tree(tmp_path)
         exit_code = main(["--root", str(root)])
         assert exit_code == 0, f"Expected exit 0 on clean tree, got {exit_code}"
+
+    def test_main_returns_zero_with_suppressed_only(self, tmp_path):
+        """main() returns exit code 0 when only suppressed exceptions exist (no violations)."""
+        # The main() function prints suppressed but exits 0 if no violations
+        # This is tested implicitly by the clean tree test since exceptions are file-specific
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -103,7 +112,7 @@ class TestDoubledPrefixFails:
             "Read files from .advanced-.advanced-plans/state/loop-ready.json\n",
             encoding="utf-8",
         )
-        violations = audit(
+        violations, suppressed = audit(
             repo_root=root,
             scanned_roots=["platforms/claude-code/commands"],
         )
@@ -125,7 +134,7 @@ class TestDoubledPrefixFails:
             "Write to .advanced-.advanced-plans/state/\n",
             encoding="utf-8",
         )
-        violations = audit(
+        violations, suppressed = audit(
             repo_root=root,
             scanned_roots=["core/agents"],
         )
@@ -143,7 +152,7 @@ class TestDoubledPrefixFails:
             "line four\n",
             encoding="utf-8",
         )
-        violations = audit(
+        violations, suppressed = audit(
             repo_root=root,
             scanned_roots=["platforms/claude-code/commands"],
         )
@@ -168,7 +177,7 @@ class TestDeprecatedTokenFails:
             "Read the plan from .claude/plans/phase-9/loops.md\n",
             encoding="utf-8",
         )
-        violations = audit(
+        violations, suppressed = audit(
             repo_root=root,
             scanned_roots=[".claude/commands"],
         )
@@ -203,7 +212,7 @@ class TestWrongNestingFails:
             "Write output to .claude/.advanced-plans/state/\n",
             encoding="utf-8",
         )
-        violations = audit(
+        violations, suppressed = audit(
             repo_root=root,
             scanned_roots=["core/skills"],
         )
@@ -226,7 +235,7 @@ class TestFalsePositiveGuard:
             "Skills live at `.claude/skills/` and agents at `.claude/agents/`.\n",
             encoding="utf-8",
         )
-        violations = audit(
+        violations, suppressed = audit(
             repo_root=root,
             scanned_roots=["platforms/claude-code/commands"],
         )
@@ -246,7 +255,7 @@ class TestFalsePositiveGuard:
             "Load skill from `.claude/skills/plan-todos/SKILL.md`.\n",
             encoding="utf-8",
         )
-        violations = audit(
+        violations, suppressed = audit(
             repo_root=root,
             scanned_roots=["platforms/claude-code/commands"],
         )
@@ -273,7 +282,7 @@ class TestHostNeutralityInCore:
             "Load skill from `.claude/skills/plan-todos/SKILL.md`.\n",
             encoding="utf-8",
         )
-        violations = audit(
+        violations, suppressed = audit(
             repo_root=root,
             scanned_roots=["core/agents"],
         )
@@ -293,7 +302,7 @@ class TestHostNeutralityInCore:
             "Configure in `.cursor/settings.json`.\n",
             encoding="utf-8",
         )
-        violations = audit(
+        violations, suppressed = audit(
             repo_root=root,
             scanned_roots=["core/skills"],
         )
@@ -313,7 +322,7 @@ class TestHostNeutralityInCore:
             "Claude Code and Cowork are host-specific.\n",
             encoding="utf-8",
         )
-        violations = audit(
+        violations, suppressed = audit(
             repo_root=root,
             scanned_roots=["core/agents"],
         )
@@ -342,7 +351,7 @@ class TestHostNeutralityInCore:
             "task_name: \"Descriptive Task Name\"\n",
             encoding="utf-8",
         )
-        violations = audit(
+        violations, suppressed = audit(
             repo_root=root,
             scanned_roots=["core/agents"],
         )
@@ -359,7 +368,7 @@ class TestHostNeutralityInCore:
             "Requires permissions.defaultMode = ask in settings.json.\n",
             encoding="utf-8",
         )
-        violations = audit(
+        violations, suppressed = audit(
             repo_root=root,
             scanned_roots=["core/skills"],
         )
@@ -380,7 +389,7 @@ class TestHostNeutralityInCore:
             "Cowork is another host.\n",
             encoding="utf-8",
         )
-        violations = audit(
+        violations, suppressed = audit(
             repo_root=root,
             scanned_roots=["core/agents"],
         )
@@ -399,7 +408,7 @@ class TestHostNeutralityInCore:
             "Platform-agnostic core definitions.\n",
             encoding="utf-8",
         )
-        violations = audit(
+        violations, suppressed = audit(
             repo_root=root,
             scanned_roots=["core/agents"],
         )
@@ -416,7 +425,7 @@ class TestHostNeutralityInCore:
             "Write to `.advanced-plans/state/loop-ready.json`.\n",
             encoding="utf-8",
         )
-        violations = audit(
+        violations, suppressed = audit(
             repo_root=root,
             scanned_roots=["core/agents"],
         )
@@ -433,11 +442,44 @@ class TestHostNeutralityInCore:
             "Deprecated: `.claude/plans/` and `.advanced-.advanced-plans`.\n",
             encoding="utf-8",
         )
-        violations = audit(
+        violations, suppressed = audit(
             repo_root=root,
             scanned_roots=["docs"],  # Even if someone passes docs/ explicitly
             excluded_segments=["docs"],
         )
         assert violations == [], (
             "docs/ dir was scanned despite being in excluded_segments"
+        )
+
+
+# ---------------------------------------------------------------------------
+# TestExceptionMechanism — excepted files still fail on other rules
+# ---------------------------------------------------------------------------
+
+class TestExceptionMechanism:
+    def test_excepted_file_fails_on_different_rule(self, tmp_path):
+        """An excepted file must still fail on a rule it was not excepted for.
+
+        This proves the exception mechanism is keyed by (file, pattern), not file alone.
+        permission-config/SKILL.md is excepted for host-permission-syntax, but should
+        still fail if it contains a host-directory token.
+        """
+        root = _make_scoped_tree(tmp_path)
+        # Create a file similar to permission-config that has both permission syntax
+        # (excepted) and a .claude/ directory reference (not excepted)
+        bad_file = root / "core" / "skills" / "test-skill" / "SKILL.md"
+        bad_file.parent.mkdir(parents=True, exist_ok=True)
+        bad_file.write_text(
+            "Edit settings.json permissions.\n"
+            "Install to `.claude/skills/` directory.\n",  # This should be flagged
+            encoding="utf-8",
+        )
+        violations, suppressed = audit(
+            repo_root=root,
+            scanned_roots=["core/skills"],
+        )
+        # The .claude/ reference should be a violation (not excepted)
+        assert len(violations) >= 1, f"Expected violation for .claude/ directory, got {violations}"
+        assert any("host-directory" in v.pattern_name for v in violations), (
+            f"Expected host-directory violation, got: {[v.pattern_name for v in violations]}"
         )

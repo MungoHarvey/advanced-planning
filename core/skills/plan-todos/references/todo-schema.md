@@ -51,7 +51,7 @@ outcome: "core/skills/plan-todos/SKILL.md exists with decomposition patterns and
 outcome: "python -m pytest platforms/python/tests/ exits 0; all 40 tests pass"
 
 # Negative scan
-outcome: "Zero occurrences of '.claude/' in any platforms/cowork/ file"
+outcome: "Zero occurrences of host-specific platform names, tool identifiers, or host directories appear in any SKILL.md in core/skills/"
 
 # Numeric threshold
 outcome: "Silhouette score ≥ 0.6 on validation set; result logged to reports/metrics.md"
@@ -107,7 +107,7 @@ todos:
     content: "Create core/skills/phase-plan-creator/SKILL.md with platform-agnostic content"
     skill: "NA"
     agent: "NA"
-    outcome: "core/skills/phase-plan-creator/SKILL.md exists; zero occurrences of 'Claude Code', 'Cowork', or '.claude/' in the file"
+    outcome: "core/skills/phase-plan-creator/SKILL.md exists; zero occurrences of host-specific platform names or host directories in the file"
     status: pending
     priority: high
 
@@ -131,7 +131,7 @@ todos:
     content: "Verify all three skills contain zero platform-specific references"
     skill: "NA"
     agent: "NA"
-    outcome: "grep scan returns zero occurrences of 'Claude Code', 'Cowork', 'slash command', 'Agent tool', 'TodoWrite', '.claude/' across all three SKILL.md files"
+    outcome: "grep scan returns zero occurrences of host-specific platform names, tool identifiers, or host directories across all three SKILL.md files"
     status: pending
     priority: high
 ```

@@ -17,9 +17,9 @@ For each todo with `agent: NA` (skills already assigned):
 
 The delegation decision is more important than the agent choice — settle that first.
 
-### Platform Constraint: Claude Code
+### Platform Constraint: Hosts Without Recursive Spawning
 
-In Claude Code, the `ralph-loop-worker` is a subagent and **cannot spawn further subagents**.
+In host frameworks that do not support recursive subagent spawning, the `ralph-loop-worker` is a subagent and **cannot spawn further subagents**.
 The `agent:` field in todos is **planning-time metadata** that categorises task types — it does
 not trigger separate agent spawning during loop execution. The worker executes all todos inline,
 using targeted skill injection for quality.
@@ -234,8 +234,8 @@ Flag these explicitly. Do not silently leave `agent: NA` when delegation is clea
 
 The `orchestrator` and `worker` roles are platform-agnostic specifications. Each platform adapter provides its own concrete implementation:
 
-- **Claude Code adapter**: `platforms/claude-code/agents/` — slash command-driven invocation
-- **Cowork adapter**: `platforms/cowork/agents/` — Agent tool prompts passed to the LLM directly
+- **Host adapter A**: `platforms/claude-code/agents/` — slash command-driven invocation
+- **Host adapter B**: `platforms/cowork/agents/` — host tool prompts passed to the LLM directly
 - **Generic (Python) adapter**: invocation via `platforms/python/` API
 
 When assigning `agent: worker` or `agent: orchestrator`, you are assigning to the *role*. The adapter resolves which concrete implementation to use at execution time.

@@ -179,6 +179,17 @@ contains Claude Code-specific adapter code. For example:
 The path audit enforces this boundary: `core/` = host-neutral, `platforms/` = host-specific
 allowed.
 
+**Exception mechanism:** The path audit supports named exceptions for cases that cannot be
+reworded (e.g., a skill whose subject is host-specific configuration). Exceptions are:
+- Keyed by `(file_path, rule_name)` tuple — never by file alone. An excepted file still
+  fails on rules it was not excepted for.
+- Printed in full on every audit run — silent suppression is not allowed.
+- **File-scoped per rule:** An exception for `file.md` + `host-directory` suppresses ALL
+  `host-directory` hits in `file.md`. This is why rewording is preferred: an exception
+  makes the entire file invisible to that rule, including any genuine violations added
+  later.
+- Required to have a retirement plan — an exception with no exit is technical debt.
+
 ---
 
 ## Validation Checklist

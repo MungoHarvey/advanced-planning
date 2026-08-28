@@ -112,6 +112,27 @@ VIOLATION_PATTERNS: List[tuple] = [
 
 
 # ---------------------------------------------------------------------------
+# Exception mechanism for named deviations
+# ---------------------------------------------------------------------------
+
+#: Exceptions are keyed by (relative_file_path, pattern_name).
+#: Each entry is (reason: str, retirement_plan: str).
+#: Exceptions are printed at the end of every audit run - silent suppression is not allowed.
+#: An excepted file must still fail on a rule it was not excepted for.
+EXCEPTIONS: dict = {
+    # permission-config skill is about Claude Code permissions - cannot be reworded
+    # Retirement: move skill to platforms/claude-code/ when structural changes are in scope
+    (
+        "core/skills/permission-config/SKILL.md",
+        "host-permission-syntax (settings.json|opencode.json|.cursor/rules)",
+    ): (
+        "Skill subject is Claude Code permission configuration (settings.json, hooks.json)",
+        "Retire by moving skill to platforms/claude-code/skills/ when structural changes are in scope",
+    ),
+}
+
+
+# ---------------------------------------------------------------------------
 # Scanned roots (relative to repo root, configurable)
 # ---------------------------------------------------------------------------
 
@@ -247,11 +268,22 @@ def check_file(path: pathlib.Path, core_only_scan: bool = False) -> List[PathVio
     return violations
 
 
+class SuppressedViolation(NamedTuple):
+    """A violation that was suppressed by an exception."""
+
+    file: pathlib.Path
+    line: int
+    pattern_name: str
+    matched_text: str
+    reason: str
+    retirement_plan: str
+
+
 def audit(
     repo_root: pathlib.Path,
     scanned_roots: List[str] = None,
     excluded_segments: List[str] = None,
-) -> List[PathViolation]:
+) -> tuple:
     """Run the full path-convention audit.
 
     Parameters
@@ -265,8 +297,9 @@ def audit(
 
     Returns
     -------
-    list of PathViolation
-        All violations found across all scanned roots.
+    tuple of (violations, suppressed)
+        violations: list of PathViolation - unsuppressed violations
+        suppressed: list of SuppressedViolation - exceptions applied (always printed)
     """
     if scanned_roots is None:
         scanned_roots = DEFAULT_SCANNED_ROOTS
@@ -274,6 +307,7 @@ def audit(
         excluded_segments = DEFAULT_EXCLUDED_SEGMENTS
 
     all_violations: List[PathViolation] = []
+    all_suppressed: List[SuppressedViolation] = []
 
     for root_rel in scanned_roots:
         root_abs = repo_root / root_rel
@@ -297,9 +331,26 @@ def audit(
             if _is_excluded(f, excluded_segments):
                 continue
             violations = check_file(f, core_only_scan=is_core_root)
-            all_violations.extend(violations)
+            for v in violations:
+                # Check if this (file, pattern) is excepted
+                rel_path = v.file.relative_to(repo_root).as_posix()
+                exc_key = (rel_path, v.pattern_name)
+                if exc_key in EXCEPTIONS:
+                    reason, retirement = EXCEPTIONS[exc_key]
+                    all_suppressed.append(
+                        SuppressedViolation(
+                            file=v.file,
+                            line=v.line,
+                            pattern_name=v.pattern_name,
+                            matched_text=v.matched_text,
+                            reason=reason,
+                            retirement_plan=retirement,
+                        )
+                    )
+                else:
+                    all_violations.append(v)
 
-    return all_violations
+    return all_violations, all_suppressed
 
 
 # ---------------------------------------------------------------------------
@@ -356,10 +407,22 @@ def main(argv: List[str] = None) -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
 
-    violations = audit(repo_root)
+    violations, suppressed = audit(repo_root)
+
+    # Always print suppressed violations - silent suppression is not allowed
+    if suppressed:
+        print(f"SUPPRESSED -- {len(suppressed)} exception(s) applied:")
+        for s in suppressed:
+            print(f"  {s.file}:{s.line}: [{s.pattern_name}]")
+            print(f"    Reason: {s.reason}")
+            print(f"    Retirement: {s.retirement_plan}")
+        print()
 
     if not violations:
-        print(f"CLEAN -- path-convention audit passed (scanned roots: {DEFAULT_SCANNED_ROOTS})")
+        if suppressed:
+            print(f"PASSED WITH {len(suppressed)} SUPPRESSED -- path-convention audit passed with exceptions (scanned roots: {DEFAULT_SCANNED_ROOTS})")
+        else:
+            print(f"CLEAN -- path-convention audit passed (scanned roots: {DEFAULT_SCANNED_ROOTS})")
         return 0
 
     print(

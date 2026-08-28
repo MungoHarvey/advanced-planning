@@ -230,7 +230,7 @@ outcome: "All unit tests pass; coverage >85%; linter clean with 0 warnings"
 outcome: "reports/qc.md exists; contains sample counts, NA summary, and PCA interpretation"
 
 # Zero-occurrence verification
-outcome: "No occurrences of 'Claude Code', 'Cowork', or 'slash command' appear in any core/skills/ SKILL.md"
+outcome: "No occurrences of host-specific tool names or host directories appear in any core/skills/ SKILL.md"
 
 # Schema validation
 outcome: "JSON Schema validates against draft-07; required fields present; pattern constraint on loop_name"

@@ -225,30 +225,30 @@ Design the platform-independent core as a clean, documented foundation that adap
 ### Example 2: Migration Phase
 
 ```markdown
-# Phase 2: Claude Code Adapter
+# Phase 2: Host Adapter
 
 ## Objective
-Implement the Claude Code platform adapter, wrapping core components with slash commands, sub-agent configs, and hooks.
+Implement the host platform adapter, wrapping core components with host-specific invocation (e.g., slash commands), sub-agent configs, and permission hooks.
 
 ## Scope
 
 ### Included:
-- Slash commands: next-loop, new-phase, check-execution
+- Host-specific commands: next-loop, new-phase, check-execution
 - Sub-agent definitions: ralph-orchestrator (Sonnet), ralph-loop-worker (Haiku)
-- settings.json: permissions whitelist and PostToolUse hooks
+- Host permission config: permissions whitelist and PostToolUse hooks
 - End-to-end test: one full loop executed against the adapter
 
 ### Explicitly NOT included:
-- Cowork routing skill (Phase 3)
+- Alternative host routing skill (Phase 3)
 - Python API adapter (Phase 4)
 
 ## Key Deliverables
 
 | Deliverable | Format | Location |
 |-------------|--------|----------|
-| Slash commands | Markdown | platforms/claude-code/commands/ |
-| Sub-agent configs | Markdown | platforms/claude-code/agents/ |
-| Permissions config | JSON | platforms/claude-code/settings.json |
+| Host commands | Markdown | platforms/[host]/commands/ |
+| Sub-agent configs | Markdown | platforms/[host]/agents/ |
+| Permissions config | JSON | platforms/[host]/[config_file] |
 
 ## Success Criteria
 

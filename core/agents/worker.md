@@ -76,7 +76,7 @@ For each todo with status: pending, in order:
      Path resolution (checked in order; first match wins):
        1. Source tree:    core/skills/[skill-name]/SKILL.md
        2. Project-local:  [skills_directory]/[skill-name]/SKILL.md
-       3. Global fallback: ~/.claude/skills/[skill-name]/SKILL.md
+       3. Global fallback: [global_skills_directory]/[skill-name]/SKILL.md
 
      If none of the three paths exist for a declared skill, log to stdout AND to
      the execution log:
