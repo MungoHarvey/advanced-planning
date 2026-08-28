@@ -1,12 +1,4 @@
 {
-  "permissions": {
-    "allow": [
-      "Read(.advanced-plans/**)",
-      "Write(.advanced-plans/**)",
-      "Edit(.advanced-plans/**)",
-      "MultiEdit(.advanced-plans/**)"
-    ]
-  },
   "planning": {
     "state_dir": ".advanced-plans/state",
     "skills_dir": ".claude/skills",

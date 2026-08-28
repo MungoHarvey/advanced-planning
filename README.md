@@ -44,6 +44,28 @@ Phase Plan (Opus — strategic)
 
 ## How To Use
 
+### 0. Permissions (changed in this release)
+
+`.claude/settings.json` no longer pre-approves write access to `.advanced-plans/**`.
+Earlier versions shipped four `allow` rules so the planning skills could write
+their state without prompting. They were removed because a repo that pre-approves
+its own tool permissions makes Claude Code raise a consent dialog on every fresh
+checkout and every git worktree, which blocks unattended multi-agent runs.
+
+If you want the old behaviour, add the rules to **your own** settings rather than
+the repo's, so the grant is yours and visible to you:
+
+```jsonc
+// ~/.claude/settings.json
+"permissions": { "allow": [
+  "Read(.advanced-plans/**)", "Write(.advanced-plans/**)",
+  "Edit(.advanced-plans/**)", "MultiEdit(.advanced-plans/**)"
+] }
+```
+
+Without them the planning skills still work; Claude will simply ask before
+writing under `.advanced-plans/`.
+
 ### 1. Install
 
 Clone the repository and install into your project. The current release is
