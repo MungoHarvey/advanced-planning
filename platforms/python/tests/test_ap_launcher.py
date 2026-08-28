@@ -736,6 +736,46 @@ def test_every_source_call_site_is_in_the_substitutable_form():
         % offenders)
 
 
+# The environment an installer is allowed to read without assigning it.
+_INSTALLER_ENV = frozenset([
+    "HOME", "USERPROFILE", "PATH", "PWD", "TARGET", "CLAUDE_DIR",
+    "PLANNING_SKILLS_PATH", "ADVANCED_PLANNING_ROOT",
+])
+
+
+@pytest.mark.parametrize("script", [
+    "setup/claude-code/install.sh",
+    "platforms/claude-code/install.sh",
+])
+def test_no_installer_reads_a_variable_it_never_assigns(script):
+    """Found by running the third installer, not by reading it.
+
+    `platforms/claude-code/install.sh` calls its root `SCRIPT_DIR`, but the
+    global block added here was written against the other installer's name for
+    the same thing, `REPO_ROOT`. Nothing defines it, so `set -e` aborted on
+    `cp "$REPO_ROOT/platforms/..."` -- AFTER the commands had been copied and
+    BEFORE their launcher paths were rewritten. That is precisely the state
+    this whole change exists to prevent: commands installed to a home directory
+    naming a project-relative launcher that will not be there.
+
+    It exits 1, so it is not silent. It is worse than silent: it half-installs.
+    """
+    path = _REPO_ROOT / script
+    text = io.open(str(path), encoding="utf-8", newline="").read()
+    # `(?:^|[;&|]) ` and not just `^`: these installers write more than one
+    # assignment per line (`_f="$1"; _launcher="$2"`), and an anchored pattern
+    # sees only the first -- which would have reported the second as unassigned.
+    assigned = set(re.findall(
+        r"(?:^|[;&|])\s*(?:local\s+|export\s+)?([A-Za-z_][A-Za-z0-9_]*)=",
+        text, re.M))
+    assigned |= set(re.findall(r"for\s+([A-Za-z_][A-Za-z0-9_]*)\s+in", text))
+    used = set(re.findall(r'\$\{?([A-Za-z_][A-Za-z0-9_]*)', text))
+    unknown = sorted(used - assigned - _INSTALLER_ENV)
+    assert not unknown, (
+        "%s reads %s but never assigns them, and never declares them as "
+        "environment. Under set -e that half-installs." % (script, unknown))
+
+
 # ---------------------------------------------------------------------------
 # (i) the installers record the path on upgrade, not only on fresh install
 # ---------------------------------------------------------------------------

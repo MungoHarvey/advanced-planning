@@ -173,11 +173,11 @@ install_global() {
     # launcher for its whole life; found by a cross-vendor review panel.
     echo "  → Recording the shared Python runtime globally..."
     mkdir -p "$AP_GLOBAL_DIR/bin"
-    cp "$REPO_ROOT/platforms/python/ap_launcher.py" "$AP_GLOBAL_DIR/bin/ap.py"
-    _src="$REPO_ROOT"
-    if command -v cygpath >/dev/null 2>&1; then _src="$(cygpath -m "$REPO_ROOT")"; fi
+    cp "$SCRIPT_DIR/platforms/python/ap_launcher.py" "$AP_GLOBAL_DIR/bin/ap.py"
+    _src="$SCRIPT_DIR"
+    if command -v cygpath >/dev/null 2>&1; then _src="$(cygpath -m "$SCRIPT_DIR")"; fi
     _ver="unknown"
-    [ -f "$REPO_ROOT/VERSION" ] && _ver="$(tr -d '[:space:]' < "$REPO_ROOT/VERSION")"
+    [ -f "$SCRIPT_DIR/VERSION" ] && _ver="$(tr -d '[:space:]' < "$SCRIPT_DIR/VERSION")"
     printf '{"schema_version": 1, "source_root": "%s", "version": "%s", "written_by": "platforms/claude-code/install.sh --global"}\n' \
         "$_src" "$_ver" > "$AP_GLOBAL_DIR/runtime.json"
 
