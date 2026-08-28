@@ -640,7 +640,7 @@ class TestLanguagesAgree:
                     parts = line.split()
                     for i, p in enumerate(parts):
                         if p == "removed,":
-                            return parts[i-1] if i > 0 else None
+                            return parts[i-2] if i > 1 else None
             return None
         
         count_sh = extract_count(out_sh)
