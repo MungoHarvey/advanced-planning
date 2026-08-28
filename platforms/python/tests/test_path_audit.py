@@ -541,3 +541,103 @@ class TestMainExitCodes:
         assert main(["--root", str(root)]) == 0, (
             "Expected exit 0 once the host token was removed from the same tree"
         )
+
+
+# ---------------------------------------------------------------------------
+# TestNewRoots — tests for newly added scanned roots
+# ---------------------------------------------------------------------------
+
+class TestNewRoots:
+    """Tests for the new scanned roots added in loop-004-2."""
+
+    def test_platforms_shared_root_is_scanned(self, tmp_path):
+        """A violation planted under platforms/shared/ is caught."""
+        root = _make_scoped_tree(tmp_path)
+        shared_dir = root / "platforms" / "shared" / "agent-skills"
+        shared_dir.mkdir(parents=True, exist_ok=True)
+        bad_file = shared_dir / "bad.md"
+        bad_file.write_text(
+            "References `.claude/commands/` in a shared file.\n",
+            encoding="utf-8",
+        )
+        violations, suppressed = audit(
+            repo_root=root,
+            scanned_roots=["platforms/shared"],
+        )
+        assert len(violations) >= 1, f"Expected host-directory violation under platforms/shared/, got {violations}"
+        assert any("host-directory" in v.pattern_name for v in violations), (
+            f"Expected host-directory violation, got: {[v.pattern_name for v in violations]}"
+        )
+
+    def test_platforms_codex_root_allows_host_names(self, tmp_path):
+        """A host name under platforms/codex/ is NOT flagged (host-specific by design)."""
+        root = _make_scoped_tree(tmp_path)
+        codex_dir = root / "platforms" / "codex"
+        codex_dir.mkdir(parents=True, exist_ok=True)
+        good_file = codex_dir / "README.md"
+        good_file.write_text(
+            "Configure Codex to use `.claude/commands/` for the adapter.\n",
+            encoding="utf-8",
+        )
+        violations, suppressed = audit(
+            repo_root=root,
+            scanned_roots=["platforms/codex"],
+        )
+        assert violations == [], f"Expected no violations for host-specific root platforms/codex/, got {violations}"
+
+    def test_platforms_shared_host_directory_violation(self, tmp_path):
+        """A .claude/ reference under platforms/shared/ IS flagged (must be host-neutral)."""
+        root = _make_scoped_tree(tmp_path)
+        shared_dir = root / "platforms" / "shared"
+        shared_dir.mkdir(parents=True, exist_ok=True)
+        bad_file = shared_dir / "bad.md"
+        bad_file.write_text(
+            "Configure in `.claude/commands/`.\n",
+            encoding="utf-8",
+        )
+        violations, suppressed = audit(
+            repo_root=root,
+            scanned_roots=["platforms/shared"],
+        )
+        assert len(violations) >= 1, f"Expected .claude/ to be a violation under platforms/shared/, got {violations}"
+        assert any("host-directory" in v.pattern_name for v in violations), (
+            f"Expected host-directory violation, got: {[v.pattern_name for v in violations]}"
+        )
+
+    def test_platforms_opencode_root_is_scanned(self, tmp_path):
+        """A doubled-prefix violation under platforms/opencode/ is caught."""
+        root = _make_scoped_tree(tmp_path)
+        opencode_dir = root / "platforms" / "opencode"
+        opencode_dir.mkdir(parents=True, exist_ok=True)
+        bad_file = opencode_dir / "bad.md"
+        bad_file.write_text(
+            "Path is `.advanced-.advanced-plans/state/`.\n",
+            encoding="utf-8",
+        )
+        violations, suppressed = audit(
+            repo_root=root,
+            scanned_roots=["platforms/opencode"],
+        )
+        assert len(violations) >= 1, f"Expected doubled-prefix violation under platforms/opencode/, got {violations}"
+        assert any("doubled-prefix" in v.pattern_name for v in violations), (
+            f"Expected doubled-prefix violation, got: {[v.pattern_name for v in violations]}"
+        )
+
+    def test_setup_codex_root_is_scanned(self, tmp_path):
+        """A deprecated-token violation under setup/codex/ is caught."""
+        root = _make_scoped_tree(tmp_path)
+        setup_dir = root / "setup" / "codex"
+        setup_dir.mkdir(parents=True, exist_ok=True)
+        bad_file = setup_dir / "bad.md"
+        bad_file.write_text(
+            "Legacy path is `.claude/plans/phase-1/plan.md`.\n",
+            encoding="utf-8",
+        )
+        violations, suppressed = audit(
+            repo_root=root,
+            scanned_roots=["setup/codex"],
+        )
+        assert len(violations) >= 1, f"Expected deprecated-token violation under setup/codex/, got {violations}"
+        assert any("deprecated-token" in v.pattern_name for v in violations), (
+            f"Expected deprecated-token violation, got: {[v.pattern_name for v in violations]}"
+        )

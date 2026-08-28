@@ -94,9 +94,9 @@ VIOLATION_PATTERNS: List[tuple] = [
     ),
     # Host-neutrality violations (core/ only)
     (
-        "host-directory (.claude/|.cursor/|.opencode/|.codex/|.agents/|.gemini/)",
-        re.compile(r"\.(claude|cursor|opencode|codex|agents|gemini)/"),
-        True,  # core/ only
+        "host-directory (.claude/|.cursor/|.opencode/|.codex/|.gemini/)",
+        re.compile(r"\.(claude|cursor|opencode|codex|gemini)/"),
+        True,  # core/ and platforms/shared/ only
     ),
     (
         "host-tool-name (Claude Code|Cowork|Agent tool|Task tool|TodoWrite|subagent_type)",
@@ -141,6 +141,10 @@ DEFAULT_SCANNED_ROOTS: List[str] = [
     "platforms/claude-code/commands",
     "platforms/claude-code/agents",
     "platforms/cowork",
+    "platforms/shared",
+    "platforms/codex",
+    "platforms/opencode",
+    "setup/codex",
     "core/agents",
     "core/skills",
     ".claude/commands",
@@ -319,8 +323,8 @@ def audit(
         else:
             files = sorted(root_abs.rglob("*"))
 
-        # Determine if this is a core/ root (host-neutrality rules apply)
-        is_core_root = root_rel.startswith("core/")
+        # Determine if this is a core/ or platforms/shared/ root (host-neutrality rules apply)
+        is_neutral_root = root_rel.startswith("core/") or root_rel.startswith("platforms/shared")
 
         for f in files:
             if not f.is_file():
@@ -330,7 +334,7 @@ def audit(
                 continue
             if _is_excluded(f, excluded_segments):
                 continue
-            violations = check_file(f, core_only_scan=is_core_root)
+            violations = check_file(f, core_only_scan=is_neutral_root)
             for v in violations:
                 # Check if this (file, pattern) is excepted
                 rel_path = v.file.relative_to(repo_root).as_posix()

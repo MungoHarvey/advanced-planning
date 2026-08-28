@@ -14,7 +14,7 @@ Use this skill when the user invokes any of these five actions:
 | `resume` | `resume` — recover from mid-session interruption |
 | `compact` | `compact current` — generate phase compaction artefacts |
 
-This skill is host-neutral. It works identically under Codex, OpenCode, and any other host that discovers `.agents/skills/advanced-planning/SKILL.md`.
+This skill is host-neutral. It works identically across all hosts that discover `.agents/skills/advanced-planning/SKILL.md`.
 
 ## Process
 
