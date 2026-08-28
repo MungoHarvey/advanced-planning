@@ -1,0 +1,35 @@
+# Line endings.
+#
+# The repository is uniformly LF: 0 of 257 tracked blobs contain CRLF. The
+# working tree on this machine is the opposite -- 231 of them do. With
+# core.autocrlf=false and no attributes at all, git had no opinion about the
+# difference and would commit whatever bytes a tool wrote. That is not
+# hypothetical: a session working on the shared-runtime fix had its editing
+# tools convert eleven files from LF to CRLF, and the change was caught by an
+# implausible diff stat rather than by anything in the repository, because
+# there was nothing in the repository to catch it. Three `#!/bin/sh` installers
+# were in that set, and no POSIX shell could have executed them.
+#
+# `text=auto` makes git normalise to LF on commit. Because the repository is
+# already uniformly LF this costs nothing and changes no blob -- it only stops
+# the next CRLF write from entering.
+* text=auto
+
+# The one case where a carriage return changes behaviour rather than just
+# bytes. A POSIX shell script with CRLF fails two ways and neither error names
+# the cause: run directly, the kernel reads the shebang literally and looks for
+# an interpreter called `/bin/sh<CR>`; run as `sh script.sh`, the shebang is
+# bypassed and the carriage returns surface later as `$'\r': command not found`
+# at some unrelated line. Pinned explicitly so it does not depend on the
+# heuristic above.
+*.sh text eol=lf
+
+# Pinned to LF because that is what this file already is -- not because Windows
+# scripts conventionally use CRLF. They do, and AAW's own .gitattributes says
+# so; pinning this one to its current state prevents drift without rewriting a
+# working file, and PowerShell reads either.
+*.ps1 text eol=lf
+
+# Binary, so git never touches the bytes.
+*.zip binary
+*.png binary
