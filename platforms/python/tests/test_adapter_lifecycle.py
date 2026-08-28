@@ -20,6 +20,7 @@ assertion messages. It fails loudly when the behaviour is wrong.
 """
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -160,7 +161,6 @@ def _skip_if_no_sh():
     
     When AP_REQUIRE_ADAPTER_INTERPRETERS=1, escalate to failure instead of skip.
     """
-    import os
     if shutil.which("sh") is None:
         if os.environ.get("AP_REQUIRE_ADAPTER_INTERPRETERS") == "1":
             raise RuntimeError("AP_REQUIRE_ADAPTER_INTERPRETERS=1 but 'sh' interpreter not found")
@@ -173,7 +173,6 @@ def _skip_if_no_pwsh():
     When AP_REQUIRE_ADAPTER_INTERPRETERS=1, escalate to failure instead of skip.
     """
     if shutil.which("pwsh") is None:
-        import os
         if os.environ.get("AP_REQUIRE_ADAPTER_INTERPRETERS") == "1":
             raise RuntimeError("AP_REQUIRE_ADAPTER_INTERPRETERS=1 but 'pwsh' interpreter not found")
         pytest.skip("no pwsh (PowerShell 7+) available")
