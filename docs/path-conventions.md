@@ -18,6 +18,9 @@ framework - both in the source repository and in an installed target project.
    the target project. They are NOT the data home.
 4. Deprecated tokens listed below MUST NOT appear in new code, commands, or agent definitions.
    Existing occurrences must be rewritten on encounter.
+5. **Host-neutrality under `core/`:** Files under `core/` must contain no host-specific
+   directories, tool names, or permission syntax. The CI path audit enforces this.
+   See §7.3 below.
 
 ---
 
@@ -133,9 +136,48 @@ Rewrite any occurrence on encounter.
 A reference is stale if it directs an agent or script to store or read planning data from
 any of the deprecated paths above. It is NOT stale if it:
 
-- Describes the `.claude/` directory as a runtime adapter location (commands, skills, agents)
+- Describes the `.claude/` directory as a runtime Adapter location (commands, skills, agents)
 - Appears inside an install script explaining what it creates at `.claude/`
 - Appears in a test fixture or migration artefact that explicitly labels it as legacy
+
+---
+
+## Host-Neutrality Rule (§7.3)
+
+**Design authority:** Design §7.3 (envelope loop-003-hostneutral).
+
+**Rule:** Core files must contain no `.claude/`, `.cursor/`, `.opencode/`, `.codex/`,
+`.agents/`, `.gemini/`, Claude-only tool names, or host-specific permission syntax.
+
+**Rationale:** The `core/` directory contains platform-agnostic definitions that must remain
+usable by any agentic host (Claude Code, Cursor, Codex, opencode, etc.). Host-specific
+references couple the core to a single platform and violate the architecture.
+
+**Enforcement:** The CI path audit (`platforms/python/path_audit.py`) scans `core/agents/`
+and `core/skills/` for host-specific tokens. Violations cause CI failure.
+
+**What is forbidden under `core/`:**
+
+| Category | Tokens | Example |
+|----------|--------|---------|
+| Host directories | `.claude/`, `.cursor/`, `.opencode/`, `.codex/`, `.agents/`, `.gemini/` | "Load from `.claude/skills/`" |
+| Host-only tool names | `Claude Code`, `Cowork`, `Agent tool`, `Task tool`, `TodoWrite`, `subagent_type` | "Use the Agent tool" |
+| Host permission syntax | `settings.json`, `opencode.json`, `.cursor/rules` | "permissions.defaultMode" |
+
+**Note:** Bare English words like "task" and "agent" in ordinary prose are NOT flagged.
+The rule matches qualified tool names and identifiers (e.g., "Agent tool", "TodoWrite"),
+not common nouns. A markdown table header "| Loop | Task | Todos |" is legitimate.
+
+**What is allowed under `platforms/claude-code/`:**
+
+The same tokens are **legitimate** under `platforms/claude-code/` because that directory
+contains Claude Code-specific adapter code. For example:
+
+- `platforms/claude-code/commands/install.md` may document installing to `.claude/commands/`
+- `platforms/claude-code/agents/orchestrator.md` may reference the Agent tool
+
+The path audit enforces this boundary: `core/` = host-neutral, `platforms/` = host-specific
+allowed.
 
 ---
 

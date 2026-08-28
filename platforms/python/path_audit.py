@@ -26,13 +26,30 @@ The following are EXPLICITLY EXCLUDED from the scan:
     - platforms/python/tests/ (test fixtures may plant tokens deliberately)
     - README*, CHANGELOG*, *.schema.md (documentation files)
 
-Only these three signatures are treated as violations:
+Only these signatures are treated as violations:
+
+A. Path-convention violations (all scanned roots):
     1. Doubled prefix:      `.advanced-.advanced-`  (or `\\.advanced-\\.advanced-`)
     2. Wrong nesting:       `.claude/.advanced-plans`
     3. Deprecated token:    `.claude/plans/`
 
-A bare `.claude/commands/` or `.claude/skills/` reference is LEGITIMATE (installed
-runtime) and is NOT flagged.
+B. Host-neutrality violations (core/ roots ONLY — see docs/path-conventions.md §7.3):
+    Core files must contain no host-specific directories, tool names, or permission syntax.
+    The following are violations when found under core/agents/ or core/skills/:
+
+    B1. Host directories:
+        - `.claude/`, `.cursor/`, `.opencode/`, `.codex/`, `.agents/`, `.gemini/`
+    B2. Host-only tool and agent names:
+        - `Agent` tool, `Task` tool, `subagent_type` parameter
+        - Slash-command syntax: `/plan-and-phase`, `/next-loop`, `/run-gate`, etc.
+    B3. Host permission syntax:
+        - `settings.json` permission rules (e.g., `permissions.defaultMode`)
+        - `opencode.json` configuration
+        - `.cursor/rules` references
+
+A bare `.claude/commands/` or `.claude/skills/` reference is LEGITIMATE in
+platforms/claude-code/ (installed runtime docs) and is NOT flagged there.
+The same reference in core/ IS flagged.
 
 Source of truth for canonical paths: docs/path-conventions.md
 
@@ -56,20 +73,40 @@ from typing import List, NamedTuple
 # Violation signatures
 # ---------------------------------------------------------------------------
 
-#: Each entry is (pattern_name, compiled_regex).
+#: Each entry is (pattern_name, compiled_regex, core_only).
 #: A line matching ANY of these is a violation.
+#: core_only=True means the pattern is only checked under core/ roots.
 VIOLATION_PATTERNS: List[tuple] = [
     (
         "doubled-prefix (.advanced-.advanced-)",
         re.compile(r"\.advanced-\.advanced-"),
+        False,  # all roots
     ),
     (
         "wrong-nesting (.claude/.advanced-plans)",
         re.compile(r"\.claude/\.advanced-plans"),
+        False,  # all roots
     ),
     (
         "deprecated-token (.claude/plans/)",
         re.compile(r"\.claude/plans/"),
+        False,  # all roots
+    ),
+    # Host-neutrality violations (core/ only)
+    (
+        "host-directory (.claude/|.cursor/|.opencode/|.codex/|.agents/|.gemini/)",
+        re.compile(r"\.(claude|cursor|opencode|codex|agents|gemini)/"),
+        True,  # core/ only
+    ),
+    (
+        "host-tool-name (Claude Code|Cowork|Agent tool|Task tool|TodoWrite|subagent_type)",
+        re.compile(r"(Claude Code|Cowork|Agent tool|Task tool|TodoWrite|subagent_type)"),
+        True,  # core/ only
+    ),
+    (
+        r"host-permission-syntax (settings.json|opencode.json|.cursor/rules)",
+        re.compile(r"(settings\.json|opencode\.json|\.cursor/rules)"),
+        True,  # core/ only
     ),
 ]
 
@@ -167,13 +204,16 @@ def _is_excluded(file_path: pathlib.Path, excluded_segments: List[str]) -> bool:
     return False
 
 
-def check_file(path: pathlib.Path) -> List[PathViolation]:
+def check_file(path: pathlib.Path, core_only_scan: bool = False) -> List[PathViolation]:
     """Scan a single file for path-convention violations.
 
     Parameters
     ----------
     path : pathlib.Path
         Path to the file to inspect (any text file).
+    core_only_scan : bool, optional
+        If True, only check core-only patterns (host-neutrality rules).
+        Used when scanning core/ roots.
 
     Returns
     -------
@@ -187,7 +227,10 @@ def check_file(path: pathlib.Path) -> List[PathViolation]:
         return violations
 
     for lineno, line in enumerate(lines, start=1):
-        for pattern_name, regex in VIOLATION_PATTERNS:
+        for pattern_name, regex, is_core_only in VIOLATION_PATTERNS:
+            # Skip core-only patterns if not in a core-only scan
+            if is_core_only and not core_only_scan:
+                continue
             match = regex.search(line)
             if match:
                 violations.append(
@@ -242,6 +285,9 @@ def audit(
         else:
             files = sorted(root_abs.rglob("*"))
 
+        # Determine if this is a core/ root (host-neutrality rules apply)
+        is_core_root = root_rel.startswith("core/")
+
         for f in files:
             if not f.is_file():
                 continue
@@ -250,7 +296,7 @@ def audit(
                 continue
             if _is_excluded(f, excluded_segments):
                 continue
-            violations = check_file(f)
+            violations = check_file(f, core_only_scan=is_core_root)
             all_violations.extend(violations)
 
     return all_violations
