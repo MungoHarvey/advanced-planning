@@ -91,7 +91,16 @@ if (-not (Test-Path (Join-Path $RepoRoot "core"))) {
 # path survives JSON and Python string literals with no backslash escaping.
 function Get-ApGlobalHome {
     if ($env:USERPROFILE) { return $env:USERPROFILE }
-    return $HOME
+    # USERPROFILE first, then the HOME *environment variable*, and only then
+    # PowerShell's automatic $HOME. The order matters because the automatic
+    # variable is not $env:HOME -- PowerShell derives it from HOMEDRIVE and
+    # HOMEPATH -- so on a machine where Git Bash set HOME and USERPROFILE is
+    # absent it is empty, while install_audit and the launcher both resolve
+    # the HOME path. Join-Path then throws on the empty string and the install
+    # aborts exactly where the other two implementations succeed.
+    if ($env:HOME) { return $env:HOME }
+    if ($HOME) { return $HOME }
+    throw "Neither USERPROFILE nor HOME is set; refusing to resolve the global home to the filesystem root."
 }
 
 function ConvertTo-ApEmbeddedPath([string]$p) { return ($p -replace '\\', '/') }

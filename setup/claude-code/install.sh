@@ -131,8 +131,19 @@ ap_home_fs() {
         cygpath -u "$USERPROFILE"
     elif [ -n "${USERPROFILE:-}" ]; then
         printf '%s' "$USERPROFILE"
-    else
+    elif [ -n "${HOME:-}" ]; then
         printf '%s' "$HOME"
+    else
+        # Neither is set. Returning the empty string here is not harmless: the
+        # callers append "/.claude" and "/.advanced-plans" and mkdir -p the
+        # result, so an empty home installs at the filesystem root -- the only
+        # path in this mechanism that writes outside the profile it was asked
+        # to install into. Under `set -e` this non-zero status propagates out
+        # of the command substitution and stops the installer, which is the
+        # intended outcome. Masked on Windows, where Git Bash repopulates HOME
+        # during startup; reachable on any POSIX shell, which is what CI runs.
+        echo "install.sh: neither USERPROFILE nor HOME is set; refusing to resolve the global home to the filesystem root." >&2
+        exit 1
     fi
 }
 
@@ -141,8 +152,19 @@ ap_home_native() {
         cygpath -m "$USERPROFILE"
     elif [ -n "${USERPROFILE:-}" ]; then
         printf '%s' "$USERPROFILE" | tr '\\' '/'
-    else
+    elif [ -n "${HOME:-}" ]; then
         printf '%s' "$HOME"
+    else
+        # Neither is set. Returning the empty string here is not harmless: the
+        # callers append "/.claude" and "/.advanced-plans" and mkdir -p the
+        # result, so an empty home installs at the filesystem root -- the only
+        # path in this mechanism that writes outside the profile it was asked
+        # to install into. Under `set -e` this non-zero status propagates out
+        # of the command substitution and stops the installer, which is the
+        # intended outcome. Masked on Windows, where Git Bash repopulates HOME
+        # during startup; reachable on any POSIX shell, which is what CI runs.
+        echo "install.sh: neither USERPROFILE nor HOME is set; refusing to resolve the global home to the filesystem root." >&2
+        exit 1
     fi
 }
 
