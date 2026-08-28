@@ -91,11 +91,25 @@ class TestCleanTreePasses:
         exit_code = main(["--root", str(root)])
         assert exit_code == 0, f"Expected exit 0 on clean tree, got {exit_code}"
 
-    def test_main_returns_zero_with_suppressed_only(self, tmp_path):
-        """main() returns exit code 0 when only suppressed exceptions exist (no violations)."""
-        # The main() function prints suppressed but exits 0 if no violations
-        # This is tested implicitly by the clean tree test since exceptions are file-specific
-        pass
+    def test_main_returns_zero_with_suppressed_only(self, tmp_path, capsys):
+        """main() returns exit code 0 when only suppressed exceptions exist (no violations).
+        
+        Creates a fixture file matching the permission-config exception key and asserts
+        exit 0 with the suppression printed.
+        """
+        root = _make_scoped_tree(tmp_path)
+        # Create a file at the exact path that is excepted for host-permission-syntax
+        excepted_file = root / "core" / "skills" / "permission-config" / "SKILL.md"
+        excepted_file.parent.mkdir(parents=True, exist_ok=True)
+        excepted_file.write_text(
+            "Edit settings.json permissions.\n",  # This is excepted
+            encoding="utf-8",
+        )
+        exit_code = main(["--root", str(root)])
+        assert exit_code == 0, f"Expected exit 0 with only suppressed exceptions, got {exit_code}"
+        captured = capsys.readouterr()
+        assert "SUPPRESSED" in captured.out, "Expected suppressed output"
+        assert "permission-config" in captured.out, "Expected file name in output"
 
 
 # ---------------------------------------------------------------------------
@@ -463,23 +477,56 @@ class TestExceptionMechanism:
         This proves the exception mechanism is keyed by (file, pattern), not file alone.
         permission-config/SKILL.md is excepted for host-permission-syntax, but should
         still fail if it contains a host-directory token.
+        
+        Asserts both halves: the settings.json line is SUPPRESSED (in suppressed list,
+        not in violations) AND the .claude/ line on the same file IS a violation.
         """
         root = _make_scoped_tree(tmp_path)
-        # Create a file similar to permission-config that has both permission syntax
-        # (excepted) and a .claude/ directory reference (not excepted)
-        bad_file = root / "core" / "skills" / "test-skill" / "SKILL.md"
-        bad_file.parent.mkdir(parents=True, exist_ok=True)
-        bad_file.write_text(
-            "Edit settings.json permissions.\n"
-            "Install to `.claude/skills/` directory.\n",  # This should be flagged
+        # Create a file at the EXACT excepted path with both tokens
+        excepted_file = root / "core" / "skills" / "permission-config" / "SKILL.md"
+        excepted_file.parent.mkdir(parents=True, exist_ok=True)
+        excepted_file.write_text(
+            "Edit settings.json permissions.\n"  # Excepted for host-permission-syntax
+            "Install to `.claude/skills/` directory.\n",  # NOT excepted - should be violation
             encoding="utf-8",
         )
         violations, suppressed = audit(
             repo_root=root,
             scanned_roots=["core/skills"],
         )
-        # The .claude/ reference should be a violation (not excepted)
-        assert len(violations) >= 1, f"Expected violation for .claude/ directory, got {violations}"
+        # Half 1: settings.json line is suppressed, not in violations
+        assert len(suppressed) >= 1, "Expected settings.json to be suppressed"
+        assert any("host-permission-syntax" in s.pattern_name for s in suppressed), (
+            f"Expected host-permission-syntax in suppressed, got: {[s.pattern_name for s in suppressed]}"
+        )
+        # Half 2: .claude/ line is a violation
+        assert len(violations) >= 1, f"Expected .claude/ to be a violation, got {violations}"
         assert any("host-directory" in v.pattern_name for v in violations), (
             f"Expected host-directory violation, got: {[v.pattern_name for v in violations]}"
         )
+
+
+# ---------------------------------------------------------------------------
+# TestMainExitCodes — main() exit code tests for host-neutrality violations
+# ---------------------------------------------------------------------------
+
+class TestMainExitCodes:
+    def test_main_exits_one_on_host_directory_violation(self, tmp_path, capsys):
+        """main() exits 1 when a host-directory violation is present in core/.
+        
+        Proves the command-line interface correctly reports host-neutrality violations.
+        """
+        root = _make_scoped_tree(tmp_path)
+        bad_file = root / "core" / "skills" / "bad-skill" / "SKILL.md"
+        bad_file.parent.mkdir(parents=True, exist_ok=True)
+        bad_file.write_text(
+            "Configure in `.cursor/settings.json`.\n",
+            encoding="utf-8",
+        )
+        exit_code = main(["--root", str(root)])
+        assert exit_code == 1, f"Expected exit 1 on host-directory violation, got {exit_code}"
+        captured = capsys.readouterr()
+        # Verify output contains file name and line number
+        assert "bad-skill" in captured.out, f"Expected file name in output: {captured.out}"
+        assert "1:" in captured.out or ":1:" in captured.out, f"Expected line number in output: {captured.out}"
+        assert "host-directory" in captured.out, f"Expected pattern name in output: {captured.out}"
