@@ -116,6 +116,27 @@ install_project() {
         echo "  → settings.json installed"
     fi
 
+    # The shared Python runtime. Without this the commands copied just above
+    # invoke .advanced-plans/bin/ap.py in a project that has no such file, and
+    # die with the interpreter's own "can't open file" - which is the whole
+    # defect this mechanism exists to close, still fully intact in this branch
+    # of this installer until now. The setup/ installers have carried it since
+    # 54a0a73; this one only ever got it on the --global path.
+    #
+    # Written unconditionally, and after everything above: an upgrade in place
+    # is exactly when a stale source_root most needs refreshing, and nothing
+    # here may skip it.
+    echo "  → Recording the shared Python runtime..."
+    _ap_dir="$TARGET/.advanced-plans"
+    mkdir -p "$_ap_dir/bin"
+    cp "$SCRIPT_DIR/platforms/python/ap_launcher.py" "$_ap_dir/bin/ap.py"
+    _src="$SCRIPT_DIR"
+    if command -v cygpath >/dev/null 2>&1; then _src="$(cygpath -m "$SCRIPT_DIR")"; fi
+    _ver="unknown"
+    [ -f "$SCRIPT_DIR/VERSION" ] && _ver="$(tr -d '[:space:]' < "$SCRIPT_DIR/VERSION")"
+    printf '{"schema_version": 1, "source_root": "%s", "version": "%s", "written_by": "platforms/claude-code/install.sh --project"}\n' \
+        "$_src" "$_ver" > "$_ap_dir/runtime.json"
+
     echo ""
     echo "✓ Installation complete"
     echo ""

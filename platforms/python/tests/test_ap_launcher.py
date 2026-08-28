@@ -776,6 +776,37 @@ def test_no_installer_reads_a_variable_it_never_assigns(script):
         "environment. Under set -e that half-installs." % (script, unknown))
 
 
+@pytest.mark.parametrize("script,project_marker", [
+    ("setup/claude-code/install.sh", "--project"),
+    ("setup/claude-code/install.ps1", "-Project"),
+    ("platforms/claude-code/install.sh", "--project"),
+])
+def test_every_installer_project_path_records_the_runtime(script, project_marker):
+    """There are THREE installers, and the third one's project path shipped
+    commands without their launcher for its whole life -- the original defect,
+    fully intact, in the one code path nobody had re-read.
+
+    Found by an independent reviewer reading the file after the controller had
+    fixed its --global branch and moved on. The parameterisation is the point:
+    the earlier test covered the two installers under setup/ and said nothing
+    about this one.
+    """
+    text = io.open(str(_REPO_ROOT / script), encoding="utf-8",
+                   newline="").read().replace("\r\n", "\n")
+    assert project_marker in text, (
+        "%s does not appear to have a project install path" % script)
+    # Two writes now: one in the global branch, one in the project branch.
+    # Counting is what distinguishes "records it somewhere" from "records it
+    # on the path a project install actually takes".
+    assert text.count("runtime.json") >= 2, (
+        "%s writes runtime.json %d time(s); a global-only write leaves every "
+        "project install shipping commands whose launcher is not there"
+        % (script, text.count("runtime.json")))
+    assert text.count("ap_launcher.py") >= 2, (
+        "%s copies the launcher %d time(s), so one of its install paths does "
+        "not" % (script, text.count("ap_launcher.py")))
+
+
 # ---------------------------------------------------------------------------
 # (i) the installers record the path on upgrade, not only on fresh install
 # ---------------------------------------------------------------------------

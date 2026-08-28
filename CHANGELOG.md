@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   record, and names both places it looked when there is none. A linked worktree
   or submodule (`.git` as a *file*, not a directory) is recognised.
 - **The in-line `runpy` call sites print the guard, not a traceback.**
-  `bootstrap()` catches `Unreachable`, reports, and exits 2.
+  `bootstrap()` catches `Unreachable`, reports, and exits 3 (`EXIT_UNREACHABLE`).
 - `install_audit` no longer reports every globally installed command as
   permanently stale: the install-time launcher path is canonical, not drift,
   and is normalised out before hashing. Source call sites are quoted and
