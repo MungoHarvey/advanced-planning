@@ -1,0 +1,145 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "collected-evidence",
+  "description": "Written by the controller/collector after a worker finishes. Validated before allowing any state advance. The worker's prose is one evidence item; the collector independently calculates changed paths, diff summary, commit identity, and check exit codes.",
+  "type": "object",
+  "required": ["schema_version", "run_id", "status", "agent", "git", "checks", "policy", "agent_summary", "collected_at"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version; always 1 for this version of the collected evidence"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^\\d{8}T\\d{6}Z-[a-z0-9-]+$",
+      "description": "Run identifier from the dispatched envelope. Format: YYYYMMDDTHHMMSSZ-slug."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["declared", "prepared", "running", "blocked", "review", "completed", "failed", "interrupted", "cancelled"],
+      "description": "AAW lifecycle status from §10. Terminal states are completed, failed, cancelled. 'review' is the correct value (not 'review_required' — the §9.3 example uses a non-canonical name). 'blocked' is valid but non-terminal. 'done', 'idle', 'unknown' are Herdr observations, not AAW states."
+    },
+    "agent": {
+      "type": "object",
+      "description": "Worker identity as reported by the execution manager (e.g. herdr).",
+      "required": ["provider", "herdr_agent", "native_session_id"],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": ["claude", "codex", "opencode", "cursor", "agy"],
+          "description": "AI provider/CLI that executed the task"
+        },
+        "herdr_agent": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Herdr agent name, e.g. superpowers-sync"
+        },
+        "native_session_id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Native session ID as reported by the Herdr integration"
+        }
+      },
+      "additionalProperties": false
+    },
+    "git": {
+      "type": "object",
+      "description": "Git state computed independently by the collector — not trusted from worker prose.",
+      "required": ["worktree", "base_sha", "head_sha", "dirty", "changed_paths"],
+      "properties": {
+        "worktree": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Absolute path to the git worktree where the task executed"
+        },
+        "base_sha": {
+          "type": "string",
+          "minLength": 40,
+          "maxLength": 40,
+          "pattern": "^[0-9a-f]{40}$",
+          "description": "Full 40-character SHA of the base commit. Abbreviated SHAs must fail."
+        },
+        "head_sha": {
+          "type": "string",
+          "minLength": 40,
+          "maxLength": 40,
+          "pattern": "^[0-9a-f]{40}$",
+          "description": "Full 40-character SHA of HEAD after the task. Abbreviated SHAs must fail."
+        },
+        "dirty": {
+          "type": "boolean",
+          "description": "True if the worktree has uncommitted changes; false if clean"
+        },
+        "changed_paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Paths modified in this run, computed from git diff by the collector"
+        }
+      },
+      "additionalProperties": false
+    },
+    "checks": {
+      "type": "array",
+      "description": "Test/verification commands run by the collector. Each entry records command, exit code, and output digest.",
+      "items": {
+        "type": "object",
+        "required": ["command", "exit_code", "output_sha256"],
+        "properties": {
+          "command": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The test or verification command that was run"
+          },
+          "exit_code": {
+            "type": "integer",
+            "description": "Exit code of the command; 0 typically means pass"
+          },
+          "output_sha256": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "SHA-256 hex digest of the command output for integrity tracking"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "policy": {
+      "type": "object",
+      "description": "Policy gate outcomes. All three gates are required — a missing gate must fail validation, not default to true.",
+      "required": ["path_scope_passed", "tests_passed", "independent_review_passed"],
+      "properties": {
+        "path_scope_passed": {
+          "type": "boolean",
+          "description": "True if all modified paths were within allowed_paths; false if any forbidden or out-of-scope paths were touched"
+        },
+        "tests_passed": {
+          "type": "boolean",
+          "description": "True if all required acceptance checks passed (exit code 0); false otherwise"
+        },
+        "independent_review_passed": {
+          "type": "boolean",
+          "description": "True if an independent review (human or second agent) approved the result; false if review is pending or rejected"
+        }
+      },
+      "additionalProperties": false
+    },
+    "agent_summary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Worker-supplied prose summary. This is ONE evidence item and is NOT trusted — the collector independently computes changed paths, diff summary, commit identity, and check exit codes. Documented here because JSON Schema cannot encode trust boundaries; consumers must treat this as untrusted self-report."
+    },
+    "collected_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the collector wrote this result"
+    }
+  },
+  "additionalProperties": false
+}
