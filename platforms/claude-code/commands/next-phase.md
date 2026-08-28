@@ -372,7 +372,7 @@ On the first remediation cycle (`cycles == 1`):
 Import and call `triage_findings` from `platforms/python/remediate.py`:
 
 ```python
-import runpy; runpy.run_path('.advanced-plans/bin/ap.py')['bootstrap']()
+import runpy; runpy.run_path(r'.advanced-plans/bin/ap.py')['bootstrap']()
 from platforms.python.remediate import triage_findings
 result = triage_findings(verdict)
 # result keys: structural, localized, unfixable, conflict
@@ -416,7 +416,7 @@ Write the failure context to the worker-only sidecar
 `inject_failure_context` from `platforms/python/versioning.py`:
 
 ```python
-import runpy; runpy.run_path('.advanced-plans/bin/ap.py')['bootstrap']()
+import runpy; runpy.run_path(r'.advanced-plans/bin/ap.py')['bootstrap']()
 from platforms.python.versioning import inject_failure_context
 import pathlib
 inject_failure_context(

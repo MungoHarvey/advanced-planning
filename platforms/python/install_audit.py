@@ -53,6 +53,7 @@ import argparse
 import hashlib
 import os
 import pathlib
+import re
 import sys
 from typing import Dict, List, NamedTuple, Optional
 
@@ -116,6 +117,22 @@ def resolve_global_home(env: Optional[Dict[str, str]] = None) -> pathlib.Path:
 # Hashing
 # ---------------------------------------------------------------------------
 
+#: A ``--global`` install rewrites the launcher path in every command file it
+#: copies, from the project-relative form to one absolute path.  It has to:
+#: no single literal reaches the launcher from a project that was never
+#: project-installed, because ``~`` is not expanded by ``runpy.run_path`` at
+#: all, ``$HOME`` is a division operator in PowerShell, and ``cmd`` expands
+#: neither.  Resolving it once, at install time, sidesteps all three.
+#:
+#: That rewrite is part of installing, not drift.  Without normalising it away
+#: before hashing, every command file would report STALE against source for
+#: ever and ``/sync-install`` would keep recommending a reinstall that changes
+#: nothing -- an audit that cries wolf is an audit nobody reads.
+LAUNCHER_CANONICAL = ".advanced-plans/bin/ap.py"
+LAUNCHER_PATH_RE = re.compile(
+    r"""[^\s'"]*[\\/]\.advanced-plans[\\/]bin[\\/]ap\.py""")
+
+
 def _file_hash(path: pathlib.Path) -> str:
     """Return a SHA-256 hex digest of *path* with EOL-normalised content.
 
@@ -138,6 +155,7 @@ def _file_hash(path: pathlib.Path) -> str:
         # Unreadable -- treat as empty for hashing purposes
         raw = ""
     normalised = raw.replace("\r\n", "\n").replace("\r", "\n")
+    normalised = LAUNCHER_PATH_RE.sub(LAUNCHER_CANONICAL, normalised)
     return hashlib.sha256(normalised.encode("utf-8")).hexdigest()[:40]
 
 

@@ -82,8 +82,39 @@ if (-not (Test-Path (Join-Path $RepoRoot "core"))) {
 # ---------------------------------------------------------------------------
 # Global install
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Global runtime record (mechanism B')
+# ---------------------------------------------------------------------------
+# USERPROFILE before HOME, matching install_audit.resolve_global_home and the
+# launcher's own global_home(). Forward slashes in the embedded form so the
+# path survives JSON and Python string literals with no backslash escaping.
+function Get-ApGlobalHome {
+    if ($env:USERPROFILE) { return $env:USERPROFILE }
+    return $HOME
+}
+
+function ConvertTo-ApEmbeddedPath([string]$p) { return ($p -replace '\\', '/') }
+
+# Point a copied command file at an absolute launcher. Only the two executable
+# forms are rewritten; prose mentions describe the project install and stay true.
+function Set-ApCallSites([string]$File, [string]$Launcher) {
+    $text = [System.IO.File]::ReadAllText($File)
+    # Only the PATH changes. The quoting and the r'' prefix are already in the
+    # source form, so this is a pure substitution of one string for another --
+    # which is what lets install_audit normalise it back and report no drift.
+    $text = $text.Replace('python ".advanced-plans/bin/ap.py"', 'python "' + $Launcher + '"')
+    $text = $text.Replace("runpy.run_path(r'.advanced-plans/bin/ap.py')",
+                          "runpy.run_path(r'" + $Launcher + "')")
+    [System.IO.File]::WriteAllText($File, $text,
+        [System.Text.UTF8Encoding]::new($false))
+}
+
 if ($Global) {
-    $GlobalDir = Join-Path $HOME ".claude"
+    $ApGlobalHome = Get-ApGlobalHome
+    $GlobalDir = Join-Path $ApGlobalHome ".claude"
+    $ApGlobalDir = Join-Path $ApGlobalHome ".advanced-plans"
+    $ApLauncher = ConvertTo-ApEmbeddedPath (Join-Path $ApGlobalDir "bin\ap.py")
     $CommandsDir = Join-Path $GlobalDir "commands"
     $SkillsDest  = Join-Path $GlobalDir "skills"
     $AgentsDir   = Join-Path $GlobalDir "agents"
@@ -100,6 +131,12 @@ if ($Global) {
     $cmds = Get-ChildItem -Path (Join-Path $RepoRoot "platforms\claude-code\commands") -Filter "*.md" -File
     foreach ($cmd in $cmds) {
         Do-Copy $cmd.FullName $CommandsDir
+        # Globally-installed commands run in projects that were never
+        # project-installed, where .advanced-plans\bin\ap.py does not exist and
+        # the interpreter dies before the launcher's diagnostic can fire.
+        if (-not $DryRun) {
+            Set-ApCallSites (Join-Path $CommandsDir $cmd.Name) $ApLauncher
+        }
         Say "  + commands\$($cmd.Name)"
     }
 
@@ -140,6 +177,25 @@ if ($Global) {
         Do-Copy $schema.FullName $SchemasDir
         Say "  + schemas\$($schema.Name)"
     }
+
+    Say ""
+    Say "Recording the shared Python runtime globally..."
+    Do-MkDir (Join-Path $ApGlobalDir "bin")
+    Do-Copy (Join-Path $RepoRoot "platforms\python\ap_launcher.py") (Join-Path $ApGlobalDir "bin\ap.py")
+    if (-not $DryRun) {
+        $gVersionFile = Join-Path $RepoRoot "VERSION"
+        $gVersion = if (Test-Path $gVersionFile) { (Get-Content $gVersionFile -Raw).Trim() } else { "unknown" }
+        $gRuntime = [ordered]@{
+            schema_version = 1
+            source_root    = $RepoRoot
+            version        = $gVersion
+            written_by     = "setup/claude-code/install.ps1 -Global"
+        } | ConvertTo-Json -Depth 3
+        [System.IO.File]::WriteAllText((Join-Path $ApGlobalDir "runtime.json"),
+            $gRuntime, [System.Text.UTF8Encoding]::new($false))
+    }
+    Say "  + $ApGlobalDir\bin\ap.py"
+    Say "  + $ApGlobalDir\runtime.json"
 
     Say ""
     Say "Global install complete."

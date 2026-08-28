@@ -122,7 +122,7 @@ Read `.advanced-plans/PLANNING.md` and update:
 Append a `phase_planned` event to the audit log:
 
 ```bash
-python .advanced-plans/bin/ap.py history_log .advanced-plans/state/history.jsonl \
+python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jsonl \
   "{\"event\":\"phase_planned\",\"phase\":\"phase-[N]\",\"loops\":[N loops],\"todos\":[N todos]}"
 ```
 

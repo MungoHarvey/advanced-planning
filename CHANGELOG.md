@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The shared Python runtime is reachable from an installed project.** 14 call
+  sites across 6 command files invoked `.advanced-plans/bin/ap.py`, but no
+  installer had ever shipped `platforms/python/` into a project — so every
+  command died on the interpreter's own "can't open file", naming neither the
+  product nor the repair. The installers now record `runtime.json` and copy the
+  launcher (outside the scaffold guard, so an upgrade refreshes a stale
+  `source_root`), and `ap_launcher.py` walks up to find it.
+- **A `--global` install now works in projects the installer never touched.**
+  `setup/claude-code/install.{sh,ps1}` and `platforms/claude-code/install.sh`
+  write `<home>/.advanced-plans/{runtime.json,bin/ap.py}` and rewrite the
+  launcher path in each command they copy. `<home>` resolves from `USERPROFILE`
+  before `HOME`: under Git Bash on Windows those routinely disagree, and the
+  install would otherwise land where native Python never looks.
+- **The manifest walk stops at a project boundary.** A project holding
+  `.advanced-plans/` without a manifest, or any `.git` without one, no longer
+  borrows an enclosing checkout's runtime — it falls through to the global
+  record, and names both places it looked when there is none. A linked worktree
+  or submodule (`.git` as a *file*, not a directory) is recognised.
+- **The in-line `runpy` call sites print the guard, not a traceback.**
+  `bootstrap()` catches `Unreachable`, reports, and exits 2.
+- `install_audit` no longer reports every globally installed command as
+  permanently stale: the install-time launcher path is canonical, not drift,
+  and is normalised out before hashing. Source call sites are quoted and
+  raw-prefixed so the installers' rewrite swaps only the path.
+
 ---
 
 ## [0.16.0] - 2026-06-10

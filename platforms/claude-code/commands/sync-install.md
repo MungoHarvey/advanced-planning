@@ -55,7 +55,7 @@ it could never be reached in either case it exists for.
 For each project layer included in `--layers`:
 
 ```bash
-python .advanced-plans/bin/ap.py --check
+python ".advanced-plans/bin/ap.py" --check
 ```
 
 - Exit 0: the record resolves. Print the line it produced and continue to
@@ -77,7 +77,7 @@ available; this step exists for the case where it is not.
 Run:
 
 ```bash
-python .advanced-plans/bin/ap.py install_audit --layers [resolved_layers]
+python ".advanced-plans/bin/ap.py" install_audit --layers [resolved_layers]
 ```
 
 Capture the output and exit code.
@@ -148,7 +148,7 @@ visually distinct:
 After all copies are done, run the audit again:
 
 ```bash
-python .advanced-plans/bin/ap.py install_audit --layers [resolved_layers]
+python ".advanced-plans/bin/ap.py" install_audit --layers [resolved_layers]
 ```
 
 - Exit 0 → success. Print:
@@ -186,7 +186,7 @@ After editing any file under `platforms/claude-code/commands/`,
 propagate the change to the project and global installed copies.
 
 For CI (which cannot see the developer's global dir), use:
-`python .advanced-plans/bin/ap.py install_audit --layers source,project`
+`python ".advanced-plans/bin/ap.py" install_audit --layers source,project`
 
 ## Error Modes
 

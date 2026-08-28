@@ -40,7 +40,9 @@ import json
 import os
 import pathlib
 import re
+import shutil
 import subprocess
+import tempfile
 import sys
 
 import pytest
@@ -60,12 +62,62 @@ EXIT_UNREACHABLE = 3
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _clean_env():
-    """os.environ without the two things that would mask a resolution failure."""
+def _clean_env(home=None):
+    """os.environ without the things that would mask a resolution failure.
+
+    `home` also pins USERPROFILE and HOME. Without that these tests read the
+    developer's real profile: the global record at ~/.advanced-plans/ is now
+    part of resolution, so a machine that happens to have one would turn every
+    "this must fail" assertion green for the wrong reason. Defaults to a fresh
+    empty directory, which is the "no global install" case.
+    """
     environ = dict(os.environ)
     environ.pop("ADVANCED_PLANNING_ROOT", None)
     environ.pop("PYTHONPATH", None)
+    if home is None:
+        home = tempfile.mkdtemp(prefix="ap-nohome-")
+    environ["USERPROFILE"] = str(home)
+    environ["HOME"] = str(home)
     return environ
+
+
+def make_decoy_checkout(tmp_path, name="decoy-checkout"):
+    """A second, otherwise-empty Advanced Planning checkout.
+
+    Resolution tests that expect the global record must not assert against
+    _REPO_ROOT: the own-checkout fallback returns that too, so the assertion
+    would pass with the global step deleted. Pointing the global record at a
+    decoy makes the two routes distinguishable.
+    """
+    root = tmp_path / name
+    (root / "platforms" / "python").mkdir(parents=True)
+    (root / "platforms" / "python" / "__init__.py").write_text(
+        "", encoding="utf-8")
+    return root
+
+
+def make_loose_launcher(tmp_path, name="installed"):
+    """A launcher copy with no source checkout above it.
+
+    The installed copy is what these tests are about; running the source file
+    at platforms/python/ap_launcher.py silently enables the own-checkout
+    fallback and hides whatever the test meant to prove.
+    """
+    d = tmp_path / name
+    d.mkdir(parents=True, exist_ok=True)
+    ap = d / "ap.py"
+    ap.write_bytes(LAUNCHER_SRC.read_bytes())
+    return ap
+
+
+def make_global_record(home, source_root):
+    """Write the record a `--global` install leaves in the user profile."""
+    home = pathlib.Path(home)
+    (home / ".advanced-plans" / "bin").mkdir(parents=True, exist_ok=True)
+    (home / ".advanced-plans" / "runtime.json").write_text(
+        json.dumps({"schema_version": 1, "source_root": str(source_root),
+                    "written_by": "test"}), encoding="utf-8")
+    return home / ".advanced-plans" / "runtime.json"
 
 
 def make_project(tmp_path, source_root, name="proj"):
@@ -143,6 +195,237 @@ def test_path_prints_the_resolved_root(tmp_path):
     r = run_launcher(proj, ["--path"])
     assert r.returncode == 0, r.stderr
     assert pathlib.Path(r.stdout.strip()) == _REPO_ROOT
+
+
+def test_the_global_record_is_read_beside_the_launcher_not_from_the_caller_home(tmp_path):
+    """An install under one profile must be readable from another.
+
+    Found live, not by review: a `--global` install into one profile was
+    called from a shell holding a different one, and the launcher looked for
+    the record under the CALLER's profile - so a correctly installed global
+    runtime was invisible. Same failure in CI, in a container, under a service
+    account, and under Git Bash whose $HOME is a mapped drive when the install
+    ran from PowerShell.
+
+    The installed launcher knows where it lives; the record sits two
+    directories above it. Reading it there makes the two homes irrelevant.
+    """
+    install_home = tmp_path / "install-profile"
+    decoy = make_decoy_checkout(tmp_path)
+    make_global_record(install_home, decoy)
+    launcher = install_home / ".advanced-plans" / "bin" / "ap.py"
+    launcher.write_bytes(LAUNCHER_SRC.read_bytes())
+
+    project = tmp_path / "elsewhere"
+    project.mkdir()
+
+    # The caller's profile is a DIFFERENT, empty one.
+    r = subprocess.run(
+        [sys.executable, str(launcher), "--path"],
+        cwd=str(project), env=_clean_env(tmp_path / "caller-profile"),
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        universal_newlines=True)
+
+    assert r.returncode == 0, (
+        "the global record was not found beside the launcher; the caller's "
+        "profile was consulted instead:\nstderr=%s" % r.stderr)
+    assert pathlib.Path(r.stdout.strip()) == decoy
+
+
+def test_the_inline_call_sites_get_the_guard_not_a_traceback(tmp_path):
+    """`runpy.run_path(...)['bootstrap']()` must fail the way ap.py does.
+
+    Six of the thirteen call sites are that inline form. bootstrap() used to
+    let Unreachable propagate, so those six printed a traceback naming a line
+    inside ap_launcher.py and exited 1 - the raw-internal-failure that
+    mechanism (d) exists to replace, alive at half the sites and missed by
+    three independent reviewers reading the diff. Found by running one.
+    """
+    launcher = make_loose_launcher(tmp_path)
+    project = tmp_path / "uninstalled"
+    project.mkdir()
+
+    r = subprocess.run(
+        [sys.executable, "-c",
+         "import runpy; runpy.run_path(r'%s')['bootstrap']()" % launcher],
+        cwd=str(project), env=_clean_env(tmp_path / "empty-home"),
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        universal_newlines=True)
+
+    assert "Traceback" not in r.stderr, (
+        "an inline call site raised instead of reporting:\n%s" % r.stderr)
+    assert r.returncode == EXIT_UNREACHABLE, r.stderr
+    assert "advanced-planning: fix:" in r.stderr
+
+
+def test_global_home_agrees_with_install_audit(monkeypatch):
+    """The duplicated home resolution must not drift from its original.
+
+    ap_launcher cannot import install_audit - it is copied out of the checkout
+    and runs before the runtime is reachable - so the USERPROFILE-first rule
+    exists twice. The launcher's own design notes warn that a second copy of
+    logic is the thing most likely to drift, so the agreement is asserted
+    rather than assumed. If either side is edited alone, this fails.
+    """
+    from platforms.python import install_audit
+
+    cases = [
+        {"USERPROFILE": r"C:\Users\alice", "HOME": "/m/networkdrive"},
+        {"HOME": "/home/bob"},
+        {"USERPROFILE": r"C:\Users\carol"},
+    ]
+    for env in cases:
+        assert (os.path.normcase(ap_launcher.global_home(env))
+                == os.path.normcase(str(install_audit.resolve_global_home(env)))), env
+
+    # And the ordering itself, stated once so a reader need not diff two files.
+    assert ap_launcher.global_home(
+        {"USERPROFILE": r"C:\Users\alice", "HOME": "/m/net"}
+    ).lower().endswith("alice")
+
+
+def test_a_project_without_a_manifest_falls_through_to_the_global_record(tmp_path):
+    """The boundary stop must not make global installs illegal.
+
+    Found by the cross-vendor panel (cursor) against the FIRST draft of the
+    boundary stop, which raised outright. The documented `--global` path is
+    "try it out, no project changes" - and the first command that writes
+    planning data scaffolds `.advanced-plans/`. Under the first draft, that
+    directory then became a boundary and every later command died with "run
+    this project's own installer", even though the global launcher and the
+    global record both existed. The stop means "do not steal the enclosing
+    project's checkout", not "a global install stops working once you use it".
+    """
+    home = tmp_path / "home"
+    decoy = make_decoy_checkout(tmp_path)
+    make_global_record(home, decoy)
+
+    project = tmp_path / "scaffolded"
+    (project / ".advanced-plans" / "state").mkdir(parents=True)
+
+    r = subprocess.run(
+        [sys.executable, str(make_loose_launcher(tmp_path)), "--path"],
+        cwd=str(project), env=_clean_env(home), stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, universal_newlines=True)
+
+    assert r.returncode == 0, (
+        "a scaffolded but never-project-installed directory did not reach the "
+        "global record:\nstdout=%s\nstderr=%s" % (r.stdout, r.stderr))
+    # The decoy, not _REPO_ROOT: asserting _REPO_ROOT here would pass with the
+    # global step deleted, because the own-checkout fallback returns it too.
+    assert pathlib.Path(r.stdout.strip()) == decoy
+
+
+def test_without_a_global_record_the_boundary_is_still_an_error(tmp_path):
+    """The fall-through must not become a way to fail silently.
+
+    Same shape as the test above with the global record removed. The point of
+    the pair is that the boundary is not itself the verdict: it is the verdict
+    only when there is nothing to fall through to, and then it must say both
+    halves - this is a project, AND there is no global record.
+    """
+    project = tmp_path / "scaffolded"
+    (project / ".advanced-plans").mkdir(parents=True)
+
+    r = subprocess.run(
+        [sys.executable, str(make_loose_launcher(tmp_path)), "--path"],
+        cwd=str(project), env=_clean_env(tmp_path / "empty-home"),
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        universal_newlines=True)
+
+    assert r.returncode == EXIT_UNREACHABLE, r.stdout
+    assert "no global record" in r.stderr
+    assert "--global" in r.stderr
+    assert "Traceback" not in r.stderr
+
+
+def test_a_nested_repository_does_not_inherit_the_enclosing_checkout(tmp_path):
+    """A separate repo inside a project is not part of that project.
+
+    Found by the cross-vendor panel (cursor), which pointed out that the
+    project-marker stop only catches nested *Advanced Planning* projects. The
+    commoner shape is a monorepo service or a submodule: an independent
+    repository with no `.advanced-plans/` of its own, which the walk sailed
+    straight through - resolving successfully, exit 0, against a checkout that
+    has nothing to do with it. That is the silent-wrong-answer failure this
+    design is most exposed to, so `.git` is a boundary too.
+    """
+    outer = make_project(tmp_path, _REPO_ROOT, name="outer")
+    inner = outer / "services" / "api"
+    inner.mkdir(parents=True)
+    (inner / ".git").mkdir()
+
+    r = subprocess.run(
+        [sys.executable, str(outer / ".advanced-plans" / "bin" / "ap.py"),
+         "--path"],
+        cwd=str(inner), env=_clean_env(tmp_path / "empty-home"),
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        universal_newlines=True)
+
+    assert r.returncode == EXIT_UNREACHABLE, (
+        "the nested repository inherited the enclosing project's checkout:\n"
+        "stdout=%s\nstderr=%s" % (r.stdout, r.stderr))
+    assert "repository root" in r.stderr
+
+
+def test_a_nested_repository_still_reaches_the_global_record(tmp_path):
+    """...but the boundary sends it to the global record, not to a dead end.
+
+    The pair with the test above: stopping the walk must not mean a nested
+    repository can never be driven by globally-installed commands. It falls
+    through to the machine-level record like any other uninstalled directory.
+    """
+    home = tmp_path / "home"
+    decoy = make_decoy_checkout(tmp_path)
+    make_global_record(home, decoy)
+    outer = make_project(tmp_path, _REPO_ROOT, name="outer")
+    inner = outer / "services" / "api"
+    inner.mkdir(parents=True)
+    (inner / ".git").write_text("gitdir: ../../.git/modules/api\n",
+                                encoding="utf-8")
+
+    r = subprocess.run(
+        [sys.executable, str(outer / ".advanced-plans" / "bin" / "ap.py"),
+         "--path"],
+        cwd=str(inner), env=_clean_env(home), stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, universal_newlines=True)
+
+    assert r.returncode == 0, r.stderr
+    # The decoy proves the global record was used, not the enclosing project's
+    # manifest - which is the thing the boundary stop exists to refuse.
+    assert pathlib.Path(r.stdout.strip()) == decoy
+
+
+def test_the_profile_directory_is_never_adopted_as_a_checkout(tmp_path):
+    """`<home>/.advanced-plans/bin/ap.py` is three dirnames below `<home>`.
+
+    So the own-checkout fallback, which walks exactly three dirnames up from
+    __file__, resolves to the user profile for the globally-installed copy. It
+    is guarded by a marker file, which makes this harmless for most people and
+    silent for anyone who keeps a `platforms/python/` tree in their profile -
+    they would get their home directory adopted as the runtime with no
+    diagnostic. Raised by the panel (cursor) as a latent false positive.
+    """
+    home = tmp_path / "home"
+    (home / ".advanced-plans" / "bin").mkdir(parents=True)
+    shutil.copy(str(_REPO_ROOT / "platforms" / "python" / "ap_launcher.py"),
+                str(home / ".advanced-plans" / "bin" / "ap.py"))
+    # Make the profile look like a checkout, which is the whole trap.
+    (home / "platforms" / "python").mkdir(parents=True)
+    (home / "platforms" / "python" / "__init__.py").write_text(
+        "", encoding="utf-8")
+
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+
+    r = subprocess.run(
+        [sys.executable, str(home / ".advanced-plans" / "bin" / "ap.py"),
+         "--path"],
+        cwd=str(elsewhere), env=_clean_env(home), stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, universal_newlines=True)
+
+    assert r.returncode == EXIT_UNREACHABLE, (
+        "the profile directory was adopted as the runtime: %s" % r.stdout)
 
 
 def test_the_walk_stops_at_a_project_that_has_no_manifest(tmp_path):
@@ -412,7 +695,10 @@ def test_every_launcher_call_site_names_a_real_module():
     """A call site naming a module that was never written would fail exactly
     like the path defect and be diagnosed as the wrong thing."""
     available = {p.stem for p in (_REPO_ROOT / "platforms" / "python").glob("*.py")}
-    pattern = re.compile(r"bin/ap\.py\s+([a-z_][a-z0-9_]*)")
+    # The optional closing quote: source call sites are quoted so the global
+    # installer's rewrite is a pure path swap and install_audit sees no drift.
+    # An installed copy carries an absolute path inside the same quotes.
+    pattern = re.compile(r'bin/ap\.py"?\s+([a-z_][a-z0-9_]*)')
     seen, missing = set(), []
     for md in sorted(COMMANDS_DIR.glob("*.md")):
         text = io.open(str(md), encoding="utf-8", newline="").read()
@@ -422,6 +708,32 @@ def test_every_launcher_call_site_names_a_real_module():
                 missing.append("%s: %s" % (md.name, m.group(1)))
     assert seen, "no launcher call sites found at all - did the rewrite land?"
     assert not missing, "call sites name modules that do not exist: %s" % missing
+
+
+def test_every_source_call_site_is_in_the_substitutable_form():
+    """The global installers rewrite the launcher path in the commands they
+    copy. That rewrite must change the PATH and nothing else, because
+    install_audit normalises exactly one canonical path back out before
+    hashing -- so a call site the installer has to requote is a call site the
+    audit will report as drift forever.
+
+    This was not theory: the first pass rewrote bare call sites into quoted
+    ones and the audit reported 6 stale files that no /sync-install could
+    settle. The repair was to quote the SOURCE, which is what this pins.
+    """
+    shell = re.compile(r'python\s+(?!")\S*\.advanced-plans/bin/ap\.py')
+    inline = re.compile(r"runpy\.run_path\((?!r')")
+    offenders = []
+    for md in sorted(COMMANDS_DIR.glob("*.md")):
+        text = io.open(str(md), encoding="utf-8", newline="").read()
+        for label, pattern in (("unquoted shell", shell),
+                               ("non-raw runpy", inline)):
+            if pattern.search(text):
+                offenders.append("%s: %s" % (md.name, label))
+    assert not offenders, (
+        "these call sites are not in the form the installers substitute, so "
+        "install_audit will see permanent drift after a --global install: %s"
+        % offenders)
 
 
 # ---------------------------------------------------------------------------
@@ -442,9 +754,14 @@ def test_installer_records_the_runtime_outside_the_scaffold_guard(installer):
     assert "ap_launcher.py" in text, "%s never installs the launcher" % installer
 
     lines = text.split("\n")
-    guard = next(i for i, l in enumerate(lines)
-                 if "skipping scaffold" in l.lower())
-    manifest = next(i for i, l in enumerate(lines) if "runtime.json" in l)
+    # LAST occurrence of each, not first. Both installers now write a SECOND
+    # runtime.json in their --global branch, which sits above the project
+    # install and exits before reaching it; taking the first match would
+    # compare the GLOBAL write against the PROJECT guard and prove nothing
+    # about either.
+    guard = max(i for i, l in enumerate(lines)
+                if "skipping scaffold" in l.lower())
+    manifest = max(i for i, l in enumerate(lines) if "runtime.json" in l)
     # The scaffold branch is well inside the file; the manifest write must come
     # after the whole if/else has closed, not within it.
     assert manifest > guard, (
@@ -481,7 +798,7 @@ def test_the_guard_only_names_repairs_that_exist():
         # launcher exits 2, and both stop the command before it arrives.
         # Found in review, after the first draft placed it at step 4b.
         repair = sync.index("Ensure the shared runtime is reachable")
-        audit = sync.index("python .advanced-plans/bin/ap.py install_audit")
+        audit = sync.index('python ".advanced-plans/bin/ap.py" install_audit')
         assert repair < audit, (
             "sync-install.md repairs the runtime record at offset %d but "
             "first invokes the launcher at offset %d, so the repair is "
@@ -530,11 +847,11 @@ def test_find_manifest_walks_up_and_stops(tmp_path):
     orphan.mkdir()
     try:
         found = ap_launcher.find_manifest(str(orphan))
-    except ap_launcher.ProjectWithoutManifest as exc:
-        # A project directory above it, with no manifest: refused, not borrowed.
-        assert os.path.isdir(os.path.join(exc.project, ".advanced-plans"))
+    except ap_launcher.Boundary as exc:
+        # A boundary above it, with no manifest: refused, not borrowed.
+        assert exc.kind in ("project", "repo")
         assert not os.path.isfile(
-            os.path.join(exc.project, ".advanced-plans", "runtime.json"))
+            os.path.join(exc.directory, ".advanced-plans", "runtime.json"))
     else:
         # Or genuinely nothing above it, on a machine with no such directory.
         assert found is None

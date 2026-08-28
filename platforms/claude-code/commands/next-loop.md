@@ -74,7 +74,7 @@ m = re.search(r'^current_phase:\s*(\S+)', planning, re.MULTILINE)
 phase_num = m.group(1).strip('\"') if m else None
 if phase_num:
     current_phase = phase_num if str(phase_num).startswith('phase-') else f'phase-{phase_num}'
-    import runpy; runpy.run_path('.advanced-plans/bin/ap.py')['bootstrap']()
+    import runpy; runpy.run_path(r'.advanced-plans/bin/ap.py')['bootstrap']()
     from platforms.python.state_manager import archive_cross_phase_state
     archived = archive_cross_phase_state('.advanced-plans/state', current_phase)
     if archived:
@@ -205,7 +205,7 @@ if complete_path.exists():
     h = d.get('handoff', {})
     prior = {'done': h.get('done',''), 'failed': h.get('failed',''), 'needed': h.get('needed','')}
 
-import runpy; runpy.run_path('.advanced-plans/bin/ap.py')['bootstrap']()
+import runpy; runpy.run_path(r'.advanced-plans/bin/ap.py')['bootstrap']()
 from platforms.python.state_manager import prepare_loop_ready
 result = prepare_loop_ready(loops_md, prior)
 
@@ -340,7 +340,7 @@ git add -A && git commit -m "complete: [loop_name] - [loop_complete.handoff.done
 After the commit, append a `loop_complete` event to the audit log:
 
 ```bash
-python .advanced-plans/bin/ap.py history_log .advanced-plans/state/history.jsonl \
+python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jsonl \
   "{\"event\":\"loop_complete\",\"phase\":\"[phase]\",\"loop\":\"[loop_name]\",\"todos_done\":[todos_done],\"todos_count\":[todos_count],\"todos_failed\":[todos_failed],\"commit\":\"$(git rev-parse --short HEAD)\"}"
 ```
 

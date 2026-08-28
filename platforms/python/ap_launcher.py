@@ -42,9 +42,24 @@ Resolution order
    manifest, and what the tests use.
 2. ``source_root`` in the nearest ``.advanced-plans/runtime.json``, searched
    from the working directory upward, so a command still works when it is run
-   from a subdirectory.
-3. This file's own checkout, when it is running from inside one. That is what
+   from a subdirectory. The walk stops at a *boundary* -- a directory that is
+   itself a project (it has ``.advanced-plans/``) or a repository root (it has
+   ``.git``) -- so a nested project or a vendored repository can never inherit
+   the checkout of whatever happens to enclose it.
+3. The **global** record at ``<home>/.advanced-plans/runtime.json``, written
+   only by ``--global`` installs. This is what makes a globally-installed
+   command work in a project that was never project-installed, which is the
+   whole point of a global install. Reaching a boundary in step 2 does not
+   skip this step: a project that has scaffolded ``.advanced-plans/`` but was
+   never project-installed is precisely the global case.
+4. This file's own checkout, when it is running from inside one. That is what
    makes the source repository work with no manifest at all.
+
+``<home>`` is ``%USERPROFILE%`` before ``$HOME``. Under Git Bash on Windows
+``$HOME`` is routinely a mapped network drive while the installers and
+``install_audit`` use the local profile, so resolving the global record with
+``os.path.expanduser('~')`` would look in a different place from the one the
+installer wrote to - the original defect, moved rather than fixed.
 
 Whatever is resolved must actually contain ``platforms/python/__init__.py``. A
 path that no longer points at a checkout is a stale manifest, and that is the
@@ -75,6 +90,79 @@ PROJECT_MARKER = ".advanced-plans"
 MANIFEST_KEY = "source_root"
 ENV_VAR = "ADVANCED_PLANNING_ROOT"
 PACKAGE_MARKER = os.path.join("platforms", "python", "__init__.py")
+REPO_MARKER = ".git"
+
+
+def global_home(env=None):
+    """The user profile directory, preferring USERPROFILE over HOME.
+
+    Deliberately duplicates ``install_audit.resolve_global_home``. This file
+    is copied out of the checkout and run before the runtime is reachable, so
+    it cannot import the module it agrees with. The duplication is pinned by
+    test_global_home_agrees_with_install_audit, which fails if either side is
+    changed alone - the drift this launcher's own design notes warn about,
+    made loud rather than assumed away.
+    """
+    env = os.environ if env is None else env
+    for key in ("USERPROFILE", "HOME"):
+        value = env.get(key)
+        if value:
+            return value
+    return os.path.expanduser("~")
+
+
+def _is_ancestor(parent, child):
+    """True when `parent` is `child` or contains it."""
+    parent = os.path.normcase(os.path.abspath(parent))
+    child = os.path.normcase(os.path.abspath(child))
+    return child == parent or child.startswith(parent + os.sep)
+
+
+def sibling_manifest(start=None):
+    """The manifest beside this launcher, if this launcher is an installed one.
+
+    ``<anywhere>/.advanced-plans/bin/ap.py`` has its manifest two directories
+    up at ``<anywhere>/.advanced-plans/runtime.json``. For the global copy that
+    IS the global record, and reading it this way rather than re-deriving the
+    profile directory is what makes install-time and run-time agree: a record
+    written under one home and read under another - CI, a container, a service
+    account, or just Git Bash's mapped $HOME against a PowerShell install - is
+    otherwise invisible. Found by installing globally into one profile and
+    calling the result from a shell holding a different one.
+
+    For a project copy this resolves to that project's own manifest, which the
+    upward walk has already found. Harmless there, and it means one rule
+    covers both.
+
+    With one refusal, which is the whole reason this is not two lines: if the
+    launcher's own project ENCLOSES the directory being resolved, using its
+    record is the borrowing the boundary stop exists to refuse - just arrived
+    at by a different route. Running `outer/.advanced-plans/bin/ap.py` from
+    `outer/vendor/inner` must still say "inner is not installed", not quietly
+    run outer's checkout. The upward walk stays authoritative over this.
+
+    Residual, stated rather than hidden: a global install whose profile
+    encloses the project AND whose install-time home differs from the
+    run-time home falls back to the profile-derived lookup, which will not
+    find it. That combination fails loudly with the usual exit 3, and the
+    repair - reinstall - is the right one.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    if os.path.basename(here) != "bin":
+        return None
+    ap_dir = os.path.dirname(here)
+    if os.path.basename(ap_dir) != PROJECT_MARKER:
+        return None
+    if _is_ancestor(os.path.dirname(ap_dir),
+                    os.path.abspath(start or os.getcwd())):
+        return None
+    candidate = os.path.join(ap_dir, "runtime.json")
+    return candidate if os.path.isfile(candidate) else None
+
+
+def global_manifest(env=None):
+    """Path of the profile-level record. Existence is not implied."""
+    return os.path.join(global_home(env), MANIFEST_RELPATH)
 
 
 class Unreachable(Exception):
@@ -91,12 +179,28 @@ class Unreachable(Exception):
         stream.write("advanced-planning: fix: %s\n" % self.fix)
 
 
-class ProjectWithoutManifest(Exception):
-    """A project directory was reached that has no manifest of its own."""
+class Boundary(Exception):
+    """The upward walk reached a directory it must not search past.
 
-    def __init__(self, project):
-        Exception.__init__(self, project)
-        self.project = project
+    Two kinds, and the distinction is only for the diagnostic:
+
+    ``project``
+        the directory has ``.advanced-plans/`` but no manifest -- it is a
+        project that was never installed;
+    ``repo``
+        the directory is a repository root with no manifest -- a separate
+        piece of software that merely lives inside another.
+
+    Neither is an error on its own. Both mean "stop looking upward for a
+    *project* manifest"; the global record is consulted next. What they
+    prevent is the one failure this design is most exposed to: succeeding
+    against the wrong checkout without saying so.
+    """
+
+    def __init__(self, directory, kind):
+        Exception.__init__(self, directory)
+        self.directory = directory
+        self.kind = kind
 
 
 def find_manifest(start=None):
@@ -106,14 +210,23 @@ def find_manifest(start=None):
     subdirectory as from the project root, and a launcher that looked only in
     the working directory would fail there for no reason a user could see.
 
-    But the walk stops at a project boundary. A directory holding
-    ``.advanced-plans/`` IS a project; if it has no manifest of its own, the
-    answer is "this project is not installed", not "borrow the manifest of
-    whatever project happens to contain it". Without this stop, a project
-    vendored inside another silently resolved to the OUTER project's checkout
-    and ran it, exit 0, with no diagnostic - which is the one failure this
-    design was always most exposed to. Found by a cross-vendor review panel
-    and reproduced before being fixed.
+    But the walk stops at a boundary, raising `Boundary` rather than
+    climbing past it. A directory holding ``.advanced-plans/`` IS a project,
+    and a directory holding ``.git`` is a separate piece of software; if
+    either has no manifest of its own, the answer is "not installed", not
+    "borrow the manifest of whatever happens to contain it".
+
+    Both stops were found by a cross-vendor review panel and reproduced
+    before being fixed. Without the project stop, a project vendored inside
+    another silently resolved to the OUTER project's checkout and ran it,
+    exit 0, no diagnostic. The repository stop closes the same hole for the
+    commoner case the first one misses: a nested independent repository -- a
+    monorepo service, a submodule -- that has no ``.advanced-plans/`` marker
+    to stop on at all.
+
+    The caller decides what a boundary means. It is not a failure: the global
+    record is consulted next, and only if that is absent too does it become
+    an error.
     """
     here = os.path.abspath(start or os.getcwd())
     while True:
@@ -121,7 +234,12 @@ def find_manifest(start=None):
         if os.path.isfile(candidate):
             return candidate
         if os.path.isdir(os.path.join(here, PROJECT_MARKER)):
-            raise ProjectWithoutManifest(here)
+            raise Boundary(here, "project")
+        if os.path.exists(os.path.join(here, REPO_MARKER)):
+            # A file, not just a directory: linked worktrees and submodules
+            # record their git dir in a `.git` FILE, and those are exactly
+            # the nested checkouts this stop exists for.
+            raise Boundary(here, "repo")
         parent = os.path.dirname(here)
         if parent == here:
             return None
@@ -137,7 +255,15 @@ def _launcher_checkout():
     """
     root = os.path.dirname(os.path.dirname(os.path.dirname(
         os.path.abspath(__file__))))
-    return root if os.path.isfile(os.path.join(root, PACKAGE_MARKER)) else None
+    if not os.path.isfile(os.path.join(root, PACKAGE_MARKER)):
+        return None
+    if (os.path.normcase(root)
+            == os.path.normcase(os.path.abspath(global_home()))):
+        # Three dirnames up from <home>/.advanced-plans/bin/ap.py is <home>.
+        # A user who happens to keep platforms/python/ under their profile
+        # would otherwise have the profile silently adopted as the runtime.
+        return None
+    return root
 
 
 def resolve(start=None):
@@ -152,17 +278,26 @@ def resolve(start=None):
                 "and platforms/." % ENV_VAR)
         return os.path.abspath(env), "$" + ENV_VAR
 
+    boundary = None
     try:
         manifest = find_manifest(start)
-    except ProjectWithoutManifest as exc:
-        raise Unreachable(
-            "%s is an Advanced Planning project (it has %s/) but has no %s"
-            % (exc.project, PROJECT_MARKER, MANIFEST_RELPATH),
-            "run this project's own installer from your advanced-planning "
-            "checkout (setup/claude-code/install.ps1 or install.sh). The walk "
-            "for a manifest deliberately stops here rather than borrowing an "
-            "enclosing project's, which would run the wrong checkout without "
-            "saying so.")
+    except Boundary as exc:
+        boundary, manifest = exc, None
+
+    if manifest is None:
+        # The global record, written only by a --global install. This is what
+        # a globally-installed command falls back to, including in a project
+        # that has scaffolded .advanced-plans/ without ever being installed.
+        #
+        # Beside-the-launcher first: it cannot disagree with the install that
+        # wrote it. The profile-derived path is the fallback for a launcher
+        # invoked from a source checkout while a global install exists.
+        manifest = sibling_manifest(start)
+    if manifest is None:
+        candidate = global_manifest()
+        if os.path.isfile(candidate):
+            manifest = candidate
+
     if manifest is not None:
         try:
             data = json.loads(pathlib.Path(manifest).read_text(encoding="utf-8"))
@@ -208,17 +343,48 @@ def resolve(start=None):
     if own:
         return own, "the checkout this launcher is running from"
 
+    if boundary is not None:
+        what = ("an Advanced Planning project (it has %s/)" % PROJECT_MARKER
+                if boundary.kind == "project"
+                else "a repository root (it has %s)" % REPO_MARKER)
+        raise Unreachable(
+            "%s is %s but has no %s, and there is no global record at %s "
+            "either" % (boundary.directory, what, MANIFEST_RELPATH,
+                        global_manifest()),
+            "run this project's installer from your advanced-planning "
+            "checkout (setup/claude-code/install.ps1 or install.sh), or "
+            "install globally with --global. The walk stops here rather than "
+            "borrowing the manifest of whatever encloses this directory, "
+            "which would run the wrong checkout without saying so.")
+
     raise Unreachable(
-        "no %s found in %s or any parent directory, and this launcher is not "
-        "running from a source checkout" % (MANIFEST_RELPATH, os.getcwd()),
+        "no %s found in %s or any parent directory, no global record at %s, "
+        "and this launcher is not running from a source checkout"
+        % (MANIFEST_RELPATH, os.getcwd(), global_manifest()),
         "run this project's installer (setup/claude-code/install.ps1 or "
-        "install.sh), which writes that file; or set %s to your "
-        "advanced-planning checkout." % ENV_VAR)
+        "install.sh), which writes that file; or install globally with "
+        "--global; or set %s to your advanced-planning checkout." % ENV_VAR)
 
 
 def bootstrap(start=None):
-    """Put the resolved runtime on sys.path and return its root."""
-    root, _how = resolve(start)
+    """Put the resolved runtime on sys.path and return its root.
+
+    This is the entry point for the inline ``python -c`` call sites::
+
+        import runpy; runpy.run_path('...ap.py')['bootstrap']()
+
+    which is half of them. It reports and exits rather than letting
+    `Unreachable` propagate: an exception escaping here reaches the operator
+    as a traceback naming a line number inside this file, which is precisely
+    the failure the guard exists to replace - and it would replace it at only
+    the other half of the call sites. Exiting keeps one contract for every
+    site: exit 3, the manifest named, the repair named.
+    """
+    try:
+        root, _how = resolve(start)
+    except Unreachable as exc:
+        exc.report()
+        raise SystemExit(EXIT_UNREACHABLE)
     if root not in sys.path:
         sys.path.insert(0, root)
     return root

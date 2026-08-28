@@ -16,6 +16,7 @@ import pytest
 
 from platforms.python.install_audit import (
     FileVerdict,
+    _file_hash,
     LayerPairResult,
     audit_pair,
     has_drift,
@@ -366,3 +367,60 @@ class TestLayersSelection:
         captured = capsys.readouterr()
         assert "project" not in captured.out
         assert rc == 0
+
+
+# ---------------------------------------------------------------------------
+# 7. the install-time launcher rewrite is canonical, not drift
+# ---------------------------------------------------------------------------
+
+
+class TestLauncherPathNormalisation:
+    """A --global install rewrites the launcher path in every command it
+    copies, because a project-relative path is meaningless from a project the
+    installer never touched. Without normalising that one path back out, every
+    globally installed command reports stale forever and no /sync-install can
+    settle it -- observed as "6 stale" on a clean install before this landed.
+    """
+
+    def test_the_installers_absolute_path_hashes_as_the_source_form(self, tmp_path):
+        src = tmp_path / "src.md"
+        src.write_text(
+            'python ".advanced-plans/bin/ap.py" history_log\n'
+            "import runpy; runpy.run_path(r'.advanced-plans/bin/ap.py')\n",
+            encoding="utf-8",
+        )
+        installed = tmp_path / "installed.md"
+        installed.write_text(
+            'python "C:/Users/bob/.advanced-plans/bin/ap.py" history_log\n'
+            "import runpy; "
+            "runpy.run_path(r'C:/Users/bob/.advanced-plans/bin/ap.py')\n",
+            encoding="utf-8",
+        )
+        assert _file_hash(src) == _file_hash(installed)
+
+    def test_a_backslash_path_normalises_too(self, tmp_path):
+        """install.ps1 writes forward slashes today, but the launcher accepts
+        either and a future installer changing its mind must not read as drift.
+        """
+        src = tmp_path / "src.md"
+        src.write_text('python ".advanced-plans/bin/ap.py" run_gate\n',
+                       encoding="utf-8")
+        installed = tmp_path / "installed.md"
+        installed.write_text(
+            'python "C:\\Users\\bob\\.advanced-plans\\bin\\ap.py" run_gate\n',
+            encoding="utf-8")
+        assert _file_hash(src) == _file_hash(installed)
+
+    def test_normalisation_does_not_mask_a_real_edit(self, tmp_path):
+        """The narrow point. Normalisation that swallowed the rest of the line
+        would turn install_audit into a no-op for exactly the files it most
+        needs to police.
+        """
+        src = tmp_path / "src.md"
+        src.write_text('python ".advanced-plans/bin/ap.py" history_log\n',
+                       encoding="utf-8")
+        tampered = tmp_path / "tampered.md"
+        tampered.write_text(
+            'python "C:/Users/bob/.advanced-plans/bin/ap.py" rm_rf\n',
+            encoding="utf-8")
+        assert _file_hash(src) != _file_hash(tampered)
