@@ -75,6 +75,10 @@ _SH_IMPLEMENTATIONS = [
     ("setup/claude-code/install.sh", "ap_home_native"),
     ("platforms/claude-code/install.sh", "ap_home_fs"),
     ("platforms/claude-code/install.sh", "ap_home_native"),
+    # The uninstaller resolves the same home, and getting it wrong there is
+    # quieter than getting it wrong in the installer: it would remove nothing
+    # from a home nothing was installed into, and report success.
+    ("setup/claude-code/uninstall.sh", "ap_home_fs"),
 ]
 
 _ALL_IMPLEMENTATIONS = [
@@ -85,6 +89,8 @@ _ALL_IMPLEMENTATIONS = [
     ("platforms/claude-code/install.sh", "ap_home_fs"),
     ("platforms/claude-code/install.sh", "ap_home_native"),
     ("setup/claude-code/install.ps1", "Get-ApGlobalHome"),
+    ("setup/claude-code/uninstall.sh", "ap_home_fs"),
+    ("setup/claude-code/uninstall.ps1", "Get-ApGlobalHome"),
 ]
 
 
@@ -178,12 +184,13 @@ def test_a_shell_copy_resolves_the_same_variable_as_the_launcher(
 
 
 @pytest.mark.skipif(shutil.which("pwsh") is None, reason="no pwsh available")
+@pytest.mark.parametrize("script", ["setup/claude-code/install.ps1",
+                                    "setup/claude-code/uninstall.ps1"])
 @pytest.mark.parametrize("case_id,overrides,expected", _CASES,
                          ids=[c[0] for c in _CASES])
 def test_the_powershell_copy_resolves_the_same_variable_as_the_launcher(
-        case_id, overrides, expected):
-    body = _extract_ps_function("setup/claude-code/install.ps1",
-                                "Get-ApGlobalHome")
+        script, case_id, overrides, expected):
+    body = _extract_ps_function(script, "Get-ApGlobalHome")
     rc, out, err = _run(
         ["pwsh", "-NoProfile", "-NonInteractive", "-Command",
          body + "\nGet-ApGlobalHome"],
@@ -235,9 +242,10 @@ def test_a_shell_copy_never_resolves_the_home_to_nothing(script, func):
 
 
 @pytest.mark.skipif(shutil.which("pwsh") is None, reason="no pwsh available")
-def test_the_powershell_copy_never_resolves_the_home_to_nothing():
-    body = _extract_ps_function("setup/claude-code/install.ps1",
-                                "Get-ApGlobalHome")
+@pytest.mark.parametrize("script", ["setup/claude-code/install.ps1",
+                                    "setup/claude-code/uninstall.ps1"])
+def test_the_powershell_copy_never_resolves_the_home_to_nothing(script):
+    body = _extract_ps_function(script, "Get-ApGlobalHome")
     rc, out, err = _run(
         ["pwsh", "-NoProfile", "-NonInteractive", "-Command",
          body + "\nGet-ApGlobalHome"],
