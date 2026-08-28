@@ -30,7 +30,9 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\.." )).Path
 
 # Approved core skills to install (excludes companion-detection, permission-config)
+# The shared routing skill "advanced-planning" is installed alongside these.
 $ApprovedSkills = @("phase-plan-creator", "ralph-loop-planner", "plan-todos", "plan-skill-identification", "plan-subagent-identification", "progress-report", "schema-design")
+$AllInstalledSkills = @("advanced-planning") + $ApprovedSkills
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -216,15 +218,23 @@ function Write-ApOwnership([string]$ProjectPath) {
         return
     }
 
-    # Read existing or start fresh
-    $data = @{schema_version = 1; skills = @{}}
+    # Read existing or start fresh - always work with hashtables
+    $skillsHash = @{}
     if (Test-Path -LiteralPath $ownerFile) {
         try {
             $existingContent = [System.IO.File]::ReadAllText($ownerFile)
-            $data = $existingContent | ConvertFrom-Json
-            # Ensure skills dict exists
-            if (-not $data.skills) {
-                $data | Add-Member -NotePropertyName "skills" -NotePropertyValue @{}
+            $parsed = $existingContent | ConvertFrom-Json
+            # Convert PSCustomObject skills to hashtable, ensuring array values
+            if ($parsed.skills) {
+                foreach ($k in $parsed.skills.PSObject.Properties.Name) {
+                    $val = $parsed.skills.$k
+                    # Convert to array - handle both single values and arrays
+                    if ($val -is [System.Array]) {
+                        $skillsHash[$k] = $val
+                    } else {
+                        $skillsHash[$k] = @($val)
+                    }
+                }
             }
         } catch {
             Write-Error "install.ps1: $ownerFile is malformed JSON ($_)"
@@ -234,20 +244,20 @@ function Write-ApOwnership([string]$ProjectPath) {
     }
 
     # Merge: for each skill this adapter installs, add "codex" to owners
-    foreach ($skill in $ApprovedSkills) {
-        $existing = @()
-        if ($data.skills.$skill) {
-            $existing = @($data.skills.$skill)
-        }
+    foreach ($skill in $AllInstalledSkills) {
+        # Force array context - PowerShell unwraps single-element arrays from hashtables
+        $existing = if ($skillsHash.ContainsKey($skill)) { , $skillsHash[$skill] } else { @() }
         if ("codex" -notin $existing) {
             $existing = $existing + @("codex")
         }
-        $data.skills.$skill = $existing
+        $skillsHash[$skill] = $existing
     }
 
-    $data.schema_version = 1
-
     # Write back
+    $data = @{
+        schema_version = 1
+        skills = $skillsHash
+    }
     $jsonOut = $data | ConvertTo-Json -Depth 5
     [System.IO.File]::WriteAllText($ownerFile, $jsonOut,
         [System.Text.UTF8Encoding]::new($false))

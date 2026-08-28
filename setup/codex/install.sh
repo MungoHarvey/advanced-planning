@@ -26,7 +26,9 @@ DRY_RUN=false
 SELF_INSTALL=false
 
 # Approved core skills to install (excludes companion-detection, permission-config)
+# The shared routing skill "advanced-planning" is installed alongside these.
 APPROVED_SKILLS="phase-plan-creator ralph-loop-planner plan-todos plan-skill-identification plan-subagent-identification progress-report schema-design"
+ALL_INSTALLED_SKILLS="advanced-planning $APPROVED_SKILLS"
 
 # ---------------------------------------------------------------------------
 # Argument parsing
@@ -311,7 +313,7 @@ write_ownership() {
     # Python does the JSON merge: reads existing (if any), adds "codex" to
     # each installed skill's owner list (creating entries as needed), leaves
     # other entries untouched, deduplicates, and writes back.
-    python3 - "$_owner_file" "$APPROVED_SKILLS" <<'PYEOF'
+    python - "$_owner_file" "$ALL_INSTALLED_SKILLS" <<'PYEOF'
 import json
 import sys
 import os

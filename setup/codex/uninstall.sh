@@ -169,7 +169,7 @@ process_ownership() {
     # List of skills this adapter installed
     _approved_skills="advanced-planning phase-plan-creator ralph-loop-planner plan-todos plan-skill-identification plan-subagent-identification progress-report schema-design"
 
-    python3 - "$_ownership_file" "$_skills_dir" "$_approved_skills" "$_confirmed" <<'PYEOF'
+    python - "$_ownership_file" "$_skills_dir" "$_approved_skills" "$_confirmed" <<'PYEOF'
 import json
 import sys
 import os
@@ -270,8 +270,8 @@ uninstall_from() {
         _decisions="$(process_ownership "$SKILLS_DIR" "$OWNERSHIP_FILE" "false")"
     fi
     
-    # Parse decisions
-    echo "$_decisions" | while IFS='|' read -r _action _skill _owners; do
+    # Parse decisions - use here-string to avoid subshell (while in pipe loses REMOVED/KEPT)
+    while IFS='|' read -r _action _skill _owners; do
         [ -z "$_action" ] && continue
         _skill_path="$SKILLS_DIR/$_skill"
         if [ "$_action" = "KEEP" ]; then
@@ -281,7 +281,9 @@ uninstall_from() {
             echo "  - skills/$_skill"
             remove_path "$_skill_path"
         fi
-    done
+    done <<EOF
+$_decisions
+EOF
     
     remove_if_empty "$SKILLS_DIR"
     remove_if_empty "$CLAUDE_DIR/.agents"
