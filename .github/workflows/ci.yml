@@ -129,15 +129,16 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Audit for deprecated/corrupted path tokens
+      - name: Path convention audit (deprecated + host-neutrality)
         run: |
           python -m platforms.python.path_audit
-        # Scans platforms/claude-code/commands/, platforms/claude-code/agents/,
-        # core/agents/, core/skills/, .claude/commands/, .claude/agents/ for:
-        #   - doubled prefix:  .advanced-.advanced-
-        #   - wrong nesting:   .claude/.advanced-plans
-        #   - deprecated token: .claude/plans/
-        # Exits non-zero (fails the build) if any violation is found.
+        # Scans active executable surface for path-convention violations per
+        # docs/path-conventions.md §7.3. Checks: (a) deprecated/corrupted tokens
+        # (.advanced-.advanced-, .claude/.advanced-plans, .claude/plans/);
+        # (b) host-neutrality in core/ (host directories, tool names, permission
+        # syntax). Exits non-zero if any violation found. Prints "PASSED WITH N
+        # SUPPRESSED" if known exceptions apply (exceptions are keyed by file+rule,
+        # printed with reason and retirement plan, and still fail on other rules).
 
       - name: Audit install-layer drift (source vs project)
         run: |
