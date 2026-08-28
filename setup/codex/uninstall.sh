@@ -20,7 +20,7 @@
 #   The shared skill at .agents/skills/advanced-planning/ may be registered by
 #   both Codex and OpenCode. This script reads .advanced-plans/skill-ownership.json
 #   and only removes what Codex owns. Shared entries have this adapter's
-#   registration dropped but the files left.
+#   registration dropped but the files left. The registry is updated, not deleted.
 #
 #   That set is derived from the source checkout, exactly as install.sh derives
 #   what to copy. A file in .agents/skills/ that this checkout does not
@@ -131,44 +131,6 @@ remove_if_empty() {
     fi
 }
 
-# Check skill ownership and remove appropriately
-remove_skill_with_ownership() {
-    _skill_name="$1"
-    _skills_dir="$2"
-    _ownership_file="$3"
-    _skill_path="$_skills_dir/$_skill_name"
-
-    [ -d "$_skill_path" ] || return 0
-
-    # Check ownership if metadata exists
-    if [ -f "$_ownership_file" ]; then
-        # Simple check: does the ownership file list "codex" for this skill?
-        # If skill is shared (multiple owners), remove registration but leave files
-        # If skill is codex-only, remove files
-        # For now: if ownership file exists and lists codex, remove the skill
-        # This is a simplified approach - full implementation would parse JSON
-        _is_owner=true
-        if grep -q "\"$_skill_name\"" "$_ownership_file" 2>/dev/null; then
-            # Skill is in ownership file - check if codex is listed
-            # Extract the array for this skill and check for "codex"
-            if grep -A5 "\"$_skill_name\"" "$_ownership_file" | grep -q '"codex"'; then
-                _is_owner=true
-            else
-                _is_owner=false
-            fi
-        fi
-
-        if [ "$_is_owner" = false ]; then
-            echo "  - $_skill_name (shared with another adapter - leaving in place)"
-            KEPT=$((KEPT + 1))
-            return 0
-        fi
-    fi
-
-    echo "  - skills/$_skill_name"
-    remove_path "$_skill_path"
-}
-
 # Remove AGENTS.md fence for codex
 remove_agents_fence() {
     _agents_file="$1"
@@ -183,8 +145,6 @@ remove_agents_fence() {
 
     if [ "$CONFIRMED" = true ]; then
         # Remove the fence block using sed
-        # This is tricky - we need to remove from fence_start to fence_end inclusive
-        # Use a temp file approach for portability
         _tmpfile=$(mktemp)
         sed "/${_fence_start}/,/${_fence_end}/d" "$_agents_file" > "$_tmpfile"
         # Remove leading/trailing blank lines that may result
@@ -196,6 +156,93 @@ remove_agents_fence() {
     else
         echo "  [dry-run] remove AGENTS.md fence block"
     fi
+}
+
+# Process ownership: remove "codex" from each skill, determine what to delete.
+# Uses Python for proper JSON handling. Outputs decisions to stdout.
+# Format: KEEP|REMOVE skill_name
+process_ownership() {
+    _skills_dir="$1"
+    _ownership_file="$2"
+    _confirmed="$3"
+
+    # List of skills this adapter installed
+    _approved_skills="advanced-planning phase-plan-creator ralph-loop-planner plan-todos plan-skill-identification plan-subagent-identification progress-report schema-design"
+
+    python3 - "$_ownership_file" "$_skills_dir" "$_approved_skills" "$_confirmed" <<'PYEOF'
+import json
+import sys
+import os
+
+owner_file = sys.argv[1]
+skills_dir = sys.argv[2]
+approved_skills = sys.argv[3].split() if len(sys.argv) > 3 else []
+confirmed = sys.argv[4] == "true"
+
+# Read ownership file
+data = {"schema_version": 1, "skills": {}}
+if os.path.exists(owner_file):
+    try:
+        with open(owner_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, ValueError):
+        # Malformed - treat as empty, will be cleaned up
+        pass
+
+if "skills" not in data:
+    data["skills"] = {}
+
+# Process each skill this adapter installed
+any_remaining = False
+for skill in approved_skills:
+    owners = data["skills"].get(skill, [])
+    if not isinstance(owners, list):
+        owners = []
+    
+    # Remove "codex" from owners
+    if "codex" in owners:
+        owners = [o for o in owners if o != "codex"]
+    
+    # Determine action
+    skill_path = os.path.join(skills_dir, skill)
+    skill_exists = os.path.isdir(skill_path)
+    
+    if owners:
+        # Shared - keep files, update registration
+        print(f"KEEP|{skill}|{','.join(owners)}")
+        any_remaining = True
+    elif skill_exists:
+        # Sole owner - remove files, drop entry
+        print(f"REMOVE|{skill}|")
+    # else: skill doesn't exist and no owners - nothing to do
+
+# Write updated ownership file only if there are remaining entries
+if any_remaining and confirmed:
+    data["skills"] = {k: v for k, v in data["skills"].items() 
+                      if k in approved_skills and "codex" not in data["skills"].get(k, []) or k not in approved_skills}
+    # Keep only entries with owners
+    remaining_skills = {}
+    for skill in approved_skills:
+        owners = data["skills"].get(skill, [])
+        if owners:
+            remaining_skills[skill] = owners
+    # Also keep any non-approved-skill entries (from other adapters)
+    for k, v in data["skills"].items():
+        if k not in approved_skills and v:
+            remaining_skills[k] = v
+    
+    if remaining_skills:
+        data["skills"] = remaining_skills
+        data["schema_version"] = 1
+        with open(owner_file, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+            f.write('\n')
+    elif os.path.exists(owner_file):
+        os.remove(owner_file)
+elif not any_remaining and confirmed and os.path.exists(owner_file):
+    # No remaining owners - delete the file
+    os.remove(owner_file)
+PYEOF
 }
 
 uninstall_from() {
@@ -215,18 +262,34 @@ uninstall_from() {
     echo ""
 
     echo "Skills (with ownership check):"
-    # Remove shared routing skill
-    remove_skill_with_ownership "advanced-planning" "$SKILLS_DIR" "$OWNERSHIP_FILE"
-    # Remove approved core skills
-    for _skill in phase-plan-creator ralph-loop-planner plan-todos plan-skill-identification plan-subagent-identification progress-report schema-design; do
-        remove_skill_with_ownership "$_skill" "$SKILLS_DIR" "$OWNERSHIP_FILE"
+    # Process ownership and get decisions
+    if [ "$CONFIRMED" = true ]; then
+        _decisions="$(process_ownership "$SKILLS_DIR" "$OWNERSHIP_FILE" "$CONFIRMED")"
+    else
+        # Dry run - simulate what would happen
+        _decisions="$(process_ownership "$SKILLS_DIR" "$OWNERSHIP_FILE" "false")"
+    fi
+    
+    # Parse decisions
+    echo "$_decisions" | while IFS='|' read -r _action _skill _owners; do
+        [ -z "$_action" ] && continue
+        _skill_path="$SKILLS_DIR/$_skill"
+        if [ "$_action" = "KEEP" ]; then
+            echo "  - $_skill (shared with another adapter - leaving files, updating registration)"
+            KEPT=$((KEPT + 1))
+        elif [ "$_action" = "REMOVE" ]; then
+            echo "  - skills/$_skill"
+            remove_path "$_skill_path"
+        fi
     done
+    
     remove_if_empty "$SKILLS_DIR"
     remove_if_empty "$CLAUDE_DIR/.agents"
 
     # Remove AGENTS.md fence
     echo "AGENTS.md:"
-    remove_agents_fence "$CLAUDE_DIR/../AGENTS.md"
+    _agents_file="$CLAUDE_DIR/../AGENTS.md"
+    remove_agents_fence "$_agents_file"
 
     # Shared Python runtime
     echo "Shared Python runtime:"
@@ -238,11 +301,6 @@ uninstall_from() {
     if [ -f "$AP_DIR/runtime.json" ]; then
         echo "  - runtime.json"
         remove_path "$AP_DIR/runtime.json"
-    fi
-    # Remove skill-ownership.json
-    if [ -f "$OWNERSHIP_FILE" ]; then
-        echo "  - skill-ownership.json"
-        remove_path "$OWNERSHIP_FILE"
     fi
 
     echo ""

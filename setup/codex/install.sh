@@ -296,38 +296,60 @@ $_fence_end"
 # ---------------------------------------------------------------------------
 # Ownership metadata for shared skills
 # ---------------------------------------------------------------------------
+# Uses Python for JSON read/modify/write to avoid fragile shell parsing.
+# Python is a hard dependency (the launcher) and this is the approach
+# that guarantees correct merging without grep-based hacks.
 write_ownership() {
     _project="$1"
     _owner_file="$_project/.advanced-plans/skill-ownership.json"
 
     if [ "$DRY_RUN" = true ]; then
-        echo "  [dry-run] write $_owner_file"
+        echo "  [dry-run] merge/write $_owner_file"
         return
     fi
 
-    # Read existing or create new
-    if [ -f "$_owner_file" ]; then
-        # Merge - add codex as owner for installed skills
-        # Simple approach: rewrite with codex ownership for all installed skills
-        _existing="$(cat "$_owner_file")"
-    fi
+    # Python does the JSON merge: reads existing (if any), adds "codex" to
+    # each installed skill's owner list (creating entries as needed), leaves
+    # other entries untouched, deduplicates, and writes back.
+    python3 - "$_owner_file" "$APPROVED_SKILLS" <<'PYEOF'
+import json
+import sys
+import os
 
-    # Write ownership for installed skills
-    cat > "$_owner_file" <<OWNEOF
-{
-  "schema_version": 1,
-  "skills": {
-    "advanced-planning": ["codex"],
-    "phase-plan-creator": ["codex"],
-    "ralph-loop-planner": ["codex"],
-    "plan-todos": ["codex"],
-    "plan-skill-identification": ["codex"],
-    "plan-subagent-identification": ["codex"],
-    "progress-report": ["codex"],
-    "schema-design": ["codex"]
-  }
-}
-OWNEOF
+owner_file = sys.argv[1]
+approved_skills = sys.argv[2].split() if len(sys.argv) > 2 else []
+
+# Read existing or start fresh
+if os.path.exists(owner_file):
+    try:
+        with open(owner_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, ValueError) as exc:
+        sys.stderr.write(f"install.sh: {owner_file} is malformed JSON ({exc})\n")
+        sys.stderr.write("install.sh: fix: repair the file or delete it and re-install.\n")
+        sys.exit(1)
+else:
+    data = {"schema_version": 1, "skills": {}}
+
+# Ensure skills dict exists
+if "skills" not in data:
+    data["skills"] = {}
+
+# Merge: for each skill this adapter installs, add "codex" to owners
+for skill in approved_skills:
+    existing = data["skills"].get(skill, [])
+    if not isinstance(existing, list):
+        existing = []
+    if "codex" not in existing:
+        existing.append("codex")
+    data["skills"][skill] = existing
+
+# Write back
+data["schema_version"] = 1
+with open(owner_file, 'w', encoding='utf-8') as f:
+    json.dump(data, f, indent=2)
+    f.write('\n')
+PYEOF
 }
 
 # ---------------------------------------------------------------------------

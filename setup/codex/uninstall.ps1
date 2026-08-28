@@ -16,7 +16,7 @@
 # The shared skill at .agents\skills\advanced-planning\ may be registered by
 # both Codex and OpenCode. This script reads .advanced-plans\skill-ownership.json
 # and only removes what Codex owns. Shared entries have this adapter's
-# registration dropped but the files left.
+# registration dropped but the files left. The registry is updated, not deleted.
 
 [CmdletBinding()]
 param(
@@ -54,8 +54,6 @@ function Remove-ApPath([string]$Path, [string]$Label) {
     if (-not $Yes) { return }
 
     if (Test-IsReparsePoint $Path) {
-        # Unlink only. Never recurse through a junction: the target is the
-        # source checkout.
         [System.IO.Directory]::Delete($Path, $false)
     }
     elseif ((Get-Item -LiteralPath $Path -Force) -is [System.IO.DirectoryInfo]) {
@@ -65,22 +63,6 @@ function Remove-ApPath([string]$Path, [string]$Label) {
         Remove-Item -LiteralPath $Path -Force
     }
     $script:Removed++
-}
-
-# Remove <Dest>\<name> for every <name> this checkout provides.
-function Remove-ApInstalledFrom([string]$Src, [string]$Dest, [string]$Label) {
-    if (-not (Test-Path -LiteralPath $Dest)) { return }
-    if (Test-IsReparsePoint $Dest) {
-        Remove-ApPath $Dest "$Label (junction -- unlinking, not following)"
-        return
-    }
-    if (-not (Test-Path -LiteralPath $Src)) { return }
-    foreach ($item in Get-ChildItem -LiteralPath $Src -Force) {
-        $target = Join-Path $Dest $item.Name
-        if (Test-Path -LiteralPath $target) {
-            Remove-ApPath $target "$Label/$($item.Name)"
-        }
-    }
 }
 
 function Remove-ApDirIfEmpty([string]$Path) {
@@ -99,53 +81,6 @@ function Remove-ApDirIfEmpty([string]$Path) {
     }
 }
 
-# Check skill ownership and remove appropriately
-# If skill has multiple owners (shared), leave files and only update registration
-# If skill has only codex as owner, remove the files
-function Remove-ApSkillWithOwnership([string]$SkillName, [string]$SkillsDir, [string]$OwnershipFile) {
-    $skillPath = Join-Path $SkillsDir $SkillName
-
-    if (-not (Test-Path -LiteralPath $skillPath)) { return }
-
-    # Check ownership if metadata exists
-    $isShared = $false
-    $isOwner = $true
-    if (Test-Path -LiteralPath $OwnershipFile) {
-        try {
-            $ownership = Get-Content $OwnershipFile -Raw | ConvertFrom-Json
-            if ($ownership.skills -and $ownership.skills.$SkillName) {
-                $owners = $ownership.skills.$SkillName
-                if ($owners -is [array]) {
-                    $isOwner = $owners -contains "codex"
-                    # Shared if more than one owner
-                    $isShared = $owners.Count -gt 1
-                } else {
-                    $isOwner = $owners -eq "codex"
-                    $isShared = $false
-                }
-            }
-        } catch {
-            # JSON parse error or other issue - assume sole ownership
-            $isOwner = $true
-            $isShared = $false
-        }
-    }
-
-    if (-not $isOwner) {
-        Write-Host "  - $SkillName (not owned by codex - leaving in place)"
-        $script:Kept++
-        return
-    }
-
-    if ($isShared) {
-        Write-Host "  - $SkillName (shared with another adapter - leaving files, will update registration)"
-        $script:Kept++
-        return
-    }
-
-    Remove-ApPath $skillPath "skills\$SkillName"
-}
-
 # Remove AGENTS.md fence for codex
 function Remove-ApAgentsFence([string]$AgentsFile) {
     if (-not (Test-Path -LiteralPath $AgentsFile)) { return }
@@ -158,10 +93,8 @@ function Remove-ApAgentsFence([string]$AgentsFile) {
     if ($content -notmatch [regex]::Escape($fenceStart)) { return }
 
     if ($Yes) {
-        # Remove the fence block
         $pattern = [regex]::Escape($fenceStart) + ".*?" + [regex]::Escape($fenceEnd)
         $newContent = [regex]::Replace($content, $pattern, "", [System.Text.RegularExpressions.RegexOptions]::Singleline)
-        # Clean up multiple consecutive blank lines
         $newContent = [regex]::Replace($newContent, "\n{3,}", "`n`n")
         [System.IO.File]::WriteAllText($AgentsFile, $newContent,
             [System.Text.UTF8Encoding]::new($false))
@@ -169,6 +102,97 @@ function Remove-ApAgentsFence([string]$AgentsFile) {
         $script:Removed++
     } else {
         Write-Host "  [dry-run] remove AGENTS.md fence block"
+    }
+}
+
+# Process ownership and perform removals
+function Invoke-ApOwnershipRemoval([string]$SkillsDir, [string]$OwnershipFile) {
+    $approvedSkills = @("advanced-planning", "phase-plan-creator", "ralph-loop-planner", "plan-todos", "plan-skill-identification", "plan-subagent-identification", "progress-report", "schema-design")
+
+    # Read ownership file
+    $data = @{schema_version = 1; skills = @{}}
+    $fileExists = Test-Path -LiteralPath $OwnershipFile
+    if ($fileExists) {
+        try {
+            $existingContent = [System.IO.File]::ReadAllText($OwnershipFile)
+            $data = $existingContent | ConvertFrom-Json
+            if (-not $data.skills) {
+                $data | Add-Member -NotePropertyName "skills" -NotePropertyValue @{}
+            }
+        } catch {
+            # Malformed - treat as empty
+        }
+    }
+
+    $anyRemaining = $false
+    $decisions = @()
+
+    # Process each skill
+    foreach ($skill in $approvedSkills) {
+        $owners = @()
+        if ($data.skills.$skill) {
+            $owners = @($data.skills.$skill)
+        }
+
+        # Remove "codex" from owners
+        $owners = $owners | Where-Object { $_ -ne "codex" }
+
+        $skillPath = Join-Path $SkillsDir $skill
+        $skillExists = Test-Path -LiteralPath $skillPath
+
+        if ($owners.Count -gt 0) {
+            # Shared - keep files, update registration
+            $decisions += @{Action = "KEEP"; Skill = $skill; Owners = $owners}
+            $anyRemaining = $true
+        } elseif ($skillExists) {
+            # Sole owner - remove
+            $decisions += @{Action = "REMOVE"; Skill = $skill; Owners = @()}
+        }
+    }
+
+    # Output decisions and perform actions
+    foreach ($decision in $decisions) {
+        if ($decision.Action -eq "KEEP") {
+            Write-Host "  - $($decision.Skill) (shared with another adapter - leaving files, updating registration)"
+            $script:Kept++
+        } else {
+            Remove-ApPath (Join-Path $SkillsDir $decision.Skill) "skills\$($decision.Skill)"
+        }
+    }
+
+    # Write updated ownership file
+    if ($Yes) {
+        if ($anyRemaining) {
+            # Build remaining skills object
+            $remainingSkills = @{}
+            foreach ($skill in $approvedSkills) {
+                $owners = @($data.skills.$skill | Where-Object { $_ -ne "codex" })
+                if ($owners.Count -gt 0) {
+                    $remainingSkills[$skill] = $owners
+                }
+            }
+            # Keep non-approved-skill entries from other adapters
+            foreach ($k in $data.skills.PSObject.Properties.Name) {
+                if ($k -notin $approvedSkills -and $data.skills.$k) {
+                    $remainingSkills[$k] = $data.skills.$k
+                }
+            }
+
+            if ($remainingSkills.Count -gt 0) {
+                $newData = @{
+                    schema_version = 1
+                    skills = $remainingSkills
+                }
+                $jsonOut = $newData | ConvertTo-Json -Depth 5
+                [System.IO.File]::WriteAllText($OwnershipFile, $jsonOut,
+                    [System.Text.UTF8Encoding]::new($false))
+            } elseif (Test-Path -LiteralPath $OwnershipFile) {
+                Remove-Item -LiteralPath $OwnershipFile -Force
+            }
+        } elseif (Test-Path -LiteralPath $OwnershipFile) {
+            # No remaining owners - delete the file
+            Remove-Item -LiteralPath $OwnershipFile -Force
+        }
     }
 }
 
@@ -187,13 +211,8 @@ function Invoke-ApUninstall([string]$AgentsDir, [string]$ApDir) {
     Write-Host ""
 
     Write-Host "Skills (with ownership check):"
-    # Remove shared routing skill
-    Remove-ApSkillWithOwnership "advanced-planning" $SkillsDir $OwnershipFile
-    # Remove approved core skills
-    $approvedSkills = @("phase-plan-creator", "ralph-loop-planner", "plan-todos", "plan-skill-identification", "plan-subagent-identification", "progress-report", "schema-design")
-    foreach ($skill in $approvedSkills) {
-        Remove-ApSkillWithOwnership $skill $SkillsDir $OwnershipFile
-    }
+    Invoke-ApOwnershipRemoval $SkillsDir $OwnershipFile
+
     Remove-ApDirIfEmpty $SkillsDir
     Remove-ApDirIfEmpty $AgentsDir
 
@@ -210,11 +229,6 @@ function Invoke-ApUninstall([string]$AgentsDir, [string]$ApDir) {
     Remove-ApPath (Join-Path $ApDir "bin\ap.py") "bin/ap.py"
     Remove-ApDirIfEmpty (Join-Path $ApDir "bin")
     Remove-ApPath (Join-Path $ApDir "runtime.json") "runtime.json"
-
-    # Remove skill-ownership.json
-    if (Test-Path -LiteralPath $OwnershipFile) {
-        Remove-ApPath $OwnershipFile "skill-ownership.json"
-    }
 
     Write-Host ""
     Write-Host "Left in place -- this is your planning record, not part of the install:"

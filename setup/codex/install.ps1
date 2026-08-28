@@ -206,31 +206,50 @@ $fenceEnd
 }
 
 # ---------------------------------------------------------------------------
-# Write ownership metadata
+# Write ownership metadata - merges with existing, does not overwrite
 # ---------------------------------------------------------------------------
 function Write-ApOwnership([string]$ProjectPath) {
     $ownerFile = Join-Path $ProjectPath ".advanced-plans\skill-ownership.json"
 
     if ($DryRun) {
-        Write-Host "  [dry-run] write $ownerFile"
+        Write-Host "  [dry-run] merge/write $ownerFile"
         return
     }
 
-    $ownership = @{
-        schema_version = 1
-        skills = @{
-            "advanced-planning" = @("codex")
-            "phase-plan-creator" = @("codex")
-            "ralph-loop-planner" = @("codex")
-            "plan-todos" = @("codex")
-            "plan-skill-identification" = @("codex")
-            "plan-subagent-identification" = @("codex")
-            "progress-report" = @("codex")
-            "schema-design" = @("codex")
+    # Read existing or start fresh
+    $data = @{schema_version = 1; skills = @{}}
+    if (Test-Path -LiteralPath $ownerFile) {
+        try {
+            $existingContent = [System.IO.File]::ReadAllText($ownerFile)
+            $data = $existingContent | ConvertFrom-Json
+            # Ensure skills dict exists
+            if (-not $data.skills) {
+                $data | Add-Member -NotePropertyName "skills" -NotePropertyValue @{}
+            }
+        } catch {
+            Write-Error "install.ps1: $ownerFile is malformed JSON ($_)"
+            Write-Error "install.ps1: fix: repair the file or delete it and re-install."
+            exit 1
         }
-    } | ConvertTo-Json -Depth 3
+    }
 
-    [System.IO.File]::WriteAllText($ownerFile, $ownership,
+    # Merge: for each skill this adapter installs, add "codex" to owners
+    foreach ($skill in $ApprovedSkills) {
+        $existing = @()
+        if ($data.skills.$skill) {
+            $existing = @($data.skills.$skill)
+        }
+        if ("codex" -notin $existing) {
+            $existing = $existing + @("codex")
+        }
+        $data.skills.$skill = $existing
+    }
+
+    $data.schema_version = 1
+
+    # Write back
+    $jsonOut = $data | ConvertTo-Json -Depth 5
+    [System.IO.File]::WriteAllText($ownerFile, $jsonOut,
         [System.Text.UTF8Encoding]::new($false))
 }
 
