@@ -163,18 +163,41 @@ function Invoke-ApOwnershipRemoval([string]$SkillsDir, [string]$OwnershipFile) {
     # Write updated ownership file
     if ($Yes) {
         if ($anyRemaining) {
-            # Build remaining skills object
+            # Build remaining skills object - convert PSCustomObject to hashtable first
+            $skillsHash = @{}
+            if ($data.skills) {
+                foreach ($k in $data.skills.PSObject.Properties.Name) {
+                    $val = $data.skills.$k
+                    # Preserve arrays, wrap non-arrays
+                    if ($val -is [System.Array]) {
+                        $skillsHash[$k] = $val
+                    } else {
+                        $skillsHash[$k] = @($val)
+                    }
+                }
+            }
+
             $remainingSkills = @{}
             foreach ($skill in $approvedSkills) {
-                $owners = @($data.skills.$skill | Where-Object { $_ -ne "codex" })
-                if ($owners.Count -gt 0) {
-                    $remainingSkills[$skill] = $owners
+                if ($skillsHash.ContainsKey($skill)) {
+                    $owners = $skillsHash[$skill]
+                    # Filter out "codex"
+                    $filtered = @($owners | Where-Object { $_ -ne "codex" })
+                    $filtered = @($filtered | Where-Object { $null -ne $_ })
+                    if ($filtered.Count -gt 0) {
+                        $remainingSkills[$skill] = $filtered
+                    }
                 }
             }
             # Keep non-approved-skill entries from other adapters
-            foreach ($k in $data.skills.PSObject.Properties.Name) {
-                if ($k -notin $approvedSkills -and $data.skills.$k) {
-                    $remainingSkills[$k] = $data.skills.$k
+            foreach ($k in $skillsHash.Keys) {
+                if ($k -notin $approvedSkills) {
+                    $owners = $skillsHash[$k]
+                    $filtered = @($owners | Where-Object { $_ -ne "codex" })
+                    $filtered = @($filtered | Where-Object { $null -ne $_ })
+                    if ($filtered.Count -gt 0) {
+                        $remainingSkills[$k] = $filtered
+                    }
                 }
             }
 
