@@ -192,16 +192,17 @@ if os.path.exists(owner_file):
 if "skills" not in data:
     data["skills"] = {}
 
-# Process each skill this adapter installed
+# Process each skill this adapter installed - mutate data in place
 any_remaining = False
 for skill in approved_skills:
     owners = data["skills"].get(skill, [])
     if not isinstance(owners, list):
         owners = []
     
-    # Remove "codex" from owners
+    # Remove "codex" from owners - mutate data directly
     if "codex" in owners:
         owners = [o for o in owners if o != "codex"]
+        data["skills"][skill] = owners  # Write back to data
     
     # Determine action
     skill_path = os.path.join(skills_dir, skill)
@@ -218,9 +219,7 @@ for skill in approved_skills:
 
 # Write updated ownership file only if there are remaining entries
 if any_remaining and confirmed:
-    data["skills"] = {k: v for k, v in data["skills"].items() 
-                      if k in approved_skills and "codex" not in data["skills"].get(k, []) or k not in approved_skills}
-    # Keep only entries with owners
+    # Build remaining skills: approved skills with owners + non-approved entries
     remaining_skills = {}
     for skill in approved_skills:
         owners = data["skills"].get(skill, [])
