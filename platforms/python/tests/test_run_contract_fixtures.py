@@ -155,7 +155,7 @@ INVALID_FIXTURES = [
     {
         "file": "evidence-status-review-required.json",
         "schema": "evidence",
-        "reason": "status=review_required is not in §10 lifecycle (design §9.3 example is wrong)",
+        "reason": "status=review_required is not in §10 lifecycle; kept as a regression case after the §9.3 example was corrected to 'review'",
         "expect": ["/properties/status/enum"],
         "repair": {"op": "set", "pointer": "/status", "value": "review"},
     },

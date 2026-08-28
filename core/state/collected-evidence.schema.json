@@ -19,7 +19,7 @@
     "status": {
       "type": "string",
       "enum": ["declared", "prepared", "running", "blocked", "review", "completed", "failed", "interrupted", "cancelled"],
-      "description": "AAW lifecycle status from §10. Terminal states are completed, failed, cancelled. 'review' is the correct value (not 'review_required' — the §9.3 example uses a non-canonical name). 'blocked' is valid but non-terminal. 'done', 'idle', 'unknown' are Herdr observations, not AAW states."
+      "description": "AAW lifecycle status from §10. Terminal states are completed, failed, cancelled. 'review' is the correct value; 'review_required' is not a state (the §9.3 example said so until it was corrected). 'blocked' is valid but non-terminal. 'done', 'idle', 'unknown' are Herdr observations, not AAW states."
     },
     "agent": {
       "type": "object",
