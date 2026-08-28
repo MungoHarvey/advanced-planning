@@ -37,18 +37,30 @@ All state operations use `.advanced-plans/state/`. If the directory does not exi
 
 Every Python call goes through the launcher, in exactly this form:
 
-```
+```bash
 python ".advanced-plans/bin/ap.py" <module> [args]
 ```
 
+Example commands:
+- `python ".advanced-plans/bin/ap.py" state_validate loop-ready .advanced-plans/state/loop-ready.json`
+- `python ".advanced-plans/bin/ap.py" state_manager .advanced-plans/state`
+- `python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jsonl '{"event": "phase_started"}'`
+
 Never `python -m platforms.python.<module>`, never `python platforms/python/<module>.py`, never `sys.path.insert(0, '.')`.
+
+**Exit code contract**: The launcher exits `3` when the runtime is unreachable (moved checkout, missing manifest). On exit `3`, print the repair diagnostic and stop — do not carry on as though the step succeeded.
 
 ### 4. Action implementations
 
 #### `phase <goal>`
 
-1. Call the phase planning pipeline via the shared runtime.
-2. When the phase plan is written to `.advanced-plans/phases/phase-N/plan.md`, print the plan and the human gate instruction:
+1. Run the phase planning pipeline:
+   ```bash
+   python ".advanced-plans/bin/ap.py" plan_io phase --goal "<goal>"
+   ```
+   This writes `.advanced-plans/phases/phase-N/plan.md`.
+
+2. When the phase plan is written, print the plan and the human gate instruction:
 
    ```
    REVIEW .advanced-plans/phases/phase-N/plan.md
@@ -61,7 +73,14 @@ Never `python -m platforms.python.<module>`, never `python platforms/python/<mod
 
 3. **Stop and wait.** Do not proceed to loop decomposition. Do not record an approval event. Do not run auto mode.
 
-4. On `APPROVE phase-N`: run loop decomposition, todo population, skill assignment, and agent assignment. Update `.advanced-plans/PLANNING.md`.
+4. On `APPROVE phase-N`: run loop decomposition, todo population, skill assignment, and agent assignment via:
+   ```bash
+   python ".advanced-plans/bin/ap.py" plan_io decompose --phase phase-N
+   ```
+   Update `.advanced-plans/PLANNING.md` and log the event:
+   ```bash
+   python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jsonl '{"event": "phase_approved", "phase": "phase-N"}'
+   ```
 
 5. On `REVISE phase-N`: rerun phase planning with the supplied instructions and present the revised plan.
 
@@ -71,15 +90,37 @@ Never `python -m platforms.python.<module>`, never `python platforms/python/<mod
 
 1. Check for outstanding human review. If a phase plan exists without an approval record, print the gate instruction and stop.
 
-2. Validate `loop-ready.json` if present:
-   - If it exists and matches the next pending loop, proceed to worker assignment.
-   - If it exists but is stale (different phase), archive it and start fresh.
+2. Check state status:
+   ```bash
+   python ".advanced-plans/bin/ap.py" state_manager .advanced-plans/state
+   ```
 
-3. Spawn the orchestrator (via native subagent or external Herdr task) to prepare `loop-ready.json`.
+3. Validate `loop-ready.json` if present:
+   ```bash
+   python ".advanced-plans/bin/ap.py" state_validate loop-ready .advanced-plans/state/loop-ready.json
+   ```
+   - Exit code `0`: valid, proceed to worker assignment.
+   - Exit code `1`: invalid document — print validation errors and stop.
+   - Exit code `2` or `3`: environment error (missing schema, unreachable runtime) — print the repair diagnostic and stop.
+   - If stale (different phase), archive via `state_manager.archive_cross_phase_state` and start fresh.
 
-4. Once `loop-ready.json` is written and validated (use `state_validate loop-ready`), spawn the worker to execute the loop.
+4. Spawn the orchestrator (via native subagent or external Herdr task) to prepare `loop-ready.json`.
 
-5. On worker completion, validate `loop-complete.json` and update planning state.
+5. Once `loop-ready.json` is written, validate before spawning the worker:
+   ```bash
+   python ".advanced-plans/bin/ap.py" state_validate loop-ready .advanced-plans/state/loop-ready.json
+   ```
+
+6. Spawn the worker to execute the loop.
+
+7. On worker completion, validate `loop-complete.json`:
+   ```bash
+   python ".advanced-plans/bin/ap.py" state_validate loop-complete .advanced-plans/state/loop-complete.json
+   ```
+   Then update planning state and log:
+   ```bash
+   python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jsonl '{"event": "loop_completed", "loop": "ralph-loop-NNN"}'
+   ```
 
 **Auto-chaining is not the default.** `loop next` performs exactly one cycle. Auto-chaining requires an explicit `--auto` flag.
 
@@ -89,26 +130,67 @@ Never `python -m platforms.python.<module>`, never `python platforms/python/<mod
 
 2. Spawn independent gate reviewers (one per review type) to evaluate the phase outputs.
 
-3. Validate every verdict against `core/state/gate-verdict.schema.json`.
+3. Validate every verdict against the schema:
+   ```bash
+   python ".advanced-plans/bin/ap.py" state_validate gate-verdict gate-verdicts/phase-N-attempt-1.json
+   ```
+   - Exit code `0`: verdict is valid.
+   - Exit code `1`: verdict is invalid — print validation errors and stop.
+   - Exit code `2` or `3`: environment error — print the repair diagnostic and stop.
 
-4. If all verdicts pass: close the phase, advance the pointer, and direct to `/phase-compact`.
+4. If all verdicts pass: close the phase, advance the pointer, and direct to `/phase-compact`. Log the event:
+   ```bash
+   python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jsonl '{"event": "gate_pass", "phase": "phase-N"}'
+   ```
 
-5. If any verdict fails: create validated retry context with `gate_failure_context` injected, and stop for operator direction.
+5. If any verdict fails: create validated retry context with `gate_failure_context` injected, and stop for operator direction. Log:
+   ```bash
+   python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jsonl '{"event": "gate_fail", "phase": "phase-N"}'
+   ```
+
+**External task dispatch** (if using Herdr/AAW fallback):
+- Before dispatch, validate the envelope:
+  ```bash
+  python ".advanced-plans/bin/ap.py" state_validate external-task-envelope <envelope-path>
+  ```
+- After completion, validate collected evidence before state advances:
+  ```bash
+  python ".advanced-plans/bin/ap.py" state_validate collected-evidence <evidence-path>
+  ```
 
 #### `resume`
 
-1. Validate existing state:
-   - If an outstanding human review exists: reprint the plan and gate instruction.
-   - If `loop-complete.json` exists and matches `loop-ready.json`: finalize without rerunning.
-   - If `loop-ready.json` exists without matching completion: resume that assignment.
-   - If state is dirty or contradictory: stop for explicit direction.
-   - If JSON is invalid: do not overwrite; report the defect.
+1. Validate existing state by reading status:
+   ```bash
+   python ".advanced-plans/bin/ap.py" state_manager .advanced-plans/state
+   ```
+   This returns the current state bus status (has_loop_ready, has_loop_complete, etc.).
 
-2. Proceed based on the validated state.
+2. Based on the state:
+   - **Outstanding human review**: Reprint the plan and gate instruction.
+   - **`loop-complete.json` matches `loop-ready.json`**: Finalize without rerunning. Validate both:
+     ```bash
+     python ".advanced-plans/bin/ap.py" state_validate loop-ready .advanced-plans/state/loop-ready.json
+     python ".advanced-plans/bin/ap.py" state_validate loop-complete .advanced-plans/state/loop-complete.json
+     ```
+   - **`loop-ready.json` without matching completion**: Resume that assignment. Validate:
+     ```bash
+     python ".advanced-plans/bin/ap.py" state_validate loop-ready .advanced-plans/state/loop-ready.json
+     ```
+   - **Dirty or contradictory state**: Stop for explicit direction.
+   - **Invalid JSON**: Do not overwrite; report the defect. Validate to get specific errors:
+     ```bash
+     python ".advanced-plans/bin/ap.py" state_validate loop-ready .advanced-plans/state/loop-ready.json
+     ```
 
 #### `compact current`
 
-1. Generate and validate phase handoff and compaction artefacts:
+1. Generate and validate phase handoff and compaction artefacts via:
+   ```bash
+   python ".advanced-plans/bin/ap.py" handoff phase-N
+   python ".advanced-plans/bin/ap.py" handoff_digest phase-N
+   ```
+   These produce:
    - `.advanced-plans/phases/phase-N/complete.md` (cold artefact)
    - `.advanced-plans/PLANS-INDEX.md` manifest entry (hot artefact)
    - `.advanced-plans/phases/phase-N/handoff.md` (resume digest)
@@ -152,5 +234,5 @@ Print a clear error message:
 - **State directory:** `.advanced-plans/state/` — never a host-private directory.
 - **Schema validation:** use `state_validate` before publishing any state document and after reading one.
 - **Human gate blocks:** after phase planning, print the gate instruction and stop.
-- **No Plannotator:** do not mention, detect, or recommend the deprecated review companion.
+- **Deprecated review companions:** do not mention, detect, or recommend external review tools that are not part of the core planning framework.
 - **Checkpoint ownership:** the worker never commits. Codex runs in linked worktrees where `git commit` is forbidden by sandbox; the external controller commits.

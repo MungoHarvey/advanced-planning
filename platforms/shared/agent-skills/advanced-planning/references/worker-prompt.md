@@ -191,34 +191,45 @@ Rules:
 
 ### Step 3 — Write loop-complete.json
 
-Write `loop-complete.json` to the state directory:
+Write `loop-complete.json` to the state directory via the runtime:
 
-```json
-{
-  "loop_name": "[name from loop frontmatter]",
-  "loop_file": "[path to loop plan file]",
-  "status": "completed",
-  "todos_done": [count of todos with status: completed],
-  "todos_failed": [count of todos with status: cancelled],
-  "completed_at": "[ISO 8601 timestamp]",
-  "handoff": {
-    "done": "[same value as handoff_summary.done]",
-    "failed": "[same value as handoff_summary.failed]",
-    "needed": "[same value as handoff_summary.needed]"
-  },
-  "duration_seconds": [elapsed seconds since worker start, optional]
-}
+```bash
+python ".advanced-plans/bin/ap.py" state_manager .advanced-plans/state --write-loop-complete \
+  --loop_name "ralph-loop-NNN" \
+  --loop_file ".advanced-plans/phases/phase-N/loops.md" \
+  --status "completed" \
+  --todos_done N \
+  --todos_failed N \
+  --handoff_done "..." \
+  --handoff_failed "..." \
+  --handoff_needed "..."
+```
+
+Or use the library API:
+```python
+from platforms.python.state_manager import write_loop_complete
+write_loop_complete(state_dir, loop_name="ralph-loop-NNN", ...)
 ```
 
 The `status` enum: `completed` (all todos done), `partial` (some cancelled), `failed` (escalate or rollback triggered).
 
 The formal JSON Schema is at `core/state/loop-complete.schema.json`.
 
+**Validation requirement**: Before returning, validate the file you just wrote:
+```bash
+python ".advanced-plans/bin/ap.py" state_validate loop-complete .advanced-plans/state/loop-complete.json
+```
+
 ### Step 4 — Return
 
-Log the completion event.
+Log the completion event:
+```bash
+python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jsonl '{"event": "loop_completed", "loop": "ralph-loop-NNN"}'
+```
 
 Return to the main thread. Do not advance to the next loop — that is the main thread's decision.
+
+**Exit code contract**: If the launcher exits `3`, the runtime is unreachable. Print the diagnostic and stop — do not write a partial file.
 
 ---
 

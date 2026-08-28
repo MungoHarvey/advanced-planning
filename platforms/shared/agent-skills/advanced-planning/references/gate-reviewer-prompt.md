@@ -79,7 +79,18 @@ Write the verdict to `gate-verdicts/[phase]-attempt-[N]-[agent-name].json` follo
 
 The file is immutable once written. Do not overwrite. Each attempt produces a new file.
 
+**Validation requirement**: After writing, validate the verdict:
+```bash
+python ".advanced-plans/bin/ap.py" state_validate gate-verdict gate-verdicts/phase-N-attempt-1.json
+```
+
+- Exit code `0`: verdict is valid.
+- Exit code `1`: verdict is invalid — print validation errors and repair.
+- Exit code `2` or `3`: environment error — print the repair diagnostic and stop.
+
 Return to the main thread.
+
+**Exit code contract**: If the launcher exits `3`, the runtime is unreachable. Print the diagnostic and stop — do not write a partial file.
 
 ---
 
