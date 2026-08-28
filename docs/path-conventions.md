@@ -136,7 +136,7 @@ Rewrite any occurrence on encounter.
 A reference is stale if it directs an agent or script to store or read planning data from
 any of the deprecated paths above. It is NOT stale if it:
 
-- Describes the `.claude/` directory as a runtime Adapter location (commands, skills, agents)
+- Describes the `.claude/` directory as a runtime adapter location (commands, skills, agents)
 - Appears inside an install script explaining what it creates at `.claude/`
 - Appears in a test fixture or migration artefact that explicitly labels it as legacy
 
@@ -144,7 +144,7 @@ any of the deprecated paths above. It is NOT stale if it:
 
 ## Host-Neutrality Rule (§7.3)
 
-**Design authority:** Design §7.3 (envelope loop-003-hostneutral).
+**Design authority:** AAW v0.2 design, §7.3 (Advanced Planning adapter requirements).
 
 **Rule:** Core files must contain no `.claude/`, `.cursor/`, `.opencode/`, `.codex/`,
 `.agents/`, `.gemini/`, Claude-only tool names, or host-specific permission syntax.
