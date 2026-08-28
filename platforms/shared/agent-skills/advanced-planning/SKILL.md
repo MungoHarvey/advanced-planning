@@ -60,16 +60,7 @@ Never `python -m platforms.python.<module>`, never `python platforms/python/<mod
 
 #### `phase <goal>`
 
-1. Run the phase planning pipeline. **Note:** `plan_io` is a library module (no CLI). Use the bootstrap form:
-
-   ```python
-   import runpy
-   runpy.run_path(r'.advanced-plans/bin/ap.py')['bootstrap']()
-   from platforms.python.plan_io import create_phase_plan
-   create_phase_plan(phases_dir=".advanced-plans/phases", goal="<goal>")
-   ```
-
-   **GAP:** `create_phase_plan` function does not exist in `plan_io`. The runtime has `find_next_loop`, `_parse_simple_yaml_block`, etc. but no phase creation function. This is a **gap** — the runtime needs a new function for phase plan creation.
+1. **GAP:** `plan_io` has no `create_phase_plan` function. The runtime has `find_next_loop`, `_parse_simple_yaml_block`, etc. but no phase creation function. This is a **gap** — the runtime needs a new function for phase plan creation.
 
    For now, the host must perform phase planning directly (not through the runtime) and write `.advanced-plans/phases/phase-N/plan.md`.
 
