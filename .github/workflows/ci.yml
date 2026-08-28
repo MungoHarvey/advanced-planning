@@ -132,13 +132,15 @@ jobs:
       - name: Path convention audit (deprecated + host-neutrality)
         run: |
           python -m platforms.python.path_audit
-        # Scans active executable surface for path-convention violations per
-        # docs/path-conventions.md §7.3. Checks: (a) deprecated/corrupted tokens
-        # (.advanced-.advanced-, .claude/.advanced-plans, .claude/plans/);
-        # (b) host-neutrality in core/ (host directories, tool names, permission
-        # syntax). Exits non-zero if any violation found. Prints "PASSED WITH N
-        # SUPPRESSED" if known exceptions apply (exceptions are keyed by file+rule,
-        # printed with reason and retirement plan, and still fail on other rules).
+        # Scans the roots in path_audit.DEFAULT_SCANNED_ROOTS for two families of
+        # violation: (a) deprecated/corrupted path tokens, everywhere it scans
+        # (docs/path-conventions.md, "Deprecated Path Tokens"); (b) host-neutrality
+        # under core/ only -- host directories, host-only tool names, host
+        # permission syntax (same doc, "Host-Neutrality Rule (§7.3)").
+        # Exits non-zero if any violation is found. Known exceptions are keyed by
+        # (file, rule), are printed in full with reason and retirement plan, and do
+        # not blind that file to other rules; a run with only exceptions prints
+        # "PASSED WITH N SUPPRESSED" and exits 0.
 
       - name: Audit install-layer drift (source vs project)
         run: |
