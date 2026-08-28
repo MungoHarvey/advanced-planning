@@ -530,3 +530,14 @@ class TestMainExitCodes:
         assert "bad-skill" in captured.out, f"Expected file name in output: {captured.out}"
         assert "1:" in captured.out or ":1:" in captured.out, f"Expected line number in output: {captured.out}"
         assert "host-directory" in captured.out, f"Expected pattern name in output: {captured.out}"
+
+        # The other half of the round trip: remove the token from the SAME tree and
+        # the same command must go green. A check that only ever goes red on a tree
+        # built to be red has not been shown to distinguish the two.
+        bad_file.write_text(
+            "Configure the host settings file for this platform.\n",
+            encoding="utf-8",
+        )
+        assert main(["--root", str(root)]) == 0, (
+            "Expected exit 0 once the host token was removed from the same tree"
+        )
