@@ -42,21 +42,54 @@ jobs:
 
       - name: Validate JSON schema files are well-formed
         run: |
-          python -c "
-          import json, pathlib, sys
+          python - <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          # Import the zero-dependency validator to check structural validity
+          from platforms.python.tests.minischema import validate, UnsupportedKeyword
+
           schema_dir = pathlib.Path('core/state')
           errors = []
+          parse_errors = []
+
           for f in schema_dir.glob('*.json'):
+              # Step 1: Parse check (catches malformed JSON)
               try:
-                  json.loads(f.read_text())
-                  print(f'OK: {f}')
+                  schema = json.loads(f.read_text())
               except json.JSONDecodeError as e:
-                  errors.append(f'FAIL: {f}: {e}')
+                  parse_errors.append(f'PARSE FAIL: {f}: {e}')
+                  continue
+
+              # Step 2: Structural check (catches typos, unknown keywords, invalid type values)
+              try:
+                  validate({}, schema)  # Empty instance; we only care that the schema itself is valid
+                  print(f'OK: {f}')
+              except UnsupportedKeyword as e:
+                  errors.append(f'STRUCTURAL FAIL: {f}: {e}')
+
+          # Report results
+          if parse_errors:
+              for err in parse_errors:
+                  print(err)
           if errors:
-              print('\n'.join(errors))
+              for err in errors:
+                  print(err)
+
+          total = len(list(schema_dir.glob('*.json')))
+          ok_count = total - len(parse_errors) - len(errors)
+
+          if parse_errors or errors:
+              print(f'\n{ok_count}/{total} schemas valid.')
               sys.exit(1)
-          print(f'All {len(list(schema_dir.glob(\"*.json\")))} schema files valid.')
-          "
+
+          print(f'\nAll {total} schema files valid.')
+          PY
+        # Uses minischema validator to catch unknown keywords (e.g. 'requried' typo)
+        # and invalid type values. The *.json glob is deliberate: non-schema files
+        # dropped in core/state/ now fail loudly because their keys are not schema
+        # keywords. Tightening to *.schema.json would silently skip them instead.
 
   # ── Job 3: Python tests ─────────────────────────────────────────────────────
   python-tests:
