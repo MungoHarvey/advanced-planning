@@ -145,6 +145,7 @@ DEFAULT_SCANNED_ROOTS: List[str] = [
     "platforms/codex",
     "platforms/opencode",
     "setup/codex",
+    "setup/opencode",
     "core/agents",
     "core/skills",
     ".claude/commands",

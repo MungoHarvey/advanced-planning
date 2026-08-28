@@ -1,7 +1,7 @@
 # install.ps1
 #
 # Installs the Advanced Planning System for OpenCode into a project or globally.
-# PowerShell equivalent of install.ps1 — for Windows users.
+# PowerShell equivalent of install.sh — for Windows users.
 #
 # Usage:
 #   .\setup\opencode\install.ps1 -Project C:\path\to\your\project

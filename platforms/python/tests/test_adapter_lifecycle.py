@@ -32,6 +32,9 @@ _REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 
 # Adapter pairs: (adapter_name, install_sh, install_ps1, uninstall_sh, uninstall_ps1)
 # Adding OpenCode later: append one tuple to this list.
+# A foreign owner that is deliberately NOT any adapter name.
+_FOREIGN = "otherhost"
+_FOREIGN_SKILL = _FOREIGN + "-only-skill"
 _ADAPTERS = [
     ("codex",
      _REPO_ROOT / "setup" / "codex" / "install.sh",
@@ -126,7 +129,7 @@ def _setup_state_sentinel(project_dir):
 def _set_owners(project_dir, skill_name, owners_list):
     """Set the owners of a skill in skill-ownership.json.
     
-    Also plants a foreign entry for opencode-only-skill.
+    Also plants a foreign entry for _FOREIGN_SKILL.
     """
     ownership_file = project_dir / ".advanced-plans" / "skill-ownership.json"
     ownership_file.parent.mkdir(parents=True, exist_ok=True)
@@ -137,7 +140,7 @@ def _set_owners(project_dir, skill_name, owners_list):
         data = {"schema_version": 1, "skills": {}}
     
     data["skills"][skill_name] = owners_list
-    data["skills"]["opencode-only-skill"] = ["opencode"]
+    data["skills"][_FOREIGN_SKILL] = [_FOREIGN]
     
     ownership_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
@@ -182,7 +185,7 @@ class TestInstallMerges:
         project = _fresh_project(tmp_path)
         
         # Pre-seed registry with opencode as owner
-        _set_owners(project, "advanced-planning", ["opencode"])
+        _set_owners(project, "advanced-planning", [_FOREIGN])
         
         # Install
         install_script = install_sh if lang == "sh" else install_ps1
@@ -194,8 +197,8 @@ class TestInstallMerges:
         
         # Check both owners present
         owners = _owners(project, "advanced-planning")
-        assert sorted(owners) == ["codex", "opencode"], (
-            "advanced-planning should have both codex and opencode, got %s" % owners)
+        assert sorted(owners) == sorted([_FOREIGN, name]), (
+            "advanced-planning should have both %s and %s, got %s" % (_FOREIGN, name, owners))
     
     def test_foreign_entry_untouched(self, tmp_path, adapter, lang):
         """A.2: A foreign entry the adapter does not own survives install untouched."""
@@ -205,7 +208,7 @@ class TestInstallMerges:
         project = _fresh_project(tmp_path)
         
         # Pre-seed with foreign entry
-        _set_owners(project, "advanced-planning", ["opencode"])
+        _set_owners(project, "advanced-planning", [_FOREIGN])
         
         # Install
         install_script = install_sh if lang == "sh" else install_ps1
@@ -216,10 +219,10 @@ class TestInstallMerges:
         assert ret == 0, "install failed: %s" % err
         
         # Check foreign entry survives
-        assert _has_skill_entry(project, "opencode-only-skill"), (
-            "foreign entry opencode-only-skill was removed")
-        foreign_owners = _owners(project, "opencode-only-skill")
-        assert foreign_owners == ["opencode"], (
+        assert _has_skill_entry(project, _FOREIGN_SKILL), (
+            "foreign entry %s was removed" % _FOREIGN_SKILL)
+        foreign_owners = _owners(project, _FOREIGN_SKILL)
+        assert foreign_owners == [_FOREIGN], (
             "foreign entry was modified: %s" % foreign_owners)
     
     def test_adapter_owned_skill_has_correct_owner(self, tmp_path, adapter, lang):
@@ -293,7 +296,7 @@ class TestUninstallPhase1:
         assert ret == 0, "install failed: %s" % err
         
         # Hand-edit registry to shared ownership
-        _set_owners(project, "advanced-planning", ["codex", "opencode"])
+        _set_owners(project, "advanced-planning", [name, _FOREIGN])
         
         # Plant state sentinel
         _setup_state_sentinel(project)
@@ -369,8 +372,8 @@ class TestUninstallPhase1:
         
         # Check registry updated
         owners = _owners(project, "advanced-planning")
-        assert owners == ["opencode"], (
-            "advanced-planning should have only opencode after uninstall, got %s" % owners)
+        assert owners == [_FOREIGN], (
+            "advanced-planning should have only %s after uninstall, got %s" % (_FOREIGN, owners))
     
     def test_state_sentinel_intact(self, shared_fixture):
         """B.9: .advanced-plans/state/loop-ready.json is intact."""
@@ -457,7 +460,7 @@ class TestUninstallPhase2a:
         assert ret == 0, "install failed: %s" % err
         
         # Set shared ownership
-        _set_owners(project, "advanced-planning", ["codex", "opencode"])
+        _set_owners(project, "advanced-planning", [name, _FOREIGN])
         
         # Run phase-1 uninstall
         uninstall_script = uninstall_sh if lang == "sh" else uninstall_ps1
@@ -502,7 +505,7 @@ class TestUninstallPhase2a:
         
         # Check registry unchanged
         owners = _owners(project, "advanced-planning")
-        assert owners == ["opencode"], (
+        assert owners == [_FOREIGN], (
             "registry was modified on second uninstall: %s" % owners)
 
 
@@ -531,7 +534,7 @@ class TestUninstallPhase2b:
         assert ret == 0, "install failed: %s" % err
         
         # Make adapter sole owner
-        _set_owners(project, "advanced-planning", ["codex"])
+        _set_owners(project, "advanced-planning", [name])
         
         # Plant state sentinel
         _setup_state_sentinel(project)
@@ -619,7 +622,7 @@ class TestLanguagesAgree:
             assert ret == 0, "install failed: %s" % err
             
             # Set shared ownership
-            _set_owners(project, "advanced-planning", ["codex", "opencode"])
+            _set_owners(project, "advanced-planning", [name, _FOREIGN])
         
         return proj_sh, proj_ps1, adapter
     
