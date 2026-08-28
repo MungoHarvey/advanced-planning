@@ -245,9 +245,9 @@ PYEOF
 }
 
 uninstall_from() {
-    CLAUDE_DIR="$1"
+    AGENTS_DIR="$1"
     AP_DIR="$2"
-    SKILLS_DIR="$CLAUDE_DIR/skills"
+    SKILLS_DIR="$AGENTS_DIR/skills"
     OWNERSHIP_FILE="$AP_DIR/skill-ownership.json"
 
     echo ""
@@ -285,11 +285,11 @@ $_decisions
 EOF
     
     remove_if_empty "$SKILLS_DIR"
-    remove_if_empty "$CLAUDE_DIR/.agents"
+    remove_if_empty "$AGENTS_DIR"
 
     # Remove AGENTS.md fence
     echo "AGENTS.md:"
-    _agents_file="$CLAUDE_DIR/../AGENTS.md"
+    _agents_file="$AGENTS_DIR/../AGENTS.md"
     remove_agents_fence "$_agents_file"
 
     # Shared Python runtime
