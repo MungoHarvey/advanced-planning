@@ -971,3 +971,32 @@ def test_launcher_stays_inside_the_canonical_allow_set():
         "Either use something in it, or widen core/constraints.json "
         "deliberately and say why in its notes."
         % sorted(imported - allowed))
+
+
+
+def test_no_command_invokes_python3_by_name():
+    """One interpreter name across all call sites, and it is `python`.
+
+    Sixteen call sites said `python` and two said `python3`. On Windows that is
+    not a spelling difference: `python3` is the Microsoft Store alias, which on
+    a machine that has never installed from the Store opens the Store page
+    instead of running anything, and on a machine that has, resolves to a
+    *different interpreter* than `python` does -- verified here, where
+    `python3` is a 3.13 WindowsApps shim while `python` is the 3.12 install the
+    rest of this suite runs against.
+
+    Neither of the two sites routed through ap.py, so this is not the
+    unreachable-runtime defect. It is the same mistake one layer out: the
+    command decides which interpreter runs, and two of them decided
+    differently for no reason anyone recorded.
+    """
+    offenders = []
+    for md in sorted(COMMANDS_DIR.glob("*.md")):
+        text = io.open(str(md), encoding="utf-8", newline="").read()
+        for match in re.finditer(r"\bpython3\b", text):
+            line = text.count("\n", 0, match.start()) + 1
+            offenders.append("%s:%d" % (md.name, line))
+    assert not offenders, (
+        "these call sites invoke python3 rather than python: %s. Use `python`, "
+        "which is what every other call site and every installer uses."
+        % ", ".join(offenders))

@@ -12,6 +12,13 @@ directory (or your global Claude Code config for commands you want everywhere).
 
 - [Claude Code](https://claude.ai/claude-code) installed
 - This repository cloned to your computer
+- **Python 3.10 or newer, on `PATH` as `python`** — several slash commands shell
+  out to it, so without it they fail before any of this system's own code runs,
+  and the error comes from the shell rather than from the planning system:
+  `python: command not found`, or on Windows `'python' is not recognized`, or
+  the Microsoft Store opening instead of an interpreter. Check with
+  `python --version`. The name matters: on Windows `python3` is usually the
+  Store alias and is not necessarily the same interpreter as `python`.
 
 ---
 

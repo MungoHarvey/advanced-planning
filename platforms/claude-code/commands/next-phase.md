@@ -363,7 +363,7 @@ On the first remediation cycle (`cycles == 1`):
    `.advanced-plans/phases/phase-[N]/criteria-frozen.md`. Record its SHA-256 hash as
    `CRITERIA_HASH`:
    ```bash
-   python3 -c "import hashlib, pathlib; f=pathlib.Path('.advanced-plans/phases/phase-[N]/criteria-frozen.md'); print(hashlib.sha256(f.read_bytes()).hexdigest())"
+   python -c "import hashlib, pathlib; f=pathlib.Path('.advanced-plans/phases/phase-[N]/criteria-frozen.md'); print(hashlib.sha256(f.read_bytes()).hexdigest())"
    ```
    Store as `CRITERIA_HASH`.
 
@@ -555,7 +555,7 @@ echo '{"event":"gate_remediation","phase":"phase-[N]","cycle":[cycles],"timestam
 Before spawning the re-gate, verify the frozen criteria have not changed:
 
 ```bash
-python3 -c "
+python -c "
 import hashlib, pathlib
 f = pathlib.Path('.advanced-plans/phases/phase-[N]/criteria-frozen.md')
 h = hashlib.sha256(f.read_bytes()).hexdigest()
