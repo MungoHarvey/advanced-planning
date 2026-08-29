@@ -415,6 +415,13 @@ if [ "$GLOBAL" = true ]; then
     say "Recording the shared Python runtime globally..."
     ap_write_global_runtime
 
+    # The global skills are shared with the other adapter, so the ownership
+    # registry has to exist here too.  Without it a global uninstall reads an
+    # empty owner list and removes the shared skill the other adapter needs.
+    say ""
+    say "Recording skill ownership globally..."
+    write_ownership "$(ap_home_fs)"
+
     say ""
     say "Global install complete."
     say ""

@@ -41,6 +41,10 @@ function Get-ApGlobalHome {
 
 $script:Removed = 0
 $script:Kept = 0
+# Set only by the ownership KEEP decision below.  Kept alone will not do: it is
+# also incremented by Remove-ApDirIfEmpty for a directory that merely has files
+# in it, which says nothing about who owns the runtime.
+$script:SharedOwners = $false
 
 function Test-IsReparsePoint([string]$Path) {
     if (-not (Test-Path -LiteralPath $Path)) { return $false }
@@ -155,6 +159,7 @@ function Invoke-ApOwnershipRemoval([string]$SkillsDir, [string]$OwnershipFile) {
         if ($decision.Action -eq "KEEP") {
             Write-Host "  - $($decision.Skill) (shared with another adapter - leaving files, updating registration)"
             $script:Kept++
+            $script:SharedOwners = $true
         } else {
             Remove-ApPath (Join-Path $SkillsDir $decision.Skill) "skills\$($decision.Skill)"
         }
@@ -249,9 +254,18 @@ function Invoke-ApUninstall([string]$AgentsDir, [string]$ApDir) {
 
     # Shared Python runtime
     Write-Host "Shared Python runtime:"
-    Remove-ApPath (Join-Path $ApDir "bin\ap.py") "bin/ap.py"
-    Remove-ApDirIfEmpty (Join-Path $ApDir "bin")
-    Remove-ApPath (Join-Path $ApDir "runtime.json") "runtime.json"
+    if ($script:SharedOwners) {
+        # Another adapter still owns a skill here, and every one of those
+        # skills invokes .advanced-plans\bin\ap.py.  Removing the launcher
+        # would leave that adapter installed but inert -- exactly the failure
+        # the ownership check above exists to prevent.
+        Write-Host "  keeping bin/ap.py and runtime.json (still owned by another adapter)"
+    }
+    else {
+        Remove-ApPath (Join-Path $ApDir "bin\ap.py") "bin/ap.py"
+        Remove-ApDirIfEmpty (Join-Path $ApDir "bin")
+        Remove-ApPath (Join-Path $ApDir "runtime.json") "runtime.json"
+    }
 
     Write-Host ""
     Write-Host "Left in place -- this is your planning record, not part of the install:"

@@ -48,7 +48,7 @@ jobs:
           import sys
 
           # Import the zero-dependency validator to check structural validity
-          from platforms.python.tests.minischema import validate, UnsupportedKeyword
+          from platforms.python.minischema import validate, UnsupportedKeyword
 
           schema_dir = pathlib.Path('core/state')
           errors = []

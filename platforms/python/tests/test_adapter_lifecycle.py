@@ -405,8 +405,14 @@ class TestUninstallPhase1:
         data = json.loads(sentinel.read_text(encoding="utf-8"))
         assert data.get("sentinel") is True, "state sentinel was modified"
     
-    def test_ap_py_removed(self, shared_fixture):
-        """B.10: bin/ap.py is removed."""
+    def test_ap_py_survives_for_the_other_adapter(self, shared_fixture):
+        """B.10: bin/ap.py SURVIVES while another adapter still owns a skill.
+
+        B.5, B.7 and B.8 above establish that the other adapter's skill and
+        its registration outlive this uninstall.  Every one of those skills
+        invokes .advanced-plans/bin/ap.py, so removing the launcher here
+        would leave that adapter installed but inert.
+        """
         project, lang, adapter = shared_fixture
         name, _, _, uninstall_sh, uninstall_ps1 = adapter
         
@@ -420,7 +426,13 @@ class TestUninstallPhase1:
         
         # Check launcher removed
         launcher = project / ".advanced-plans" / "bin" / "ap.py"
-        assert not launcher.exists(), "bin/ap.py was not removed"
+        assert launcher.exists(), (
+            "bin/ap.py was removed while %s still owns advanced-planning; "
+            "that adapter is now installed but inert" % _FOREIGN)
+        runtime = project / ".advanced-plans" / "runtime.json"
+        assert runtime.exists(), (
+            "runtime.json was removed while %s still owns advanced-planning"
+            % _FOREIGN)
     
     def test_agents_md_fences_removed(self, shared_fixture):
         """B.11: AGENTS.md has zero adapter fences and still has the user line."""
@@ -789,3 +801,30 @@ class TestCompleteUninstallNoResidue:
         
         assert state_sh.exists(), "sh uninstall removed state/loop-ready.json"
         assert state_ps1.exists(), "ps1 uninstall removed state/loop-ready.json"
+
+    def test_launcher_removed_when_sole_owner(self, sole_owner_fixture):
+        """F.22: the sole owner still takes bin/ap.py and runtime.json with it.
+
+        The opposite direction of B.10.  Without this, a guard that never fires
+        -- keeping the launcher unconditionally -- would leave the repository
+        with no failing test.
+        """
+        proj_sh, proj_ps1, adapter = sole_owner_fixture
+        name, _, _, uninstall_sh, uninstall_ps1 = adapter
+
+        ret_sh, out_sh, err_sh = _run_script(
+            uninstall_sh, ["--project", str(proj_sh), "--yes"])
+        assert ret_sh == 0, "sh uninstall failed: %s" % err_sh
+        ret_ps1, out_ps1, err_ps1 = _run_script(
+            uninstall_ps1, ["-Project", str(proj_ps1), "-Yes"])
+        assert ret_ps1 == 0, "ps1 uninstall failed: %s" % err_ps1
+
+        for label, project in (("sh", proj_sh), ("ps1", proj_ps1)):
+            launcher = project / ".advanced-plans" / "bin" / "ap.py"
+            runtime = project / ".advanced-plans" / "runtime.json"
+            assert not launcher.exists(), (
+                "%s uninstall left bin/ap.py behind with no remaining owner"
+                % label)
+            assert not runtime.exists(), (
+                "%s uninstall left runtime.json behind with no remaining owner"
+                % label)

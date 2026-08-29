@@ -350,6 +350,13 @@ if ($Global) {
     Say "  + $ApGlobalDir\runtime.json"
 
     Say ""
+    # The global skills are shared with the other adapter, so the ownership
+    # registry has to exist here too.  Without it a global uninstall reads an
+    # empty owner list and removes the shared skill the other adapter needs.
+    Say ""
+    Say "Recording skill ownership globally..."
+    Write-ApOwnership $ApGlobalHome
+
     Say "Global install complete."
     exit 0
 }

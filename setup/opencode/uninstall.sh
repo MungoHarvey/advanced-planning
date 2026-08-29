@@ -70,6 +70,10 @@ print_help() {
 
 REMOVED=0
 KEPT=0
+# Set only by the ownership KEEP decision below.  KEPT alone will not do: it is
+# also incremented by remove_if_empty for a directory that merely has files in
+# it, which says nothing about who owns the runtime.
+SHARED_OWNERS=0
 
 # Remove one path, if it is one we installed. Links are unlinked, never
 # followed.
@@ -276,6 +280,7 @@ uninstall_from() {
         if [ "$_action" = "KEEP" ]; then
             echo "  - $_skill (shared with another adapter - leaving files, updating registration)"
             KEPT=$((KEPT + 1))
+            SHARED_OWNERS=1
         elif [ "$_action" = "REMOVE" ]; then
             echo "  - skills/$_skill"
             remove_path "$_skill_path"
@@ -294,14 +299,22 @@ EOF
 
     # Shared Python runtime
     echo "Shared Python runtime:"
-    if [ -f "$AP_DIR/bin/ap.py" ]; then
-        echo "  - bin/ap.py"
-        remove_path "$AP_DIR/bin/ap.py"
-    fi
-    remove_if_empty "$AP_DIR/bin"
-    if [ -f "$AP_DIR/runtime.json" ]; then
-        echo "  - runtime.json"
-        remove_path "$AP_DIR/runtime.json"
+    if [ "$SHARED_OWNERS" -eq 1 ]; then
+        # Another adapter still owns a skill here, and every one of those
+        # skills invokes .advanced-plans/bin/ap.py.  Removing the launcher
+        # would leave that adapter installed but inert -- exactly the failure
+        # the ownership check above exists to prevent.
+        echo "  keeping bin/ap.py and runtime.json (still owned by another adapter)"
+    else
+        if [ -f "$AP_DIR/bin/ap.py" ]; then
+            echo "  - bin/ap.py"
+            remove_path "$AP_DIR/bin/ap.py"
+        fi
+        remove_if_empty "$AP_DIR/bin"
+        if [ -f "$AP_DIR/runtime.json" ]; then
+            echo "  - runtime.json"
+            remove_path "$AP_DIR/runtime.json"
+        fi
     fi
 
     echo ""
