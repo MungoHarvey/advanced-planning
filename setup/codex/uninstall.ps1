@@ -128,7 +128,6 @@ function Invoke-ApOwnershipRemoval([string]$SkillsDir, [string]$OwnershipFile) {
         }
     }
 
-    $anyRemaining = $false
     $decisions = @()
 
     # Process each skill
@@ -147,7 +146,6 @@ function Invoke-ApOwnershipRemoval([string]$SkillsDir, [string]$OwnershipFile) {
         if ($owners.Count -gt 0) {
             # Shared - keep files, update registration
             $decisions += @{Action = "KEEP"; Skill = $skill; Owners = $owners}
-            $anyRemaining = $true
         } elseif ($skillExists) {
             # Sole owner - remove
             $decisions += @{Action = "REMOVE"; Skill = $skill; Owners = @()}
@@ -167,56 +165,52 @@ function Invoke-ApOwnershipRemoval([string]$SkillsDir, [string]$OwnershipFile) {
 
     # Write updated ownership file
     if ($Yes) {
-        if ($anyRemaining) {
-            # Build remaining skills object - convert PSCustomObject to hashtable first
-            $skillsHash = @{}
-            if ($data.skills) {
-                foreach ($k in $data.skills.PSObject.Properties.Name) {
-                    $val = $data.skills.$k
-                    # Preserve arrays, wrap non-arrays
-                    if ($val -is [System.Array]) {
-                        $skillsHash[$k] = $val
-                    } else {
-                        $skillsHash[$k] = @($val)
-                    }
+        # Build remaining skills from ALL entries with non-empty owner lists after pruning
+        $skillsHash = @{}
+        if ($data.skills) {
+            foreach ($k in $data.skills.PSObject.Properties.Name) {
+                $val = $data.skills.$k
+                # Preserve arrays, wrap non-arrays
+                if ($val -is [System.Array]) {
+                    $skillsHash[$k] = $val
+                } else {
+                    $skillsHash[$k] = @($val)
                 }
             }
+        }
 
-            $remainingSkills = @{}
-            foreach ($skill in $approvedSkills) {
-                if ($skillsHash.ContainsKey($skill)) {
-                    $owners = $skillsHash[$skill]
-                    # Filter out "codex"
-                    $filtered = @($owners | Where-Object { $_ -ne "codex" })
-                    $filtered = @($filtered | Where-Object { $null -ne $_ })
-                    if ($filtered.Count -gt 0) {
-                        $remainingSkills[$skill] = $filtered
-                    }
+        $remainingSkills = @{}
+        foreach ($skill in $approvedSkills) {
+            if ($skillsHash.ContainsKey($skill)) {
+                $owners = $skillsHash[$skill]
+                # Filter out "codex"
+                $filtered = @($owners | Where-Object { $_ -ne "codex" })
+                $filtered = @($filtered | Where-Object { $null -ne $_ })
+                if ($filtered.Count -gt 0) {
+                    $remainingSkills[$skill] = $filtered
                 }
             }
-            # Keep non-approved-skill entries from other adapters
-            foreach ($k in $skillsHash.Keys) {
-                if ($k -notin $approvedSkills) {
-                    $owners = $skillsHash[$k]
-                    $filtered = @($owners | Where-Object { $_ -ne "codex" })
-                    $filtered = @($filtered | Where-Object { $null -ne $_ })
-                    if ($filtered.Count -gt 0) {
-                        $remainingSkills[$k] = $filtered
-                    }
+        }
+        # Keep non-approved-skill entries from other adapters
+        foreach ($k in $skillsHash.Keys) {
+            if ($k -notin $approvedSkills) {
+                $owners = $skillsHash[$k]
+                $filtered = @($owners | Where-Object { $_ -ne "codex" })
+                $filtered = @($filtered | Where-Object { $null -ne $_ })
+                if ($filtered.Count -gt 0) {
+                    $remainingSkills[$k] = $filtered
                 }
             }
+        }
 
-            if ($remainingSkills.Count -gt 0) {
-                $newData = @{
-                    schema_version = 1
-                    skills = $remainingSkills
-                }
-                $jsonOut = $newData | ConvertTo-Json -Depth 5
-                [System.IO.File]::WriteAllText($OwnershipFile, $jsonOut,
-                    [System.Text.UTF8Encoding]::new($false))
-            } elseif (Test-Path -LiteralPath $OwnershipFile) {
-                Remove-Item -LiteralPath $OwnershipFile -Force
+        if ($remainingSkills.Count -gt 0) {
+            $newData = @{
+                schema_version = 1
+                skills = $remainingSkills
             }
+            $jsonOut = $newData | ConvertTo-Json -Depth 5
+            [System.IO.File]::WriteAllText($OwnershipFile, $jsonOut,
+                [System.Text.UTF8Encoding]::new($false))
         } elseif (Test-Path -LiteralPath $OwnershipFile) {
             # No remaining owners - delete the file
             Remove-Item -LiteralPath $OwnershipFile -Force

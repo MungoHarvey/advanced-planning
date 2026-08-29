@@ -556,8 +556,13 @@ class TestUninstallPhase2b:
         )
         assert ret == 0, "install failed: %s" % err
         
-        # Make adapter sole owner
-        _set_owners(project, "advanced-planning", [name])
+        # A fresh single-adapter install already registers this adapter as
+        # sole owner of every approved skill, so nothing needs forcing here.
+        # This called _set_owners until F4, which plants a foreign entry as a
+        # side effect -- so D.15 below asserted "no entry has any owner left"
+        # against a registry that still had one, and passed only because the
+        # file was being deleted with that entry inside it.  That deletion is
+        # the defect; a genuinely empty registry is what D.15 means to test.
         
         # Plant state sentinel
         _setup_state_sentinel(project)
@@ -986,3 +991,174 @@ class TestNestedCollisionDetection:
         # The check_collision function says "shared; unchanged" for identical skills
         assert "shared; unchanged" in out, (
             "installer did not report 'shared; unchanged' for identical nested files:\nstdout: %s" % out)
+
+
+# =============================================================================
+# I. Third-party registration survives sole-owner uninstall
+# =============================================================================
+
+class TestThirdPartySurvivesSoleOwnerUninstall:
+    """I.1-I.4: a foreign adapter's skill registration survives uninstall
+    when this adapter is sole owner of every approved skill, whether that
+    registration is well formed (I.1-I.3) or malformed (I.4).
+
+    The defect: any_remaining was set True ONLY when an approved skill still
+    had owners after removal. So when this adapter was sole owner of every
+    approved skill, any_remaining was False and the ownership file was deleted,
+    destroying third-party registrations. The foreign skill's files survive
+    (only approved skills are removed), leaving it installed but unregistered.
+    """
+
+    @pytest.fixture
+    def sole_owner_with_foreign_fixture(self, tmp_path, adapter, lang):
+        """Fixture: adapter is sole owner of every approved skill, but a
+        third-party entry exists in the registry."""
+        _skip_if_no_sh() if lang == "sh" else _skip_if_no_pwsh()
+
+        name, install_sh, install_ps1, uninstall_sh, uninstall_ps1 = adapter
+        project = _fresh_project(tmp_path, "sole-with-foreign")
+
+        # Install fresh
+        install_script = install_sh if lang == "sh" else install_ps1
+        ret, out, err = _run_script(
+            install_script,
+            ["--project", str(project)] if lang == "sh" else ["-Project", str(project)],
+        )
+        assert ret == 0, "install failed: %s" % err
+
+        # The install already made this adapter sole owner of every approved
+        # skill.  Take the list from the registry it wrote rather than
+        # restating it here, so this cannot drift from the installers, and
+        # assert the sole ownership the whole test depends on.
+        ownership_file = project / ".advanced-plans" / "skill-ownership.json"
+        data = json.loads(ownership_file.read_text(encoding="utf-8"))
+        approved_before = sorted(data["skills"])
+        assert approved_before, "install registered no skills; fixture is vacuous"
+        for skill in approved_before:
+            assert data["skills"][skill] == [name], (
+                "fixture needs sole ownership, but %s is owned by %s"
+                % (skill, data["skills"][skill]))
+
+        # Plant the third-party entry explicitly.  _set_owners does this as a
+        # side effect, which is precisely how D.15 came to assert the defect.
+        data["skills"][_FOREIGN_SKILL] = [_FOREIGN]
+        ownership_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+        # Plant state sentinel
+        _setup_state_sentinel(project)
+
+        return project, lang, adapter, approved_before
+
+    @pytest.mark.parametrize("lang", ["sh", "ps1"], ids=["sh", "ps1"])
+    def test_foreign_registration_survives(self, sole_owner_with_foreign_fixture):
+        """I.1: the ownership file still exists and the foreign entry is preserved."""
+        project, lang, adapter, approved_before = sole_owner_with_foreign_fixture
+        name, _, _, uninstall_sh, uninstall_ps1 = adapter
+
+        # Uninstall
+        uninstall_script = uninstall_sh if lang == "sh" else uninstall_ps1
+        ret, out, err = _run_script(
+            uninstall_script,
+            ["--project", str(project), "--yes"] if lang == "sh" else ["-Project", str(project), "-Yes"],
+        )
+        assert ret == 0, "uninstall failed: %s" % err
+
+        # Ownership file must still exist
+        ownership_file = project / ".advanced-plans" / "skill-ownership.json"
+        assert ownership_file.exists(), (
+            "skill-ownership.json was deleted despite third-party entry")
+
+        # Foreign entry must be preserved
+        assert _has_skill_entry(project, _FOREIGN_SKILL), (
+            "foreign entry %s was removed" % _FOREIGN_SKILL)
+        foreign_owners = _owners(project, _FOREIGN_SKILL)
+        assert foreign_owners == [_FOREIGN], (
+            "foreign entry was modified: expected [%s], got %s" % (_FOREIGN, foreign_owners))
+
+    @pytest.mark.parametrize("lang", ["sh", "ps1"], ids=["sh", "ps1"])
+    def test_approved_skills_removed_from_registry(self, sole_owner_with_foreign_fixture):
+        """I.2: the adapter's own approved skills are gone from the registry."""
+        project, lang, adapter, approved_before = sole_owner_with_foreign_fixture
+        name, _, _, uninstall_sh, uninstall_ps1 = adapter
+
+        # Uninstall
+        uninstall_script = uninstall_sh if lang == "sh" else uninstall_ps1
+        ret, out, err = _run_script(
+            uninstall_script,
+            ["--project", str(project), "--yes"] if lang == "sh" else ["-Project", str(project), "-Yes"],
+        )
+        assert ret == 0, "uninstall failed: %s" % err
+
+        # Adapter's approved skills should be gone from the registry.
+        # The list is what the install actually registered, read in the fixture.
+        ownership_file = project / ".advanced-plans" / "skill-ownership.json"
+        data = json.loads(ownership_file.read_text(encoding="utf-8"))
+        for skill in approved_before:
+            assert skill not in data["skills"], (
+                "approved skill %s should be removed from registry" % skill)
+
+    @pytest.mark.parametrize("lang", ["sh", "ps1"], ids=["sh", "ps1"])
+    def test_only_foreign_entry_remains(self, sole_owner_with_foreign_fixture):
+        """I.3: only the foreign entry remains in the registry."""
+        project, lang, adapter, approved_before = sole_owner_with_foreign_fixture
+        name, _, _, uninstall_sh, uninstall_ps1 = adapter
+
+        # Uninstall
+        uninstall_script = uninstall_sh if lang == "sh" else uninstall_ps1
+        ret, out, err = _run_script(
+            uninstall_script,
+            ["--project", str(project), "--yes"] if lang == "sh" else ["-Project", str(project), "-Yes"],
+        )
+        assert ret == 0, "uninstall failed: %s" % err
+
+        # Only foreign entry should remain
+        ownership_file = project / ".advanced-plans" / "skill-ownership.json"
+        data = json.loads(ownership_file.read_text(encoding="utf-8"))
+        assert list(data["skills"].keys()) == [_FOREIGN_SKILL], (
+            "registry should contain only %s, got %s" % (_FOREIGN_SKILL, list(data["skills"].keys())))
+
+    @pytest.mark.parametrize("lang", ["sh", "ps1"], ids=["sh", "ps1"])
+    def test_malformed_foreign_entry_is_not_destroyed(self, tmp_path, adapter, lang):
+        """I.4: the two hosts must agree about a malformed third-party entry.
+
+        The schema wants a list of owners.  A bare string is malformed, but
+        it is still somebody else's registration, and the PowerShell twin
+        normalises it to a list and keeps it.  The POSIX side dropped it --
+        and being the last entry left, it took the whole ownership file with
+        it.  That is the same data loss as I.1 by a different route, and it
+        was invisible to every test because they all wrote well-formed
+        entries.
+        """
+        _skip_if_no_sh() if lang == "sh" else _skip_if_no_pwsh()
+        name, install_sh, install_ps1, uninstall_sh, uninstall_ps1 = adapter
+        project = _fresh_project(tmp_path, "malformed-foreign")
+
+        install_script = install_sh if lang == "sh" else install_ps1
+        ret, out, err = _run_script(
+            install_script,
+            ["--project", str(project)] if lang == "sh" else ["-Project", str(project)],
+        )
+        assert ret == 0, "install failed: %s" % err
+
+        # A bare string, not a list.
+        ownership_file = project / ".advanced-plans" / "skill-ownership.json"
+        data = json.loads(ownership_file.read_text(encoding="utf-8"))
+        data["skills"][_FOREIGN_SKILL] = _FOREIGN
+        ownership_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+        uninstall_script = uninstall_sh if lang == "sh" else uninstall_ps1
+        ret, out, err = _run_script(
+            uninstall_script,
+            ["--project", str(project), "--yes"] if lang == "sh"
+            else ["-Project", str(project), "-Yes"],
+        )
+        assert ret == 0, "uninstall failed: %s" % err
+
+        assert ownership_file.exists(), (
+            "the registry was deleted along with a malformed third-party entry")
+        data = json.loads(ownership_file.read_text(encoding="utf-8"))
+        assert _FOREIGN_SKILL in data["skills"], (
+            "the malformed third-party entry was dropped")
+        assert data["skills"][_FOREIGN_SKILL] == [_FOREIGN], (
+            "expected the entry normalised to a list, got %r"
+            % (data["skills"][_FOREIGN_SKILL],))

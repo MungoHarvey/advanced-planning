@@ -197,7 +197,6 @@ if "skills" not in data:
     data["skills"] = {}
 
 # Process each skill this adapter installed - mutate data in place
-any_remaining = False
 for skill in approved_skills:
     owners = data["skills"].get(skill, [])
     if not isinstance(owners, list):
@@ -215,25 +214,24 @@ for skill in approved_skills:
     if owners:
         # Shared - keep files, update registration
         print(f"KEEP|{skill}|{','.join(owners)}")
-        any_remaining = True
     elif skill_exists:
         # Sole owner - remove files, drop entry
         print(f"REMOVE|{skill}|")
     # else: skill doesn't exist and no owners - nothing to do
 
 # Write updated ownership file only if there are remaining entries
-if any_remaining and confirmed:
-    # Build remaining skills: approved skills with owners + non-approved entries
+# Build remaining_skills from ALL entries with non-empty owner lists after pruning
+if confirmed:
     remaining_skills = {}
-    for skill in approved_skills:
-        owners = data["skills"].get(skill, [])
+    for skill, owners in data["skills"].items():
+        # A malformed entry -- a bare string where the schema wants a list
+        # -- is normalised rather than dropped, matching the PowerShell
+        # twin.  Dropping it destroys a third-party registration, which is
+        # the defect this block exists to fix.
+        if not isinstance(owners, list):
+            owners = [owners] if owners else []
         if owners:
             remaining_skills[skill] = owners
-    # Also keep any non-approved-skill entries (from other adapters)
-    for k, v in data["skills"].items():
-        if k not in approved_skills and v:
-            remaining_skills[k] = v
-    
     if remaining_skills:
         data["skills"] = remaining_skills
         data["schema_version"] = 1
@@ -242,9 +240,6 @@ if any_remaining and confirmed:
             f.write('\n')
     elif os.path.exists(owner_file):
         os.remove(owner_file)
-elif not any_remaining and confirmed and os.path.exists(owner_file):
-    # No remaining owners - delete the file
-    os.remove(owner_file)
 PYEOF
 }
 
