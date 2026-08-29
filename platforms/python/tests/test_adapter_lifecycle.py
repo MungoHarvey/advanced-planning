@@ -908,3 +908,81 @@ class TestGlobalDualAdapterInstall:
         assert 'python ".advanced-plans/bin/ap.py"' not in text, (
             "installed SKILL.md still has a project-relative call site, which "
             "cannot resolve when the skill is invoked from another directory")
+
+
+# =============================================================================
+# H. Nested file collision detection — sh and ps1 agree
+# =============================================================================
+
+class TestNestedCollisionDetection:
+    """H.1-H.2: check_collision walks the source tree recursively.
+
+    The defect: sh's check_collision iterated only top-level files
+    (`for _src_file in "$_src"/*`), while PowerShell's Test-ApCollision
+    used `Get-ChildItem -Recurse`. The shared skill has a references/
+    subdirectory. Those nested files ARE installed and rewritten by
+    --global, but on POSIX they were never compared, so a divergent
+    nested file installed silently. This test proves both languages
+    now detect the same collision.
+    """
+
+    @pytest.mark.parametrize("lang", ["sh", "ps1"])
+    def test_nested_file_divergence_detected(self, tmp_path, adapter, lang):
+        """H.1: modifying an installed references/*.md file is detected."""
+        _skip_if_no_sh() if lang == "sh" else _skip_if_no_pwsh()
+
+        name, install_sh, install_ps1, _, _ = adapter
+        project = _fresh_project(tmp_path, "nested-collision")
+
+        # Install fresh
+        install_script = install_sh if lang == "sh" else install_ps1
+        ret, out, err = _run_script(
+            install_script,
+            ["--project", str(project)] if lang == "sh" else ["-Project", str(project)],
+        )
+        assert ret == 0, "install failed: %s" % err
+
+        # Modify a nested file in the installed skill
+        nested_file = project / ".agents" / "skills" / "advanced-planning" / "references" / "orchestrator-prompt.md"
+        assert nested_file.exists(), "nested file references/orchestrator-prompt.md was not installed"
+        original_content = _read(nested_file)
+        nested_file.write_text(original_content + "\n\nMODIFIED FOR TEST", encoding="utf-8")
+
+        # Run installer again - should fail with collision error
+        ret, out, err = _run_script(
+            install_script,
+            ["--project", str(project)] if lang == "sh" else ["-Project", str(project)],
+        )
+        assert ret != 0, (
+            "installer exited 0 despite nested file divergence - sh is not walking recursively")
+        assert "collision" in (err + out).lower(), (
+            "installer failed but did not report collision:\nstdout: %s\nstderr: %s" % (out, err))
+        assert "references/orchestrator-prompt.md" in (err + out) or "orchestrator-prompt.md" in (err + out), (
+            "collision error did not name the nested file:\nstdout: %s\nstderr: %s" % (out, err))
+
+    @pytest.mark.parametrize("lang", ["sh", "ps1"])
+    def test_nested_file_identical_shared_unchanged(self, tmp_path, adapter, lang):
+        """H.2: unmodified nested files report 'shared; unchanged'."""
+        _skip_if_no_sh() if lang == "sh" else _skip_if_no_pwsh()
+
+        name, install_sh, install_ps1, _, _ = adapter
+        project = _fresh_project(tmp_path, "nested-same")
+
+        # Install fresh
+        install_script = install_sh if lang == "sh" else install_ps1
+        ret, out, err = _run_script(
+            install_script,
+            ["--project", str(project)] if lang == "sh" else ["-Project", str(project)],
+        )
+        assert ret == 0, "install failed: %s" % err
+
+        # Run installer again without modification - should report shared; unchanged
+        ret, out, err = _run_script(
+            install_script,
+            ["--project", str(project)] if lang == "sh" else ["-Project", str(project)],
+        )
+        assert ret == 0, (
+            "installer exited non-zero despite no changes:\nstdout: %s\nstderr: %s" % (out, err))
+        # The check_collision function says "shared; unchanged" for identical skills
+        assert "shared; unchanged" in out, (
+            "installer did not report 'shared; unchanged' for identical nested files:\nstdout: %s" % out)

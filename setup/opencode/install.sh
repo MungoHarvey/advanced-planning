@@ -212,13 +212,13 @@ check_collision() {
         return 0  # No collision - destination absent
     fi
 
-    # Check each file in the skill directory
+    # Check each file in the skill directory recursively
     _collision=false
-    for _src_file in "$_src"/*; do
-        [ -f "$_src_file" ] || continue
-        _base="$(basename "$_src_file")"
-        _dst_file="$_dst/$_base"
-        if [ -f "$_dst_file" ]; then
+    while IFS= read -r _rel; do
+        [ -n "$_rel" ] || continue
+        _src_file="$_src/$_rel"
+        _dst_file="$_dst/$_rel"
+        if [ -f "$_src_file" ] && [ -f "$_dst_file" ]; then
             _cmp_file="$_src_file"
             _tmp_file=""
             if [ -n "$_launcher" ]; then
@@ -247,7 +247,9 @@ check_collision() {
                 rm -f "$_tmp_file"
             fi
         fi
-    done
+    done <<EOF
+$(cd "$_src" && find . -type f | sed 's|^\./||')
+EOF
 
     # Identical - report shared; unchanged
     say "  shared; unchanged: $_skill_name"
@@ -402,8 +404,7 @@ if [ "$GLOBAL" = true ]; then
 
     # Rewrite call sites in global install
     if [ "$DRY_RUN" != true ]; then
-        for _f in "$_dst_parent/advanced-planning"/*.md "$_dst_parent/advanced-planning/references"/*.md; do
-            [ -f "$_f" ] || continue
+        find "$_dst_parent/advanced-planning" -name '*.md' -type f | while IFS= read -r _f; do
             ap_rewrite_call_sites "$_f" "$AP_LAUNCHER"
         done
         say "  (rewrote launcher call sites to $AP_LAUNCHER)"
@@ -427,8 +428,7 @@ if [ "$GLOBAL" = true ]; then
         fi
         # Rewrite call sites if skill has any
         if [ "$DRY_RUN" != true ]; then
-            for _f in "$_dst_parent/$_skill"/*.md; do
-                [ -f "$_f" ] || continue
+            find "$_dst_parent/$_skill" -name '*.md' -type f | while IFS= read -r _f; do
                 ap_rewrite_call_sites "$_f" "$AP_LAUNCHER"
             done
         fi

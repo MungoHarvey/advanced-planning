@@ -310,10 +310,7 @@ if ($Global) {
     # Rewrite call sites in global install
     if (-not $DryRun) {
         $skillDir = Join-Path $dstParent "advanced-planning"
-        Get-ChildItem -Path $skillDir -Filter "*.md" -File | ForEach-Object {
-            Set-ApCallSites $_.FullName $ApLauncher
-        }
-        Get-ChildItem -Path (Join-Path $skillDir "references") -Filter "*.md" -File | ForEach-Object {
+        Get-ChildItem -Path $skillDir -Filter "*.md" -File -Recurse | ForEach-Object {
             Set-ApCallSites $_.FullName $ApLauncher
         }
         Say "  (rewrote launcher call sites to $ApLauncher)"
@@ -338,7 +335,7 @@ if ($Global) {
         # Rewrite call sites if skill has any
         if (-not $DryRun) {
             $skillDestPath = Join-Path $dstParent $skill
-            Get-ChildItem -Path $skillDestPath -Filter "*.md" -File | ForEach-Object {
+            Get-ChildItem -Path $skillDestPath -Filter "*.md" -File -Recurse | ForEach-Object {
                 Set-ApCallSites $_.FullName $ApLauncher
             }
         }
