@@ -201,6 +201,12 @@ check_collision() {
     _src="$1"
     _dst="$2"
     _skill_name="$3"
+    # Optional 4th argument.  When set, the destination was rewritten to point
+    # at this absolute launcher when it was installed, so the raw source can
+    # never match it and every second global install would report a fork of a
+    # file it actually agrees with.  Compare what THIS installer would write.
+    # The project branch passes nothing and keeps a raw-vs-raw comparison.
+    _launcher="${4:-}"
 
     if [ ! -e "$_dst" ]; then
         return 0  # No collision - destination absent
@@ -213,15 +219,32 @@ check_collision() {
         _base="$(basename "$_src_file")"
         _dst_file="$_dst/$_base"
         if [ -f "$_dst_file" ]; then
-            if ! files_identical "$_src_file" "$_dst_file"; then
+            _cmp_file="$_src_file"
+            _tmp_file=""
+            if [ -n "$_launcher" ]; then
+                _tmp_file="$(mktemp)"
+                cp "$_src_file" "$_tmp_file"
+                ap_rewrite_call_sites "$_tmp_file" "$_launcher"
+                _cmp_file="$_tmp_file"
+            fi
+            if ! files_identical "$_cmp_file" "$_dst_file"; then
                 _collision=true
-                _src_hash="$(sha256_file "$_src_file")"
+                _src_hash="$(sha256_file "$_cmp_file")"
                 _dst_hash="$(sha256_file "$_dst_file")"
+                if [ -n "$_tmp_file" ]; then
+                    rm -f "$_tmp_file"
+                fi
                 echo "ERROR: collision detected for skill '$_skill_name'" >&2
                 echo "  Source:      $_src_file (SHA-256: $_src_hash)" >&2
+                if [ -n "$_launcher" ]; then
+                    echo "  (source hashed as it would be installed, call sites rewritten)" >&2
+                fi
                 echo "  Installed:   $_dst_file (SHA-256: $_dst_hash)" >&2
                 echo "  Refusing to overwrite - silent divergence is the defect this check exists to catch." >&2
                 return 1
+            fi
+            if [ -n "$_tmp_file" ]; then
+                rm -f "$_tmp_file"
             fi
         fi
     done
@@ -368,7 +391,7 @@ if [ "$GLOBAL" = true ]; then
     _src="$REPO_ROOT/platforms/shared/agent-skills/advanced-planning"
     _dst_parent="$GLOBAL_DIR/skills"
     _collision_result=0
-    check_collision "$_src" "$_dst_parent/advanced-planning" "advanced-planning" || _collision_result=$?
+    check_collision "$_src" "$_dst_parent/advanced-planning" "advanced-planning" "$AP_LAUNCHER" || _collision_result=$?
     if [ $_collision_result -eq 0 ]; then
         do_cp "$_src" "$_dst_parent/"
         say "  + skills/advanced-planning/"
@@ -395,7 +418,7 @@ if [ "$GLOBAL" = true ]; then
             continue
         fi
         _collision_result=0
-        check_collision "$_src" "$_dst_parent/$_skill" "$_skill" || _collision_result=$?
+        check_collision "$_src" "$_dst_parent/$_skill" "$_skill" "$AP_LAUNCHER" || _collision_result=$?
         if [ $_collision_result -eq 0 ]; then
             do_cp "$_src" "$_dst_parent/"
             say "  + skills/$_skill/"

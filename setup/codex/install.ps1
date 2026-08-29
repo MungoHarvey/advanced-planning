@@ -110,7 +110,12 @@ function Set-ApCallSites([string]$File, [string]$Launcher) {
 # ---------------------------------------------------------------------------
 # Collision check for shared skills
 # ---------------------------------------------------------------------------
-function Test-ApCollision([string]$Src, [string]$Dst, [string]$SkillName) {
+# $Launcher is optional.  When set, the destination was rewritten to point
+# at that absolute launcher when it was installed, so the raw source can
+# never match it and every second global install would report a fork of a
+# file it actually agrees with.  Compare what THIS installer would write.
+# The project branch passes nothing and keeps a raw-vs-raw comparison.
+function Test-ApCollision([string]$Src, [string]$Dst, [string]$SkillName, [string]$Launcher = "") {
     if (-not (Test-Path $Dst)) {
         return 0  # No collision - destination absent
     }
@@ -121,15 +126,28 @@ function Test-ApCollision([string]$Src, [string]$Dst, [string]$SkillName) {
         $relPath = $srcFile.FullName.Substring($Src.Length).TrimStart('\')
         $dstFile = Join-Path $Dst $relPath
         if (Test-Path $dstFile) {
-            if (-not (Test-FilesIdentical $srcFile.FullName $dstFile)) {
-                $srcHash = Get-FileHash256 $srcFile.FullName
+            $cmpFile = $srcFile.FullName
+            $tmpFile = $null
+            if ($Launcher) {
+                $tmpFile = [System.IO.Path]::GetTempFileName()
+                Copy-Item $srcFile.FullName $tmpFile -Force
+                Set-ApCallSites $tmpFile $Launcher
+                $cmpFile = $tmpFile
+            }
+            if (-not (Test-FilesIdentical $cmpFile $dstFile)) {
+                $srcHash = Get-FileHash256 $cmpFile
                 $dstHash = Get-FileHash256 $dstFile
+                if ($tmpFile) { Remove-Item $tmpFile -Force }
                 Write-Host "ERROR: collision detected for skill '$SkillName'" -ForegroundColor Red
                 Write-Host "  Source:      $($srcFile.FullName) (SHA-256: $srcHash)"
+                if ($Launcher) {
+                    Write-Host "  (source hashed as it would be installed, call sites rewritten)"
+                }
                 Write-Host "  Installed:   $dstFile (SHA-256: $dstHash)"
                 Write-Host "  Refusing to overwrite - silent divergence is the defect this check exists to catch."
                 return 1  # Collision error
             }
+            if ($tmpFile) { Remove-Item $tmpFile -Force }
         }
     }
 
@@ -281,7 +299,7 @@ if ($Global) {
     Say "Installing shared routing skill..."
     $src = Join-Path $RepoRoot "platforms\shared\agent-skills\advanced-planning"
     $dstParent = $SkillsDest
-    $collisionResult = Test-ApCollision $src (Join-Path $dstParent "advanced-planning") "advanced-planning"
+    $collisionResult = Test-ApCollision $src (Join-Path $dstParent "advanced-planning") "advanced-planning" $ApLauncher
     if ($collisionResult -eq 0) {
         Do-Copy $src $dstParent
         Say "  + skills\advanced-planning\"
@@ -309,7 +327,7 @@ if ($Global) {
             Write-Host "WARNING: core\skills\$skill not found - skipping" -ForegroundColor Yellow
             continue
         }
-        $collisionResult = Test-ApCollision $src (Join-Path $dstParent $skill) $skill
+        $collisionResult = Test-ApCollision $src (Join-Path $dstParent $skill) $skill $ApLauncher
         if ($collisionResult -eq 0) {
             Do-Copy $src $dstParent
             Say "  + skills\$skill\"

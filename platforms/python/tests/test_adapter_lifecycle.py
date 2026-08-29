@@ -828,3 +828,83 @@ class TestCompleteUninstallNoResidue:
             assert not runtime.exists(), (
                 "%s uninstall left runtime.json behind with no remaining owner"
                 % label)
+
+class TestGlobalDualAdapterInstall:
+    """G.1-G.2: both adapters install --global into one profile and share it.
+
+    Nothing else in this suite passes --global, and nothing anywhere compares
+    one adapter's installed output against the other's, so this path had no
+    coverage at all.  It was broken: --global rewrites the COPIED markdown to
+    an absolute launcher, and the next adapter to install then compared the raw
+    repo source against that rewritten copy, called it a fork, and exited 1.
+    The two adapters rewrite to the same launcher, so they do agree -- the
+    comparison was of the wrong two things.
+    """
+
+    def _install_global(self, lang, home, adapter):
+        name, install_sh, install_ps1, _, _ = adapter
+        env = dict(os.environ)
+        # USERPROFILE first: that is the order both installers resolve in.
+        env["USERPROFILE"] = str(home)
+        env["HOME"] = str(home)
+        if lang == "sh":
+            return _run_script(install_sh, ["--global"], env=env)
+        return _run_script(install_ps1, ["-Global"], env=env)
+
+    @pytest.mark.parametrize("lang", ["sh", "ps1"])
+    def test_second_adapter_shares_the_global_skill(self, tmp_path, lang):
+        """G.1: the second --global install succeeds and both owners are recorded."""
+        _skip_if_no_sh() if lang == "sh" else _skip_if_no_pwsh()
+        home = tmp_path / "profile"
+        home.mkdir()
+
+        first, second = _ADAPTERS[0], _ADAPTERS[1]
+
+        ret, out, err = self._install_global(lang, home, first)
+        assert ret == 0, "first global install (%s) failed: %s" % (
+            first[0], err or out)
+
+        ret, out, err = self._install_global(lang, home, second)
+        assert ret == 0, (
+            "second global install (%s) exited %d. The first adapter rewrote "
+            "the shared skill's call sites, so comparing the raw repo source "
+            "against the installed copy reports a fork that is not one:\n%s"
+            % (second[0], ret, err or out))
+
+        # Exit 0 alone would also be satisfied by silently overwriting the
+        # first adapter's copy, so require the installer to say it shared.
+        assert "shared; unchanged: advanced-planning" in out, (
+            "second global install did not report sharing the skill:\n%s" % out)
+
+        owners = _owners(home, "advanced-planning")
+        assert owners == sorted([first[0], second[0]]), (
+            "global ownership is %r, expected both adapters" % (owners,))
+
+    @pytest.mark.parametrize("lang", ["sh", "ps1"])
+    def test_global_skill_keeps_an_absolute_launcher(self, tmp_path, lang):
+        """G.2: sharing must not be bought by dropping the rewrite.
+
+        A global skill is read from whatever directory the agent is working in,
+        so a relative `.advanced-plans/bin/ap.py` call site would not resolve.
+        Deleting the rewrite would make G.1 pass and leave every global install
+        inert, so assert the installed call sites are absolute.  This is the
+        direction that keeps G.1 from passing vacuously.
+        """
+        _skip_if_no_sh() if lang == "sh" else _skip_if_no_pwsh()
+        home = tmp_path / "profile"
+        home.mkdir()
+
+        ret, out, err = self._install_global(lang, home, _ADAPTERS[0])
+        assert ret == 0, "global install failed: %s" % (err or out)
+
+        skill_md = home / ".agents" / "skills" / "advanced-planning" / "SKILL.md"
+        assert skill_md.exists(), "global install left no SKILL.md"
+        text = _read(skill_md)
+
+        # Both installers emit forward slashes for the embedded path.
+        expected = str(home).replace("\\", "/") + "/.advanced-plans/bin/ap.py"
+        assert expected in text, (
+            "installed SKILL.md does not call the absolute launcher %s" % expected)
+        assert 'python ".advanced-plans/bin/ap.py"' not in text, (
+            "installed SKILL.md still has a project-relative call site, which "
+            "cannot resolve when the skill is invoked from another directory")
