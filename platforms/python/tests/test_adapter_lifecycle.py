@@ -107,6 +107,40 @@ def _has_skill_entry(project_dir, skill_name):
     return skill_name in data.get("skills", {})
 
 
+def _parse_removed_count(output, label):
+    """Parse the removed count out of an uninstaller's "Done." line.
+
+    The count is the token immediately before "path(s)".  Anchoring there
+    reads every shipped wording -- codex and opencode print
+    "Done. N path(s) removed, M kept.", claude-code prints
+    "Done. N path(s) removed." -- without grabbing an unrelated digit that
+    happens to appear earlier on the line.
+
+    Raises rather than returning None.  The nested helper this replaces
+    anchored on the literal token "removed," and returned None when it was
+    absent, so a wording change made both sides None and the differential
+    assertion compared nothing.
+    """
+    saw_done = False
+    for line in output.split("\n"):
+        if "Done." not in line:
+            continue
+        saw_done = True
+        tokens = line.split()
+        for i, token in enumerate(tokens):
+            if token == "path(s)" and i > 0 and tokens[i - 1].isdigit():
+                return int(tokens[i - 1])
+    if saw_done:
+        raise AssertionError(
+            "%s: a 'Done.' line was printed but carried no 'N path(s)' "
+            "count, so this differential test would otherwise compare "
+            "nothing. Output was:\n%s" % (label, output))
+    raise AssertionError(
+        "%s: no 'Done. N path(s)' line in uninstaller output; the wording "
+        "changed and this differential test would otherwise compare "
+        "nothing. Output was:\n%s" % (label, output))
+
+
 def _fresh_project(tmp_path, project_name="proj"):
     """Create a fresh project directory structure for testing."""
     project = tmp_path / project_name
@@ -671,17 +705,8 @@ class TestLanguagesAgree:
         assert ret_ps1 == 0, "ps1 uninstall failed: %s" % err_ps1
         
         # Extract counts from output - look for "Done. N path(s) removed, M kept."
-        def extract_count(output):
-            for line in output.split("\n"):
-                if "Done." in line and "path(s)" in line:
-                    parts = line.split()
-                    for i, p in enumerate(parts):
-                        if p == "removed,":
-                            return parts[i-2] if i > 1 else None
-            return None
-        
-        count_sh = extract_count(out_sh)
-        count_ps1 = extract_count(out_ps1)
+        count_sh = _parse_removed_count(out_sh, "sh")
+        count_ps1 = _parse_removed_count(out_ps1, "ps1")
         
         assert count_sh == count_ps1, (
             "removal counts disagree: sh=%s, ps1=%s" % (count_sh, count_ps1))
@@ -691,9 +716,16 @@ class TestLanguagesAgree:
         proj_sh, proj_ps1, adapter = differential_fixture
         name, _, _, uninstall_sh, uninstall_ps1 = adapter
         
-        # Run both uninstallers
-        _run_script(uninstall_sh, ["--project", str(proj_sh), "--yes"])
-        _run_script(uninstall_ps1, ["-Project", str(proj_ps1), "-Yes"])
+        # Run both uninstallers and assert they succeeded
+        ret_sh, out_sh, err_sh = _run_script(
+            uninstall_sh, ["--project", str(proj_sh), "--yes"],
+        )
+        assert ret_sh == 0, "sh uninstall failed: %s" % err_sh
+        
+        ret_ps1, out_ps1, err_ps1 = _run_script(
+            uninstall_ps1, ["-Project", str(proj_ps1), "-Yes"],
+        )
+        assert ret_ps1 == 0, "ps1 uninstall failed: %s" % err_ps1
         
         # Compare registries
         try:
@@ -706,8 +738,38 @@ class TestLanguagesAgree:
         except FileNotFoundError:
             owners_ps1 = None
         
+        # Both-absent is now a meaningful agreement because both uninstallers
+        # are known to have succeeded (ret == 0 asserted above).
         assert owners_sh == owners_ps1, (
             "registry contents disagree: sh=%s, ps1=%s" % (owners_sh, owners_ps1))
+    
+    def test_removed_count_parser_rejects_missing_wording(self):
+        """E.19: the count parser must raise, not return None, when the wording is absent."""
+        # Both shipped wordings parse.  claude-code omits the ", M kept."
+        # clause and is absent from _ADAPTERS, so this pins the parser
+        # against an adapter the suite does not otherwise exercise.
+        assert _parse_removed_count("Done. 7 path(s) removed, 2 kept.", "x") == 7
+        assert _parse_removed_count("Done. 7 path(s) removed.", "x") == 7
+        assert _parse_removed_count("Done. 0 path(s) removed, 8 kept.", "x") == 0
+        
+        # The count is the token before "path(s)", not merely the first
+        # digit on the line.  A looser parser returns 9 here, and nothing
+        # in the suite would see it.
+        assert _parse_removed_count(
+            "Done. Pruned 9 entries; 7 path(s) removed, 2 kept.", "x") == 7
+        
+        # Absent wording raises rather than returning None.
+        for absent in ("", "Removed 7 things.\n",
+                       "Uninstall finished.\n"):
+            with pytest.raises(AssertionError) as exc_info:
+                _parse_removed_count(absent, "x")
+            assert "compare nothing" in str(exc_info.value)
+        
+        # A Done. line carrying no count raises too -- the branch a parser
+        # that guessed at the first digit would never reach.
+        with pytest.raises(AssertionError) as exc_info:
+            _parse_removed_count("Done. all path(s) removed.\n", "x")
+        assert "compare nothing" in str(exc_info.value)
 
 
 # =============================================================================
