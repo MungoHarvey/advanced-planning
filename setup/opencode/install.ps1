@@ -529,4 +529,4 @@ Say "  1. cd into your project folder"
 Say "  2. Start a new OpenCode session (skills are discovered on session start)"
 Say '  3. Use: $advanced-planning phase <goal>'
 Say ""
-Say "See setup/opencode/README.md for full documentation."
+Say "See platforms/opencode/README.md for full documentation."

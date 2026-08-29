@@ -21,6 +21,7 @@ assertion messages. It fails loudly when the behaviour is wrong.
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -1224,3 +1225,49 @@ class TestThirdPartySurvivesSoleOwnerUninstall:
         assert data["skills"][_FOREIGN_SKILL] == [_FOREIGN], (
             "expected the entry normalised to a list, got %r"
             % (data["skills"][_FOREIGN_SKILL],))
+
+
+# =============================================================================
+# F.1: documentation pointers printed by installers
+# =============================================================================
+
+
+class TestDocumentationPointersResolve:
+    """Every "See <dir>/<file>.md" an installer prints must exist."""
+
+    def test_every_see_pointer_resolves(self):
+        """F.1: no installer may advertise documentation that is not there.
+
+        Four installers pointed at setup/<adapter>/README.md, which has
+        never existed for codex or opencode -- their documentation lives
+        under platforms/.  Three other pointers in the identical shape are
+        correct, so this asserts that each target RESOLVES rather than that
+        it is spelled a particular way: rewriting a pointer to a different
+        wrong place cannot satisfy it.
+        """
+        # Requires a directory component, so the bare "See README.md" that
+        # an installer writes into a generated file is not matched here --
+        # that one is relative to the directory it is written into.
+        pattern = re.compile(r"See ([\w.-]+/[\w./-]+\.md)\b")
+        setup_dir = _REPO_ROOT / "setup"
+        checked, broken = [], []
+        for script in sorted(setup_dir.rglob("*")):
+            if script.suffix not in (".sh", ".ps1"):
+                continue
+            text = script.read_text(encoding="utf-8", errors="replace")
+            for match in pattern.finditer(text):
+                target = match.group(1)
+                checked.append(target)
+                if not (_REPO_ROOT / target).is_file():
+                    broken.append("%s points at %s"
+                                  % (script.relative_to(_REPO_ROOT), target))
+
+        # Without this floor the test passes having checked nothing the
+        # moment the wording drifts -- the failure mode E.17 and E.18 had.
+        assert len(checked) >= 7, (
+            "expected at least 7 documentation pointers under setup/, found "
+            "%d: %s. The pattern stopped matching and this test would "
+            "otherwise pass having checked nothing." % (len(checked), checked))
+        assert not broken, (
+            "installer(s) advertise documentation that does not exist:\n  "
+            + "\n  ".join(broken))
