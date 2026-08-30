@@ -1636,3 +1636,110 @@ class TestWorkerCommitContract:
         assert not problems, (
             "adapter README(s) disagree with the worker commit contract:\n  "
             + "\n  ".join(problems))
+
+
+# =============================================================================
+# H: the two adapters are near-duplicates and nothing compared them
+# =============================================================================
+
+_ADAPTER_FILES = ("install.sh", "install.ps1", "uninstall.sh", "uninstall.ps1")
+
+# Display name as it appears in prose, per adapter directory name.
+_ADAPTER_DISPLAY = {"codex": "Codex", "opencode": "OpenCode"}
+
+
+def _normalise_adapter_identity(text):
+    """Replace every adapter's own name and token with a shared placeholder.
+
+    BOTH adapters are normalised to the SAME placeholder, not to self/peer
+    markers. That is deliberate: the uninstaller headers say "may be registered
+    by both Codex and OpenCode", naming the two in a fixed order, so a
+    self/peer scheme would report correct prose as drift. The hole this opens
+    -- one adapter writing the other's token -- is what the second test covers.
+    """
+    for name in sorted(_ADAPTER_DISPLAY, key=len, reverse=True):
+        text = text.replace(_ADAPTER_DISPLAY[name], "@ADAPTERNAME@")
+        text = text.replace(name, "@ADAPTER@")
+    return text
+
+
+def _adapter_pairs():
+    """Every (filename, {adapter: text}) the two adapters both ship."""
+    root = _REPO_ROOT / "setup"
+    pairs = []
+    for filename in _ADAPTER_FILES:
+        texts = {}
+        for adapter in sorted(_ADAPTER_DISPLAY):
+            path = root / adapter / filename
+            if path.is_file():
+                texts[adapter] = path.read_text(encoding="utf-8")
+        if len(texts) == len(_ADAPTER_DISPLAY):
+            pairs.append((filename, texts))
+    return pairs
+
+
+class TestAdaptersHaveNotDrifted:
+    """H: codex and opencode are the same script with a different name in it."""
+
+    def test_every_shared_script_is_identical_once_the_name_is_normalised(self):
+        """The duplication is ~1880 lines per adapter with no guard on it.
+
+        TestLanguagesAgree compares sh against ps1 within ONE adapter. Nothing
+        compared one adapter against the other, and by the time this was
+        written they had already diverged.
+        """
+        pairs = _adapter_pairs()
+        assert len(pairs) == len(_ADAPTER_FILES), (
+            "expected %d shared scripts present in BOTH adapters, found %d: %s. "
+            "A file was renamed or an adapter moved, and this test would "
+            "otherwise pass having compared nothing."
+            % (len(_ADAPTER_FILES), len(pairs), [f for f, _ in pairs]))
+
+        drifted = []
+        for filename, texts in pairs:
+            normalised = {a: _normalise_adapter_identity(t)
+                          for a, t in texts.items()}
+            distinct = set(normalised.values())
+            if len(distinct) > 1:
+                lines = {a: t.count("\n") for a, t in texts.items()}
+                drifted.append(
+                    "%s: %s differ once the adapter name is normalised away "
+                    "(%s)" % (filename, sorted(texts),
+                              ", ".join("%s=%d lines" % (a, n)
+                                        for a, n in sorted(lines.items()))))
+        assert not drifted, (
+            "the adapters are maintained as copies of one another, so a change "
+            "made to one and not the other is a defect:\n  "
+            + "\n  ".join(drifted))
+
+    def test_no_adapter_names_its_peer_in_code(self):
+        """Closes the hole the shared placeholder opens.
+
+        Because both adapters normalise to the same token, the first test
+        cannot tell codex's installer writing an `opencode` fence from it
+        writing its own. This can: on a code line, an adapter must only ever
+        name itself. Comments are exempt -- the uninstaller headers correctly
+        explain that a shared skill may be owned by both.
+        """
+        pairs = _adapter_pairs()
+        assert len(pairs) == len(_ADAPTER_FILES), (
+            "see the floor above: found %d" % len(pairs))
+
+        leaks = []
+        for filename, texts in pairs:
+            for adapter, text in sorted(texts.items()):
+                peers = [p for p in _ADAPTER_DISPLAY if p != adapter]
+                for number, line in enumerate(text.split("\n"), 1):
+                    stripped = line.lstrip()
+                    if stripped.startswith("#"):
+                        continue
+                    for peer in peers:
+                        if peer in line or _ADAPTER_DISPLAY[peer] in line:
+                            leaks.append(
+                                "setup/%s/%s:%d names %s on a code line: %s"
+                                % (adapter, filename, number, peer,
+                                   line.strip()[:80]))
+        assert not leaks, (
+            "an adapter must only ever write its own token; naming the peer in "
+            "code means the wrong owner or the wrong fence:\n  "
+            + "\n  ".join(leaks))
