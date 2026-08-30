@@ -76,11 +76,11 @@ This ensures consistent behavior across hosts and prevents silent overwrites.
 
 ## Checkpoint Ownership
 
-**Codex never commits.** Codex subagents inherit the parent sandbox and cannot access git metadata outside their worktree. The external controller (Herdr/AAW) owns all git sequencing:
+**Codex cannot commit.** This is a sandbox limit, not a policy choice: Codex subagents inherit the parent sandbox and cannot reach a linked worktree's git metadata, which lives in the parent repo's `.git/worktrees/`. Workers on runtimes that *can* reach git commit their own work under the shared worker contract; Codex instead hands the change to the external controller (Herdr/AAW), which owns git sequencing here:
 
 1. **Opening checkpoint**: External controller records or creates the opening commit before spawning the orchestrator
 2. **Closing checkpoint**: Codex returns a structured checkpoint request; the external controller validates the diff, commits it outside the Codex sandbox, and returns the full SHA
-3. **Worker**: Receives opening SHA as immutable context; never stages, commits, or resets
+3. **Worker**: Receives opening SHA as immutable context; reports the paths it changed instead of staging them, and the controller commits with the same `Agent: worker/codex` and `Loop: <loop_name>` trailers a self-committing worker would have used
 
 For linked git worktrees (the standard pattern), this is the only permitted flow. A clean opening tree uses the existing HEAD SHA; no empty commit is required.
 

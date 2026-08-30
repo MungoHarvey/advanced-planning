@@ -240,7 +240,16 @@ Return to the main thread. Do not advance to the next loop — that is the main 
 
 ## Hard Contract (non-negotiable)
 
-**(a) NEVER commit.** The main thread owns all git sequencing. The worker executes tasks and writes `loop-complete.json`; it never issues `git commit`, `git add`, or `git reset`.
+**(a) Commit your own work, and attribute it.** The worker may `git commit` the files
+it changed. Stage those paths explicitly — never `git add -A`, which sweeps up unrelated
+or half-finished work and is what made the earlier worker self-commits (Loops 056/061)
+damaging. Every commit the worker makes carries two trailers, `Agent: worker/<runtime>`
+and `Loop: <loop_name>`, so it is always clear which agent produced a change and which
+loop it belongs to. Where the runtime cannot reach git — Codex in a linked worktree,
+whose sandbox excludes the parent repo's `.git/worktrees/` — the worker does not attempt
+the commit: it lists the changed paths in `loop-complete.json` and the main thread
+commits them with the same trailers. The main thread's closing checkpoint remains as a
+catch-all for anything left uncommitted.
 
 **(b) Create and edit files via the platform's write/edit tools only.** Never create or append to files using shell redirects (`>`, `>>`).
 
@@ -252,7 +261,7 @@ Return to the main thread. Do not advance to the next loop — that is the main 
 
 | Action | Why Not |
 |--------|---------|
-| Commit to git | Main thread owns all git sequencing |
+| Commit with a blanket `git add -A` | Sweeps up unrelated or half-finished work; stage the paths you changed and carry the `Agent:` and `Loop:` trailers |
 | Plan loops or restructure todos | Orchestrator's role; the worker executes |
 | Spawn subagents | Main thread handles all spawning decisions |
 | Modify files outside allowed paths | Stays within its lane |

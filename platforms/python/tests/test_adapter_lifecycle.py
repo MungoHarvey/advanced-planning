@@ -1271,3 +1271,368 @@ class TestDocumentationPointersResolve:
         assert not broken, (
             "installer(s) advertise documentation that does not exist:\n  "
             + "\n  ".join(broken))
+
+
+# =============================================================================
+# F.2 / F.3: the POSIX rewrite must not convert line endings
+# =============================================================================
+
+
+def _sh_function_body(path, name):
+    """Return the text of a POSIX shell function, brace to closing brace.
+
+    Reads the shipped installer rather than a copy of it, so a test built on
+    this cannot drift away from what actually runs.
+    """
+    text = path.read_text(encoding="utf-8")
+    opener = "%s() {\n" % name
+    start = text.find(opener)
+    if start < 0:
+        return None
+    end = text.find("\n}\n", start)
+    assert end > start, "%s: %s has no closing brace at column 0" % (path, name)
+    return text[start:end + len("\n}\n")]
+
+
+def _code_lines(text):
+    """The lines of a shell script with comments dropped.
+
+    A comment that NAMES a forbidden construct in order to explain why it is
+    forbidden must not read as a use of it.
+    """
+    return [ln for ln in text.split("\n") if not ln.lstrip().startswith("#")]
+
+
+def _posix_installers_defining_rewrite():
+    """Every setup/*/install.sh that defines ap_rewrite_call_sites.
+
+    Discovered from the filesystem, not from a list written here, so an adapter
+    added later is covered without anyone remembering to edit this file.
+    """
+    found = {}
+    for script in sorted((_REPO_ROOT / "setup").glob("*/install.sh")):
+        body = _sh_function_body(script, "ap_rewrite_call_sites")
+        if body is not None:
+            found[str(script.relative_to(_REPO_ROOT)).replace("\\", "/")] = body
+    return found
+
+
+class TestRewriteUsesNoInPlaceStripper:
+    """F.2: static, and meaningful on every platform including Linux CI."""
+
+    def test_no_posix_installer_rewrites_a_file_in_place(self):
+        """`sed -i` (and friends) cannot be used on files whose endings matter.
+
+        Under MSYS, sed opens files in text mode and rewrites every CRLF as LF
+        -- measured even for a substitution matching nothing.  The same GNU sed
+        4.9 on Linux preserves CR, so the fault is the platform rather than the
+        tool and there is no safe sed invocation for this job.  The PowerShell
+        twin Set-ApCallSites always preserved endings, so the two hosts
+        produced byte-different installs from the same source.
+
+        This is the guard that still bites on Linux CI, where F.3 must skip.
+        """
+        installers = _posix_installers_defining_rewrite()
+
+        # Without a floor this passes having checked nothing the moment the
+        # function is renamed -- the failure mode E.17, E.18 and F.1 all had.
+        assert len(installers) >= 3, (
+            "expected at least 3 POSIX installers defining "
+            "ap_rewrite_call_sites, found %d: %s. Either the function was "
+            "renamed or the layout moved, and this test would otherwise pass "
+            "having checked nothing." % (len(installers), sorted(installers)))
+
+        banned = ("sed -i", "sed --in-place", "-i.bak", "gawk -i inplace")
+        offenders = []
+        for rel, body in sorted(installers.items()):
+            for line in _code_lines(body):
+                for token in banned:
+                    if token in line:
+                        offenders.append("%s: %s" % (rel, line.strip()))
+        assert not offenders, (
+            "the rewrite must not edit a file in place -- under MSYS that "
+            "strips CR from every line, including on a no-op substitution:\n  "
+            + "\n  ".join(offenders))
+
+    def test_every_adapter_carries_the_same_rewrite(self):
+        """F.2/F8: the copies must not drift apart again.
+
+        claude-code's copy already carried a comment the other two lacked;
+        three hand-maintained duplicates is exactly how one gets fixed and the
+        others do not.
+        """
+        installers = _posix_installers_defining_rewrite()
+        assert len(installers) >= 3, "see the floor above: found %d" % len(installers)
+
+        bodies = {}
+        for rel, body in installers.items():
+            bodies.setdefault(body, []).append(rel)
+        assert len(bodies) == 1, (
+            "the POSIX installers carry %d different versions of "
+            "ap_rewrite_call_sites; they must be identical:\n%s"
+            % (len(bodies), "\n".join(
+                "  group %d: %s" % (i, sorted(v))
+                for i, v in enumerate(bodies.values(), 1))))
+
+
+class TestRewritePreservesLineEndings:
+    """F.3: behavioural, and honest about the platforms where it cannot bite."""
+
+    _PY_CALL = 'python ".advanced-plans/bin/ap.py"'
+    _RP_CALL = "runpy.run_path(r'.advanced-plans/bin/ap.py')"
+
+    def _sed_strips_cr(self, tmp_path):
+        """Does THIS platform's sed -i strip CR from a CRLF file?
+
+        The probe is a substitution that matches nothing, because that is the
+        measured Windows behaviour: the stripping is text-mode I/O, not the
+        edit.  A platform where this returns False cannot exhibit F10 at all.
+        """
+        probe = tmp_path / "sed-probe.txt"
+        probe.write_bytes(b"alpha\r\nbeta\r\n")
+        try:
+            proc = subprocess.Popen(
+                ["sed", "-i", "-e", "s#no-such-string-anywhere#x#g", str(probe)],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                universal_newlines=True)
+            proc.communicate(timeout=30)
+        except (OSError, subprocess.SubprocessError):
+            return None  # no usable sed; cannot tell either way
+        if proc.returncode != 0:
+            return None
+        return probe.read_bytes().count(b"\r") == 0
+
+    def _run_rewrite(self, tmp_path, installer, target, launcher):
+        """Run the REAL shipped function, lifted out of the real installer."""
+        parts = []
+        for name in ("ap_subst", "ap_rewrite_call_sites"):
+            body = _sh_function_body(installer, name)
+            assert body is not None, (
+                "%s does not define %s" % (installer, name))
+            parts.append(body)
+        harness = tmp_path / "harness.sh"
+        harness.write_bytes(
+            ("set -e\n" + "\n".join(parts)
+             + '\nap_rewrite_call_sites "$1" "$2"\n').encode("utf-8"))
+        ret, out, err = _run_script(
+            harness, [str(target), launcher], cwd=tmp_path)
+        assert ret == 0, "rewrite harness failed: %s%s" % (out, err)
+
+    def test_rewrite_preserves_crlf(self, tmp_path):
+        """F.3: a CRLF file keeps its CRLF, and still gets rewritten."""
+        strips = self._sed_strips_cr(tmp_path)
+        if strips is None:
+            pytest.skip(
+                "no usable `sed` on this platform, so the probe cannot "
+                "establish whether F10 could occur here. This guard is INERT, "
+                "not passing; TestRewriteUsesNoInPlaceStripper is what covers "
+                "the regression in this environment.")
+        if not strips:
+            pytest.skip(
+                "this platform's `sed -i` PRESERVES CR (measured just now on a "
+                "planted CRLF file), so the F10 defect cannot occur here and "
+                "this end-to-end assertion would hold whether or not the fix "
+                "were present. This guard is INERT, not passing -- reverting "
+                "the fix to `sed -i` would not fail it here. "
+                "TestRewriteUsesNoInPlaceStripper is what covers the "
+                "regression in this environment.")
+
+        launcher = "/opt/global/.advanced-plans/bin/ap.py"
+        installers = _posix_installers_defining_rewrite()
+        assert installers, "no installer defines the rewrite"
+
+        for rel in sorted(installers):
+            installer = _REPO_ROOT / rel
+
+            # 1. CRLF, with a call site: endings survive AND the edit happens.
+            hit = tmp_path / "hit.md"
+            hit.write_bytes(
+                ("prose\r\nrun %s now\r\nmore\r\n" % self._PY_CALL).encode())
+            before = hit.read_bytes().count(b"\r")
+            self._run_rewrite(tmp_path, installer, hit, launcher)
+            after = hit.read_bytes()
+            assert after.count(b"\r") == before, (
+                "%s: rewriting a CRLF file dropped %d of %d CR bytes -- a "
+                "shell install now produces byte-different files from a "
+                "PowerShell one" % (rel, before - after.count(b"\r"), before))
+            assert launcher.encode() in after, (
+                "%s: line endings survived but the substitution did not "
+                "happen, so the rewrite is preserving by doing nothing" % rel)
+            assert self._PY_CALL.encode() not in after, (
+                "%s: the original call site survives the rewrite" % rel)
+
+            # 2. CRLF, no call site: byte-identical, not merely equal text.
+            miss = tmp_path / "miss.md"
+            original = b"nothing\r\nto\r\nsee\r\n"
+            miss.write_bytes(original)
+            self._run_rewrite(tmp_path, installer, miss, launcher)
+            assert miss.read_bytes() == original, (
+                "%s: a file with no call site was modified" % rel)
+
+            # 3. LF stays LF -- the fix must not convert in the other
+            #    direction either, which is what a naive CRLF-restore would do.
+            lf = tmp_path / "lf.md"
+            lf.write_bytes(("prose\nrun %s now\n" % self._RP_CALL).encode())
+            self._run_rewrite(tmp_path, installer, lf, launcher)
+            got = lf.read_bytes()
+            assert b"\r" not in got, (
+                "%s: CR was introduced into an LF file" % rel)
+            assert launcher.encode() in got, (
+                "%s: the runpy call site was not rewritten" % rel)
+
+
+# =============================================================================
+# G.1: the worker commit contract must not contradict itself across copies
+# =============================================================================
+
+
+def _hard_contract_clause_a(path):
+    """Clause (a) of a Hard Contract, or None if the file carries no contract.
+
+    Read with universal newlines so the comparison is about what the clause
+    SAYS; line endings are F.2 and F.3's subject, not this one's.
+    """
+    text = path.read_text(encoding="utf-8")
+    if "## Hard Contract" not in text:
+        return None
+    start = text.find("**(a) ")
+    if start < 0:
+        return None
+    end = text.find("**(b) ", start)
+    assert end > start, "%s: clause (a) is not followed by a clause (b)" % path
+    return text[start:end].strip()
+
+
+def _role_contracts(role):
+    """Every Hard Contract for a role, discovered from the filesystem.
+
+    A file is a contract for the role if its NAME carries the role word and it
+    actually contains a Hard Contract. That second condition is what excludes
+    platforms/cowork/agents/worker-prompt.md, deliberately: Cowork is git-free
+    and checkpoints by snapshot, so it states no commit policy and must not be
+    held to one. platforms/claude-code/agents/analysis-worker.md is excluded the
+    same way -- it is a different agent with no contract.
+    """
+    found = {}
+    for root in (_REPO_ROOT / "core" / "agents", _REPO_ROOT / "platforms"):
+        if not root.is_dir():
+            continue
+        for md in sorted(root.rglob("*.md")):
+            if role not in md.name.lower():
+                continue
+            clause = _hard_contract_clause_a(md)
+            if clause is not None:
+                rel = str(md.relative_to(_REPO_ROOT)).replace("\\", "/")
+                found[rel] = clause
+    return found
+
+
+class TestWorkerCommitContract:
+    """G.1: one policy on committing, stated identically wherever it is shipped."""
+
+    def test_every_worker_contract_states_the_same_policy(self):
+        """The three copies are hand-maintained; that is how they drift.
+
+        This is the F5 defect in its general form: two shipped documents said
+        opposite things about whether a worker may commit, and nothing noticed.
+        """
+        contracts = _role_contracts("worker")
+        assert len(contracts) >= 3, (
+            "expected at least 3 worker Hard Contracts, found %d: %s. Either "
+            "they were renamed or the layout moved, and this test would "
+            "otherwise pass having compared nothing."
+            % (len(contracts), sorted(contracts)))
+
+        groups = {}
+        for rel, clause in contracts.items():
+            groups.setdefault(clause, []).append(rel)
+        assert len(groups) == 1, (
+            "the worker contracts state %d different commit policies; they "
+            "must agree:\n%s" % (len(groups), "\n".join(
+                "  group %d: %s" % (i, sorted(v))
+                for i, v in enumerate(groups.values(), 1))))
+
+    def test_worker_contract_requires_attribution_and_forbids_blanket_staging(self):
+        """A worker may commit, but the commit must say who made it.
+
+        Permitting commits without attribution would reintroduce exactly what
+        the old rule was adopted after: ralph-loop-worker.md records that the
+        Loops 056/061 self-commits damaged this repo's history precisely
+        because they were unattributed and staged the whole tree.
+        """
+        contracts = _role_contracts("worker")
+        assert len(contracts) >= 3, "see the floor above: found %d" % len(contracts)
+
+        missing = []
+        for rel, clause in sorted(contracts.items()):
+            for token, why in (
+                    ("Agent:", "no `Agent:` trailer, so a commit cannot be "
+                               "traced to the agent that made it"),
+                    ("Loop:", "no `Loop:` trailer, so a commit cannot be tied "
+                              "to the loop it came from"),
+                    ("git add -A", "does not forbid the blanket stage that "
+                                   "made the Loops 056/061 self-commits "
+                                   "damaging"),
+            ):
+                if token not in clause:
+                    missing.append("%s: %s" % (rel, why))
+        assert not missing, (
+            "worker contracts permit committing without the safeguards that "
+            "make it safe:\n  " + "\n  ".join(missing))
+
+    def test_orchestrator_contract_still_forbids_commits(self):
+        """The change was scoped to workers, and must stay scoped.
+
+        The orchestrator really does not commit -- it writes loop-ready.json and
+        nothing else -- so relaxing its contract too would be over-applying the
+        decision rather than implementing it.
+        """
+        contracts = _role_contracts("orchestrator")
+        assert len(contracts) >= 3, (
+            "expected at least 3 orchestrator Hard Contracts, found %d: %s"
+            % (len(contracts), sorted(contracts)))
+
+        relaxed = [rel for rel, clause in sorted(contracts.items())
+                   if "NEVER commit" not in clause]
+        assert not relaxed, (
+            "the orchestrator does not commit; its contract must still say so, "
+            "but these no longer do: %s" % relaxed)
+
+    def test_no_adapter_readme_contradicts_the_worker_contract(self):
+        """G.1/F5 proper: the README is where the contradiction actually was.
+
+        An adapter README that documents checkpoint ownership must not assert
+        the superseded policy, and must name the attribution the contract now
+        requires -- otherwise a reader following the README alone would produce
+        untraceable commits.
+        """
+        readmes = {}
+        for readme in sorted((_REPO_ROOT / "platforms").glob("*/README.md")):
+            text = readme.read_text(encoding="utf-8")
+            if "## Checkpoint Ownership" in text:
+                rel = str(readme.relative_to(_REPO_ROOT)).replace("\\", "/")
+                readmes[rel] = text
+        assert len(readmes) >= 2, (
+            "expected at least 2 adapter READMEs documenting checkpoint "
+            "ownership, found %d: %s. The heading changed and this test would "
+            "otherwise pass having checked nothing."
+            % (len(readmes), sorted(readmes)))
+
+        problems = []
+        for rel, text in sorted(readmes.items()):
+            section = text.split("## Checkpoint Ownership", 1)[1]
+            section = section.split("\n## ", 1)[0]
+            if "never commits" in section.lower():
+                problems.append(
+                    "%s: asserts as POLICY that a worker never commits, which "
+                    "the worker contract no longer says. A runtime that is "
+                    "merely unable to commit should say it cannot, not that it "
+                    "never does." % rel)
+            if "Agent:" not in section:
+                problems.append(
+                    "%s: documents checkpoint ownership without naming the "
+                    "`Agent:` trailer, so a reader following this README alone "
+                    "would produce commits that cannot be attributed." % rel)
+        assert not problems, (
+            "adapter README(s) disagree with the worker commit contract:\n  "
+            + "\n  ".join(problems))

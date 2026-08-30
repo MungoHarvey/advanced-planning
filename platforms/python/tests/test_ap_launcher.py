@@ -743,9 +743,40 @@ _INSTALLER_ENV = frozenset([
 ])
 
 
+def _strip_quoted_heredocs(text):
+    """Drop the bodies of <<'EOF' style heredocs.
+
+    A quoted heredoc delimiter suppresses expansion entirely, so `$name` inside
+    one is literal text, not a variable read -- `setup/codex/install.sh` writes
+    a PLANNING.md containing the literal string "$advanced-planning" that way.
+    Unquoted heredocs (<<EOF) DO expand and are left in scope, which is the
+    whole point: those are where an unassigned variable really does bite.
+
+    Bodies are dropped from the text used for BOTH halves of the comparison, so
+    this removes false positives without hiding a real one: a variable that is
+    only ever assigned inside a quoted heredoc was never really assigned.
+    """
+    out, delim = [], None
+    for line in text.split("\n"):
+        if delim is None:
+            match = re.search(r"<<-?\s*(['\"])([A-Za-z_][A-Za-z0-9_]*)\1", line)
+            if match:
+                delim = match.group(2)
+                out.append(line[:match.start()])
+                continue
+            out.append(line)
+        elif line.strip() == delim:
+            delim = None
+    return "\n".join(out)
+
+
 @pytest.mark.parametrize("script", [
     "setup/claude-code/install.sh",
     "platforms/claude-code/install.sh",
+    # codex and opencode carry the same rewrite helpers and were never checked
+    # by this analyser at all until F10 touched them.
+    "setup/codex/install.sh",
+    "setup/opencode/install.sh",
 ])
 def test_no_installer_reads_a_variable_it_never_assigns(script):
     """Found by running the third installer, not by reading it.
@@ -762,14 +793,27 @@ def test_no_installer_reads_a_variable_it_never_assigns(script):
     """
     path = _REPO_ROOT / script
     text = io.open(str(path), encoding="utf-8", newline="").read()
+    text = _strip_quoted_heredocs(text)
     # `(?:^|[;&|]) ` and not just `^`: these installers write more than one
     # assignment per line (`_f="$1"; _launcher="$2"`), and an anchored pattern
     # sees only the first -- which would have reported the second as unassigned.
+    # `then`/`else`/`do` join the list for the same reason `;` is on it: an
+    # assignment can legally follow a keyword, and an anchored pattern would
+    # report `if ...; then _ends_nl=0; fi` as never assigning `_ends_nl`.
     assigned = set(re.findall(
-        r"(?:^|[;&|])\s*(?:local\s+|export\s+)?([A-Za-z_][A-Za-z0-9_]*)=",
+        r"(?:^|[;&|]|\bthen\b|\belse\b|\bdo\b)"
+        r"\s*(?:local\s+|export\s+)?([A-Za-z_][A-Za-z0-9_]*)=",
         text, re.M))
     assigned |= set(re.findall(r"for\s+([A-Za-z_][A-Za-z0-9_]*)\s+in", text))
-    used = set(re.findall(r'\$\{?([A-Za-z_][A-Za-z0-9_]*)', text))
+    # `read VAR` assigns VAR. This is the same class of omission the `for` line
+    # above already covers, not a loosening: a variable that is genuinely never
+    # assigned still appears in no `read` anywhere, and is still reported.
+    assigned |= set(re.findall(
+        r"\bread\s+(?:-[A-Za-z]+\s+)*([A-Za-z_][A-Za-z0-9_]*)", text))
+    # A backslash-escaped `\$` is a literal dollar sign, not an expansion --
+    # these installers write `\\$advanced-planning` into generated docs. Without
+    # the lookbehind those literals read as uses of a variable named `advanced`.
+    used = set(re.findall(r'(?<!\\)\$\{?([A-Za-z_][A-Za-z0-9_]*)', text))
     unknown = sorted(used - assigned - _INSTALLER_ENV)
     assert not unknown, (
         "%s reads %s but never assigns them, and never declares them as "

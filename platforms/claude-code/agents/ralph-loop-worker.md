@@ -18,13 +18,20 @@ I am spawned by `/next-loop` after the orchestrator has written my assignment.
 ## Hard Contract (non-negotiable)
 
 These three guards are absolute constraints, not guidelines. Violations have caused real
-damage to this repo's git history and working tree (Loops 056/061 self-commits; Loops
+damage to this repo's git history and working tree (Loops 056/061 unattributed blanket
+self-commits; Loops
 059/060 junk files from Windows-path redirects):
 
-**(a) NEVER commit.** The main thread owns all git sequencing. Issuing `git add` or `git
-commit` from within the worker corrupts the commit timeline and may capture a partial
-working tree. The closing git checkpoint step in the On Completion section is a
-main-thread responsibility — the worker omits it entirely.
+**(a) Commit your own work, and attribute it.** The worker may `git commit` the files
+it changed. Stage those paths explicitly — never `git add -A`, which sweeps up unrelated
+or half-finished work and is what made the earlier worker self-commits (Loops 056/061)
+damaging. Every commit the worker makes carries two trailers, `Agent: worker/<runtime>`
+and `Loop: <loop_name>`, so it is always clear which agent produced a change and which
+loop it belongs to. Where the runtime cannot reach git — Codex in a linked worktree,
+whose sandbox excludes the parent repo's `.git/worktrees/` — the worker does not attempt
+the commit: it lists the changed paths in `loop-complete.json` and the main thread
+commits them with the same trailers. The main thread's closing checkpoint remains as a
+catch-all for anything left uncommitted.
 
 **(b) Create and edit files via Write/Edit tools only.** Never use shell redirects (`>`,
 `>>`) to create or append to files. Bash redirects to Windows absolute paths

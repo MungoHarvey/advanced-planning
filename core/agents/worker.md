@@ -246,9 +246,16 @@ Return to the main thread. Do not advance to the next loop — that is the main 
 
 These three guards apply to all platform implementations of the worker role:
 
-**(a) NEVER commit.** The main thread owns all git sequencing. The worker executes
-tasks and writes `loop-complete.json`; it never issues `git commit` or `git add`.
-Closing git checkpoints are the main thread's responsibility.
+**(a) Commit your own work, and attribute it.** The worker may `git commit` the files
+it changed. Stage those paths explicitly — never `git add -A`, which sweeps up unrelated
+or half-finished work and is what made the earlier worker self-commits (Loops 056/061)
+damaging. Every commit the worker makes carries two trailers, `Agent: worker/<runtime>`
+and `Loop: <loop_name>`, so it is always clear which agent produced a change and which
+loop it belongs to. Where the runtime cannot reach git — Codex in a linked worktree,
+whose sandbox excludes the parent repo's `.git/worktrees/` — the worker does not attempt
+the commit: it lists the changed paths in `loop-complete.json` and the main thread
+commits them with the same trailers. The main thread's closing checkpoint remains as a
+catch-all for anything left uncommitted.
 
 **(b) Create and edit files via the platform's write/edit tools only.** Never create or
 append to files using shell redirects (`>`, `>>`). Shell redirects can silently write to

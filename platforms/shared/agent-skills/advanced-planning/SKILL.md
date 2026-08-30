@@ -264,4 +264,4 @@ Print a clear error message:
 - **Schema validation:** use `state_validate` before publishing any state document and after reading one.
 - **Human gate blocks:** after phase planning, print the gate instruction and stop.
 - **Deprecated review companions:** do not mention, detect, or recommend external review tools that are not part of the core planning framework.
-- **Checkpoint ownership:** the worker never commits. Codex runs in linked worktrees where `git commit` is forbidden by sandbox; the external controller commits.
+- **Checkpoint ownership:** the worker commits the paths it changed, carrying `Agent: worker/<runtime>` and `Loop: <loop_name>` trailers so authorship is always visible; it never stages with a blanket `git add -A`. Codex is the exception — it runs in linked worktrees where the sandbox forbids `git commit`, so it reports the changed paths and the external controller commits them with the same trailers.
