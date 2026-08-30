@@ -480,7 +480,7 @@ if [ "$SELF_INSTALL" = true ]; then
     if [ "$DRY_RUN" = true ]; then
         echo "  [dry-run] ln -sf $REPO_ROOT/platforms/claude-code/commands $CLAUDE_DIR/commands"
         echo "  [dry-run] ln -sf $REPO_ROOT/core/skills $CLAUDE_DIR/skills"
-        echo "  [dry-run] ln -sf $REPO_ROOT/core/agents $CLAUDE_DIR/core-agents (note: agents merged below)"
+        echo "  [dry-run] ln -sf each .md from $REPO_ROOT/core/agents and $REPO_ROOT/platforms/claude-code/agents into $CLAUDE_DIR/agents"
         echo "  [dry-run] ln -sf $REPO_ROOT/core/schemas $CLAUDE_DIR/schemas"
     else
         # Remove existing dirs/links before creating symlinks

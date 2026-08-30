@@ -1743,3 +1743,176 @@ class TestAdaptersHaveNotDrifted:
             "an adapter must only ever write its own token; naming the peer in "
             "code means the wrong owner or the wrong fence:\n  "
             + "\n  ".join(leaks))
+
+
+# =============================================================================
+# J: claude-code is a different adapter, not a third instance of the same one
+# =============================================================================
+
+_CC_DIR = _REPO_ROOT / "setup" / "claude-code"
+
+# Every file the adapter is expected to ship. Kept explicit because the point of
+# the check is that one of them has NOT quietly disappeared; globbing for
+# "whatever is there" would pass for an empty directory.
+_CC_SURFACE = ("README.md", "install.sh", "install.ps1",
+               "uninstall.sh", "uninstall.ps1")
+
+# Tokens belonging to the shared-agent layout that codex and opencode
+# implement. claude-code must not drift into it -- it installs into .claude/,
+# does not maintain skill-ownership.json, and writes no AGENTS.md fences.
+_SHARED_LAYOUT_TOKENS = ("AGENTS.md", "skill-ownership", ".agents/skills")
+
+# $REPO_ROOT/<path> in sh; Join-Path $RepoRoot "<path>" in PowerShell, where the
+# path is a separate argument and so needs its own pattern.
+_CC_SRC_SH = re.compile(r"\$REPO_ROOT/([A-Za-z0-9_./*-]+)")
+_CC_SRC_PS = re.compile(r'Join-Path \$RepoRoot "([^"]+)"')
+_CC_DEST_SH = re.compile(r"\$CLAUDE_DIR/([A-Za-z0-9_.-]+)")
+_CC_FLAG_SH = re.compile(r"^\s+(--[a-z-]+)\)", re.MULTILINE)
+_CC_FLAG_PS = re.compile(r"^\s*\[(?:switch|string)\]\$([A-Za-z]+)", re.MULTILINE)
+
+
+def _cc_read(name):
+    return (_CC_DIR / name).read_text(encoding="utf-8")
+
+
+def _cc_repo_paths(text, pattern):
+    """Repo-relative paths a script reads from, with glob tails removed."""
+    found = set()
+    for match in pattern.finditer(text):
+        parts = [p for p in match.group(1).replace("\\", "/").split("/") if p]
+        while parts and ("*" in parts[-1] or parts[-1].startswith("$")):
+            parts.pop()
+        if parts:
+            found.add("/".join(parts))
+    return found
+
+
+def _cc_canonical_flag(flag):
+    """--dry-run and -DryRun are the same flag in two spellings."""
+    return flag.lstrip("-").replace("-", "").lower()
+
+
+class TestClaudeCodeAdapter:
+    """J: cover what claude-code does, rather than what it does not do.
+
+    It installs core/skills/* into .claude/skills/ and supports --symlink,
+    where codex and opencode install platforms/shared/agent-skills into
+    .agents/skills/ and maintain a shared ownership registry. Parametrising it
+    alongside them would mostly assert that it never touches machinery it was
+    never meant to touch.
+    """
+
+    def test_the_adapter_ships_its_whole_surface(self):
+        """A missing script is the failure every check below would mask."""
+        missing = [n for n in _CC_SURFACE if not (_CC_DIR / n).is_file()]
+        assert not missing, (
+            "setup/claude-code is missing %s. Every other check in this class "
+            "reads these files, so they would pass having read nothing."
+            % missing)
+
+    def test_every_repo_path_the_installer_reads_from_exists(self):
+        """A moved source directory is a silent install of nothing.
+
+        Both installers copy from fixed repo paths. If one is renamed, the
+        loops that read it simply iterate zero times -- `[ -f "$x" ] || continue`
+        skips everything and the install reports success having written no
+        skills at all.
+        """
+        for script, pattern, floor in (("install.sh", _CC_SRC_SH, 5),
+                                       ("install.ps1", _CC_SRC_PS, 5)):
+            paths = _cc_repo_paths(_cc_read(script), pattern)
+            assert len(paths) >= floor, (
+                "setup/claude-code/%s: found only %d repo paths (expected at "
+                "least %d). The script was rewritten to build its paths some "
+                "other way, and this check is now reading nothing: %s"
+                % (script, len(paths), floor, sorted(paths)))
+            gone = sorted(p for p in paths if not (_REPO_ROOT / p).exists())
+            assert not gone, (
+                "setup/claude-code/%s reads from paths that no longer exist: "
+                "%s. The installer would report success having copied nothing."
+                % (script, gone))
+
+    def test_the_uninstaller_names_every_directory_the_installer_writes(self):
+        """Anything install creates and uninstall does not name is left behind."""
+        install = _cc_read("install.sh")
+        uninstall = _cc_read("uninstall.sh")
+        dests = set(_CC_DEST_SH.findall(install))
+        assert len(dests) >= 5, (
+            "found only %d $CLAUDE_DIR destinations in install.sh (expected at "
+            "least 5); the installer no longer names its targets this way and "
+            "this check is comparing nothing: %s" % (len(dests), sorted(dests)))
+        orphans = sorted(d for d in dests if d not in uninstall)
+        assert not orphans, (
+            "install.sh names $CLAUDE_DIR/%s but uninstall.sh never mentions "
+            "it. Either the uninstaller leaves it behind, or the installer "
+            "describes something it does not actually create -- a dry-run "
+            "message that does not match a real run is the second case, and "
+            "is just as much a defect."
+            % ", $CLAUDE_DIR/".join(orphans))
+
+    def test_both_languages_offer_the_same_flags(self):
+        """A flag in one host and not the other is a platform-only feature."""
+        sh_flags = set(_CC_FLAG_SH.findall(_cc_read("install.sh")))
+        ps_flags = set(_CC_FLAG_PS.findall(_cc_read("install.ps1")))
+        for label, flags in (("install.sh", sh_flags), ("install.ps1", ps_flags)):
+            assert len(flags) >= 4, (
+                "setup/claude-code/%s: parsed only %d flags (expected at least "
+                "4). The argument parser was restructured and this check no "
+                "longer sees it: %s" % (label, len(flags), sorted(flags)))
+        sh_canon = {_cc_canonical_flag(f): f for f in sh_flags}
+        ps_canon = {_cc_canonical_flag(f): f for f in ps_flags}
+        sh_only = sorted(sh_canon[k] for k in set(sh_canon) - set(ps_canon))
+        ps_only = sorted(ps_canon[k] for k in set(ps_canon) - set(sh_canon))
+        assert not sh_only and not ps_only, (
+            "the two installers do not offer the same flags: only in "
+            "install.sh %s, only in install.ps1 %s" % (sh_only, ps_only))
+
+    def test_the_readme_documents_every_flag_the_installers_accept(self):
+        """claude-code is the only adapter shipping a README; it must be true.
+
+        Documentation drift is not cosmetic here: the README is the only place
+        --symlink is explained, and a flag that exists but is undocumented is
+        indistinguishable from one that does not exist.
+        """
+        readme = _cc_read("README.md")
+        sh_flags = sorted(_CC_FLAG_SH.findall(_cc_read("install.sh")))
+        ps_flags = sorted("-" + f
+                          for f in _CC_FLAG_PS.findall(_cc_read("install.ps1")))
+        assert len(sh_flags) >= 4 and len(ps_flags) >= 4, (
+            "parsed %d sh and %d ps1 flags (expected at least 4 each); this "
+            "check would otherwise pass having looked for nothing in the "
+            "README" % (len(sh_flags), len(ps_flags)))
+        undocumented = [f for f in sh_flags + ps_flags if f not in readme]
+        assert not undocumented, (
+            "setup/claude-code/README.md does not mention %s, which the "
+            "installers accept" % undocumented)
+
+    def test_it_installs_into_dot_claude_and_stays_out_of_the_shared_layout(self):
+        """The structural boundary, asserted in both directions.
+
+        The negative half alone would be vacuous -- it passes for a file that
+        does nothing at all. The positive half is what gives it a subject: each
+        script must actually name .claude, and each must name the skills source
+        it installs from, in its own path syntax.
+        """
+        for script, skills_src in (("install.sh", "core/skills"),
+                                   ("install.ps1", "core\\skills"),
+                                   ("uninstall.sh", "core/skills"),
+                                   ("uninstall.ps1", "core\\skills")):
+            text = _cc_read(script)
+            assert ".claude" in text, (
+                "setup/claude-code/%s never names .claude, so this check has "
+                "no subject and the absences below prove nothing" % script)
+            if script.startswith("install"):
+                assert skills_src in text, (
+                    "setup/claude-code/%s never names %s -- it no longer "
+                    "installs the core skills, or it builds the path some "
+                    "other way" % (script, skills_src))
+            intruders = [t for t in _SHARED_LAYOUT_TOKENS if t in text]
+            assert not intruders, (
+                "setup/claude-code/%s names %s. That is codex and opencode's "
+                "shared-agent layout; claude-code installs into .claude/ and "
+                "maintains no ownership registry. If this adapter genuinely "
+                "needs to join that protocol, the shared tests in this file "
+                "apply to it and this class is the wrong home for it."
+                % (script, intruders))
