@@ -573,24 +573,38 @@ class TestFullSyntheticRemediationTrace:
         expected paths (they would be missing or empty if we accidentally
         wrote/deleted them).
         """
-        real_loops_md = Path(
-            "C:/Users/mharvey2/Documents/Coding/advanced-planning"
-            "/.advanced-plans/phases/phase-14/loops.md"
-        )
-        real_state_dir = Path(
-            "C:/Users/mharvey2/Documents/Coding/advanced-planning"
-            "/.advanced-plans/state"
+        # The repository this test is running in, not a machine-specific path.
+        # The module already computes this at import time for sys.path; anchoring
+        # on an absolute checkout meant the test looked for a tree that need not
+        # exist, and reported its absence as a sandbox leak.
+        repo_root = Path(__file__).parents[3]
+
+        # Floor: if the root no longer looks like the repository, say so plainly.
+        # Without this the two assertions below would resolve under some other
+        # directory and report whatever they found there as a sandbox verdict.
+        assert (repo_root / ".advanced-plans").is_dir() and (repo_root / "platforms").is_dir(), (
+            "cannot locate the repository root from %s — this test can no longer "
+            "tell a sandbox leak from a stale anchor, so it is reporting that "
+            "rather than guessing." % __file__
         )
 
-        # Real loops.md must still exist (we never touched it in these tests)
-        assert real_loops_md.exists(), (
-            "loops.md was unexpectedly missing — sandbox tests must not modify real files."
-        )
+        real_loops_md = repo_root / ".advanced-plans" / "phases" / "phase-14" / "loops.md"
+        real_state_dir = repo_root / ".advanced-plans" / "state"
 
-        # Real state directory must still exist
-        assert real_state_dir.is_dir(), (
-            "State directory was unexpectedly missing."
-        )
+        # These are tracked files the module never writes to. If one is missing,
+        # say which of the two possible causes it is -- a test in this module
+        # escaped tmp_path, or the anchor is stale because the file was renamed
+        # or removed deliberately. Reporting the first when it is the second is
+        # what made the original version misleading.
+        for real_path, kind in ((real_loops_md, "file"), (real_state_dir, "directory")):
+            present = real_path.is_dir() if kind == "directory" else real_path.exists()
+            assert present, (
+                "%s is missing from the real working tree: %s\n"
+                "Either a test in this module wrote outside tmp_path, or this "
+                "anchor is stale. `git status` distinguishes them: a tracked "
+                "path shown as deleted is a real leak, an untracked one means "
+                "the anchor needs updating." % (kind, real_path)
+            )
 
         # The tmp_path files we created must be DIFFERENT from real files
         sandbox_file = tmp_path / "criteria-frozen.md"
