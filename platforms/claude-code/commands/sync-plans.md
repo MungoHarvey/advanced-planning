@@ -55,6 +55,7 @@ Read the YAML frontmatter of the plan. Extract:
 - `loops:` — the loop-number list (e.g. `[059, 060, 061, 062, 063]`)
 
 Compute the loop range string from the `loops:` list:
+
 - If the list has exactly one element, the range is that element zero-padded to 3 digits.
 - If the list has 2+ elements, the range is `[first]..[last]` (e.g. `059–063`).
 - If `loops:` is absent or empty, set range to `—`.
@@ -71,12 +72,14 @@ If the file does not exist, proceed without it (loop rows cannot be synced; note
 this in the drift report).
 
 If the file exists, extract each loop block's frontmatter:
+
 - `name:` — the loop identifier (e.g. `ralph-loop-059`)
 - `task_name:` — the loop title (e.g. `Doc-Hygiene + Wire State-Archiving`)
 - `handoff_summary.done` — non-empty string means the loop has completed
 - todo counts: count `status: completed` and `status: pending` todos
 
 Derive the loop status for each loop:
+
 - All todos `completed` OR `handoff_summary.done` non-empty → `**complete**`
 - Any todo `in_progress` → `**in_progress**`
 - Otherwise → `**pending**`

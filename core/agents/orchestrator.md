@@ -52,6 +52,7 @@ Example: `.advanced-plans/state/archive/phase-10-2026-05-20T14-30-00-loop-ready.
 ### Step 1 — Identify the next pending loop
 
 Read from the state directory to determine the current position:
+
 - If `loop-complete.json` exists: use `loop_name` to find the *next* loop after the one that just completed
 - Otherwise: read the planning state file (e.g. CLAUDE.md) for the current loop pointer
 
@@ -62,6 +63,7 @@ If no pending loops are found: write `loop-ready.json` with `"status": "all_comp
 ### Step 2 — Read the prior handoff
 
 If a prior loop exists, read its `handoff_summary` from the loop file's YAML frontmatter:
+
 - `done` — what was completed
 - `failed` — what failed (empty string if nothing failed)
 - `needed` — what must still happen (empty string if fully done)
@@ -85,6 +87,7 @@ Run the three planning skills **in sequence** — each operates on the output of
 3. **Load and execute `plan-subagent-identification`** — Read `[skills_directory]/plan-subagent-identification/SKILL.md` and follow its Process section. Discover available agents by listing all `[agents_directory]/*.md` files. Assess each todo for delegation suitability. Update `agent:` in-place.
 
 4. Write updated todos back to the loop file in-place, maintaining canonical field order:
+
    ```
    id → content → skill → agent → outcome → status → complexity → priority
    ```
@@ -192,6 +195,7 @@ The orchestrator has access to the three planning skills used in the todo popula
 ## Platform Adapter Notes
 
 Platform adapters must specify:
+
 - The model to use for this role (Sonnet recommended)
 - The tool capabilities granted (read, write, edit files; glob; no execution tools needed)
 - The state directory path (e.g. `.advanced-plans/state/` in the target project)

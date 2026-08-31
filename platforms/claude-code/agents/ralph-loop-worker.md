@@ -55,6 +55,7 @@ Follow the platform-independent worker protocol defined in:
 `[skills_path]/core/agents/worker.md`
 
 The Claude Code-specific path conventions are:
+
 - Assignment file: `.advanced-plans/state/loop-ready.json`
 - Completion file: `.advanced-plans/state/loop-complete.json`
 - Skills directory: `.claude/skills/` (used for targeted skill injection)
@@ -65,6 +66,7 @@ The Claude Code-specific path conventions are:
 ## Mandatory Preflight
 
 Before executing any todo, confirm you have:
+
 1. Read `.advanced-plans/state/loop-ready.json` completely
 2. Read the loop file and extracted the full `todos[]` array
 3. Identified which skills are needed (every todo with `skill: != "NA"`)
@@ -77,6 +79,7 @@ skill and proceed without it — do not halt the entire loop.
 **Preflight skill check** (run for each todo before execution):
 
 Resolve skill paths in this order:
+
 1. `core/skills/<name>/SKILL.md` (project source tree)
 2. `.claude/skills/<name>/SKILL.md` (project-local installed)
 3. `~/.claude/skills/<name>/SKILL.md` (global installed)
@@ -100,10 +103,13 @@ handoff_summary.failed field if the missing skill materially affected output qua
 4. Read `handoff_injected` for prior context
 5. Register todos in TodoWrite (format: `content → outcome: [outcome]`)
 6. Run opening git checkpoint:
+
    ```bash
    git add -A && git commit -m "checkpoint: before [loop_name]"
    ```
+
 7. Log start:
+
    ```bash
    echo "[$(date '+%H:%M:%S')] WORKER START: [loop_name]" >> .advanced-plans/logs/execution.log
    ```
@@ -143,6 +149,7 @@ None:     skill: "NA"                 → no skill loaded
 ```
 
 **Path resolution** (for each skill name):
+
 ```
 1. Project-local: .claude/skills/[skill-name]/SKILL.md
 2. Global fallback: ~/.claude/skills/[skill-name]/SKILL.md
@@ -153,6 +160,7 @@ None:     skill: "NA"                 → no skill loaded
 ### Using plan-todos for Vague Tasks
 
 If a todo's `content` is too vague to execute directly:
+
 - Read `.claude/skills/plan-todos/SKILL.md` and follow its Process section
 - Decompose into sub-steps as inline notes
 - Execute each sub-step, then mark the parent todo complete
@@ -163,13 +171,16 @@ When all todos are `completed` or `cancelled`:
 
 1. Verify success criteria from `## Success Criteria` in the loop body
 2. Write `handoff_summary` to loop frontmatter:
+
    ```yaml
    handoff_summary:
      done: "[artefacts produced — one sentence]"
      failed: "[root cause if anything failed — one sentence; empty string if none]"
      needed: "[precise next action — one sentence; empty string if fully done]"
    ```
+
 3. Write `.advanced-plans/state/loop-complete.json`:
+
    ```json
    {
      "loop_name": "[name]",
@@ -185,11 +196,15 @@ When all todos are `completed` or `cancelled`:
      }
    }
    ```
+
 4. Closing git checkpoint:
+
    ```bash
    git add -A && git commit -m "complete: [loop_name] — [one-line summary]"
    ```
+
 5. Log and return:
+
    ```bash
    echo "[$(date '+%H:%M:%S')] WORKER DONE: [loop_name] todos:[done]/[total]" >> .advanced-plans/logs/execution.log
    ```

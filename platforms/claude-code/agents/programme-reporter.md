@@ -39,11 +39,13 @@ Read each file. The documentary record is intentionally immutable — nothing ha
 ### Step 2 — Build the phase timeline
 
 For each phase plan (`.advanced-plans/phase-N.md`):
+
 - Extract the phase name, objectives, and stated success criteria
 - Count the number of attempts (from `.advanced-plans/gate-verdicts/phase-N-attempt-*.json`)
 - Identify whether it passed on first attempt or required retries
 
 For each ralph loops file (`.advanced-plans/phase-N-ralph-loops.md` and any versioned variants):
+
 - Count total loops and completed todos
 - Extract `handoff_summary.done` from each loop — this is the canonical record of what was produced
 - Note any loops where `handoff_summary.failed` is non-empty
@@ -51,11 +53,13 @@ For each ralph loops file (`.advanced-plans/phase-N-ralph-loops.md` and any vers
 ### Step 3 — Analyse gate verdicts
 
 For each gate verdict file in `.advanced-plans/gate-verdicts/`:
+
 - Read the verdict (pass/fail), agent, phase, attempt, and confidence
 - If verdict is `fail`: read findings and failure_notes
 - Build a picture of which phases required retries and why
 
 Identify patterns:
+
 - Which gate agents triggered failures most frequently
 - Which loop files were most often reverted
 - Common `failure_notes` themes (signals about plan quality or execution patterns)
@@ -63,6 +67,7 @@ Identify patterns:
 ### Step 4 — Read history.jsonl
 
 Read `history.jsonl` for the chronological event sequence. Extract:
+
 - First loop start timestamp and last event timestamp (total programme duration)
 - Count of `gate_pass`, `gate_fail`, `phase_retry`, and `closeout` events
 - Any anomalous events (unexpected statuses, missing completions)

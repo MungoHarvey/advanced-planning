@@ -16,6 +16,7 @@ pip install autogen-agentchat autogen-ext
 ```
 
 Set your API key:
+
 ```bash
 export ANTHROPIC_API_KEY=your_key_here
 ```

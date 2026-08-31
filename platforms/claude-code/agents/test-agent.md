@@ -28,6 +28,7 @@ Follow the platform-independent gate reviewer protocol defined in:
 ### Step 1 — Identify test targets
 
 Read the phase plan to determine which modules were produced. Use `Read` to check:
+
 - `platforms/python/tests/` for Python test files
 - `CLAUDE.md` for project-wide test commands and coverage expectations
 
@@ -42,6 +43,7 @@ python -m pytest platforms/python/tests/ -v 2>&1
 ```
 
 Capture the full output. Record:
+
 - Total tests collected
 - Tests passed / failed / errored / skipped
 - Any test file that could not be collected (import errors, syntax errors)
@@ -97,11 +99,13 @@ Assign a confidence score (0–100) to each finding:
 ### Step 6 — Verdict Determination
 
 Set `verdict: "pass"` when:
+
 - All tests pass (pytest exits 0)
 - Coverage meets or exceeds the threshold (if threshold is specified)
 - Zero-dependency constraint check passes
 
 Set `verdict: "fail"` when:
+
 - Any test fails or errors
 - Coverage falls below threshold
 - External dependency constraint is violated

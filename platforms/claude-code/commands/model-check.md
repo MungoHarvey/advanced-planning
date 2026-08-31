@@ -10,6 +10,7 @@ Report the current model and verify model assignments across the planning system
 ## Skill & Agent Path Resolution
 
 Resolve all `.claude/skills/` and `.claude/agents/` references in this order:
+
 1. **Project-local** — `.claude/skills/<name>/` (preferred)
 2. **Global fallback** — `~/.claude/skills/<name>/` (used when local copy absent)
 

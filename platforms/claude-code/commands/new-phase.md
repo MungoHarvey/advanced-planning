@@ -22,6 +22,7 @@ Run the complete planning pipeline end-to-end. No manual steps required.
 ## Skill & Agent Path Resolution
 
 Resolve all `.claude/skills/` and `.claude/agents/` references in this order:
+
 1. **Project-local** — `.claude/skills/<name>/` (preferred)
 2. **Global fallback** — `~/.claude/skills/<name>/` (used when local copy absent)
 
@@ -33,6 +34,7 @@ for any duplicate skill/agent names.
 ### 1a. Parse --auto flag
 
 If `$ARGUMENTS` contains `--auto`:
+
 - Set `AUTO_EXECUTE = true`
 - Strip `--auto` from `$ARGUMENTS` before passing to skills
 
@@ -48,6 +50,7 @@ Read .claude/skills/phase-plan-creator/references/phase-plan-template.md
 ### 2. Generate phase plan
 
 Follow the phase-plan-creator instructions.
+
 - Use `$ARGUMENTS` as the project/task description
 - If no arguments: ask for description, constraints, and success definition before proceeding
 - Auto-increment phase number N from existing phase directories in `.advanced-plans/phases/`
@@ -65,6 +68,7 @@ Read .claude/skills/ralph-loop-planner/references/todo-schema.md
 ### 4. Decompose into ralph loops
 
 Follow the ralph-loop-planner instructions.
+
 - Read the phase plan just created
 - Generate 3–6 loops with YAML stubs (empty `todos[]`, empty `handoff_summary`)
 - Save to `.advanced-plans/phases/phase-[N]/loops.md`
@@ -79,6 +83,7 @@ Read .claude/skills/plan-todos/SKILL.md
 ### 6. Populate todos for every loop
 
 Follow the plan-todos instructions.
+
 - For each loop in the loops file: derive atomic tasks, write `todos[]` in-place
 - All todos start with `skill: NA`, `agent: NA`, `status: pending`
 - Print: `Todos populated across [N] loops`
@@ -92,6 +97,7 @@ Read .claude/skills/plan-skill-identification/SKILL.md
 ### 8. Assign skills to every todo
 
 Follow the plan-skill-identification instructions.
+
 - `Glob(".claude/skills/*/SKILL.md")` to discover available skills
 - Update `skill:` field in-place for every todo across all loops
 - Print: `Skills assigned`
@@ -105,6 +111,7 @@ Read .claude/skills/plan-subagent-identification/SKILL.md
 ### 10. Assign agents to every todo
 
 Follow the plan-subagent-identification instructions.
+
 - `Glob(".claude/agents/*.md")` to discover available agents
 - Update `agent:` field in-place for every todo across all loops
 - Print: `Agents assigned`
@@ -112,6 +119,7 @@ Follow the plan-subagent-identification instructions.
 ### 11. Update PLANNING.md
 
 Read `.advanced-plans/PLANNING.md` and update:
+
 - `current_phase:` — set to N
 - `status:` — set to `in_progress`
 - `current_loop:` — set to first loop name
@@ -127,6 +135,7 @@ python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jso
 ```
 
 If `AUTO_EXECUTE` is false:
+
 ```
 Planning complete
 
@@ -138,6 +147,7 @@ Run /next-loop to begin execution.
 ```
 
 If `AUTO_EXECUTE` is true:
+
 ```
 Planning complete. Beginning autonomous execution...
 

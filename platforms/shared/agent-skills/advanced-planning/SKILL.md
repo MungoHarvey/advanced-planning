@@ -23,10 +23,12 @@ This skill is host-neutral. It works identically across all hosts that discover 
 Extract the verb (first word) and arguments (remainder). Valid verbs are: `phase`, `loop`, `gate`, `resume`, `compact`.
 
 If the verb is unknown, print:
+
 ```
 Unknown action: <verb>
 Valid actions: phase, loop, gate, resume, compact
 ```
+
 and stop.
 
 ### 2. Validate state directory
@@ -38,11 +40,13 @@ All state operations use `.advanced-plans/state/`. If the directory does not exi
 Two forms are valid (Contract 6):
 
 **Form A — Modules with CLI** (have `if __name__ == "__main__"` block):
+
 ```bash
 python ".advanced-plans/bin/ap.py" <module> [args]
 ```
 
 **Form B — Library modules** (no CLI — use inline bootstrap):
+
 ```python
 import runpy; runpy.run_path(r'.advanced-plans/bin/ap.py')['bootstrap']()
 # Then call the library function directly
@@ -82,6 +86,7 @@ Never `python -m platforms.python.<module>`, never `python platforms/python/<mod
    **GAP:** `plan_io` has no `decompose` function. Loop decomposition is done by the `ralph-loop-planner` skill, not a runtime module. The host should load and execute the `ralph-loop-planner` skill directly.
 
    Log the event (this module HAS CLI):
+
    ```bash
    python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jsonl '{"event": "phase_approved", "phase": "phase-N"}'
    ```
@@ -105,13 +110,16 @@ Never `python -m platforms.python.<module>`, never `python platforms/python/<mod
    ```
 
 3. Validate `loop-ready.json` if present (this module HAS CLI):
+
    ```bash
    python ".advanced-plans/bin/ap.py" state_validate loop-ready .advanced-plans/state/loop-ready.json
    ```
+
    - Exit code `0`: valid, proceed to worker assignment.
    - Exit code `1`: invalid document — print validation errors and stop.
    - Exit code `2` or `3`: environment error (missing schema, unreachable runtime) — print the repair diagnostic and stop.
    - If stale (different phase), archive via bootstrap form:
+
      ```python
      from platforms.python.state_manager import archive_cross_phase_state
      archive_cross_phase_state(".advanced-plans/state", "phase-N")
@@ -120,6 +128,7 @@ Never `python -m platforms.python.<module>`, never `python platforms/python/<mod
 4. Spawn the orchestrator (via native subagent or external Herdr task) to prepare `loop-ready.json`.
 
 5. Once `loop-ready.json` is written, validate before spawning the worker:
+
    ```bash
    python ".advanced-plans/bin/ap.py" state_validate loop-ready .advanced-plans/state/loop-ready.json
    ```
@@ -127,10 +136,13 @@ Never `python -m platforms.python.<module>`, never `python platforms/python/<mod
 6. Spawn the worker to execute the loop.
 
 7. On worker completion, validate `loop-complete.json`:
+
    ```bash
    python ".advanced-plans/bin/ap.py" state_validate loop-complete .advanced-plans/state/loop-complete.json
    ```
+
    Then log the event (HAS CLI):
+
    ```bash
    python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jsonl '{"event": "loop_completed", "loop": "ralph-loop-NNN"}'
    ```
@@ -144,29 +156,37 @@ Never `python -m platforms.python.<module>`, never `python platforms/python/<mod
 2. Spawn independent gate reviewers (one per review type) to evaluate the phase outputs.
 
 3. Validate every verdict against the schema:
+
    ```bash
    python ".advanced-plans/bin/ap.py" state_validate gate-verdict gate-verdicts/phase-N-attempt-1.json
    ```
+
    - Exit code `0`: verdict is valid.
    - Exit code `1`: verdict is invalid — print validation errors and stop.
    - Exit code `2` or `3`: environment error — print the repair diagnostic and stop.
 
 4. If all verdicts pass: close the phase, advance the pointer, and direct to `/phase-compact`. Log the event:
+
    ```bash
    python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jsonl '{"event": "gate_pass", "phase": "phase-N"}'
    ```
 
 5. If any verdict fails: create validated retry context with `gate_failure_context` injected, and stop for operator direction. Log:
+
    ```bash
    python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jsonl '{"event": "gate_fail", "phase": "phase-N"}'
    ```
 
 **External task dispatch** (if using Herdr/AAW fallback):
+
 - Before dispatch, validate the envelope:
+
   ```bash
   python ".advanced-plans/bin/ap.py" state_validate external-task-envelope <envelope-path>
   ```
+
 - After completion, validate collected evidence before state advances:
+
   ```bash
   python ".advanced-plans/bin/ap.py" state_validate collected-evidence <evidence-path>
   ```
@@ -186,16 +206,21 @@ Never `python -m platforms.python.<module>`, never `python platforms/python/<mod
 2. Based on the state:
    - **Outstanding human review**: Reprint the plan and gate instruction.
    - **`loop-complete.json` matches `loop-ready.json`**: Finalize without rerunning. Validate both (HAS CLI):
+
      ```bash
      python ".advanced-plans/bin/ap.py" state_validate loop-ready .advanced-plans/state/loop-ready.json
      python ".advanced-plans/bin/ap.py" state_validate loop-complete .advanced-plans/state/loop-complete.json
      ```
+
    - **`loop-ready.json` without matching completion**: Resume that assignment. Validate:
+
      ```bash
      python ".advanced-plans/bin/ap.py" state_validate loop-ready .advanced-plans/state/loop-ready.json
      ```
+
    - **Dirty or contradictory state**: Stop for explicit direction.
    - **Invalid JSON**: Do not overwrite; report the defect. Validate to get specific errors:
+
      ```bash
      python ".advanced-plans/bin/ap.py" state_validate loop-ready .advanced-plans/state/loop-ready.json
      ```
@@ -207,11 +232,13 @@ Never `python -m platforms.python.<module>`, never `python platforms/python/<mod
    **Note:** `handoff` is a library module (no CLI). `handoff_digest` HAS CLI.
 
    For `handoff_digest` (HAS CLI):
+
    ```bash
    python ".advanced-plans/bin/ap.py" handoff_digest phase-N
    ```
 
    For the `handoff` module operations, use the bootstrap form:
+
    ```python
    import runpy
    runpy.run_path(r'.advanced-plans/bin/ap.py')['bootstrap']()
@@ -227,6 +254,7 @@ Never `python -m platforms.python.<module>`, never `python platforms/python/<mod
 2. **Do not claim to compact host conversation context.** This action compacts AAW artefacts only.
 
 3. If the host exposes a native context-compaction command, print it for the user. Otherwise print:
+
    ```
    Start a new session and run the resume trigger.
    ```
@@ -236,6 +264,7 @@ Never `python -m platforms.python.<module>`, never `python platforms/python/<mod
 ### Success
 
 Print a brief summary of what happened:
+
 - Phase created: `Created phase-N: <title>`
 - Loop executed: `Completed ralph-loop-NNN: <task_name>`
 - Gate passed: `Phase-N passed gate review`
@@ -246,6 +275,7 @@ Print a brief summary of what happened:
 ### Failure
 
 Print a clear error message:
+
 - Unknown action: `Unknown action: <verb>`
 - Missing state: `No state found: <path>`
 - Validation failed: `Validation failed: <details>`

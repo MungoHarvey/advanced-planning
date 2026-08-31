@@ -69,6 +69,7 @@ Lock down the schemas before writing any executing code. Every downstream compon
 - 1d — Validate the schemas against one or two retrospectively-imagined phases from the repo's own development
 
 **Exit criteria**
+
 - Both schemas committed as markdown documents under `docs/` or similar
 - A worked example for each, ideally drawn from a real recent phase
 - Explicit list of required vs optional fields
@@ -89,6 +90,7 @@ Before automating anything, validate the artefact shape against reality by runni
 - 2d — Run against a synthetic or retrospective phase; review the output critically
 
 **Exit criteria**
+
 - One real or simulated phase has been compacted by hand
 - The output artefacts are useful enough that a fresh Claude session, given only the hot manifest, can plan the next phase coherently
 - Iterate on artefact schemas if the output reveals gaps
@@ -109,6 +111,7 @@ Move the slash command's logic into a proper subagent definition.
 - 3d — Add validation: the agent should refuse to write artefacts if input contracts are violated (e.g. missing phase plan, missing anchor SHA)
 
 **Exit criteria**
+
 - Subagent file exists, is documented, and can be invoked manually
 - Behaviour is equivalent to the Phase 2 slash command
 - Tool permissions are minimal (likely: `Read`, `Bash(git log:*, git show:*)`, `Write` to specific paths)
@@ -129,6 +132,7 @@ Automate the trigger so compaction never has to be remembered.
 - 4d — Test for misfire conditions: gate fail (must not compact), gate skip, interrupted execution
 
 **Exit criteria**
+
 - Compaction fires deterministically on gate pass and only on gate pass
 - The main thread resumes with only the hot manifest after compaction
 - Failure modes are documented (what happens if compaction itself errors?)
@@ -148,6 +152,7 @@ The cold tier is only useful if there is a clean way to reach back into it.
 - 5c — Consider whether `PLANS-INDEX.md` itself should hint at which phases are likely candidates for back-reference (e.g. "Phase 3 deferred work to Phase 5 — see commit range X..Y")
 
 **Exit criteria**
+
 - A future phase can selectively load earlier context without re-reading everything
 - Documented examples of when to reach back vs when not to
 
@@ -174,6 +179,7 @@ These are the specifics deliberately left unresolved. They should be worked thro
 ### 7.1 Phase-start anchor — how does the compactor know where to begin `git log`?
 
 Options identified:
+
 - **(a)** Frontmatter field on the phase plan (`anchor_sha: abc123` written when the phase is created)
 - **(b)** Git tags (`phase-2-start`, `phase-2-end`) applied programmatically
 - **(c)** Inference from `history.jsonl` timestamps cross-referenced against `git log --since`
@@ -184,6 +190,7 @@ Lean: (a) is simplest and lives alongside the plan, but (b) is more durable acro
 ### 7.2 Hook event mechanism — how is compaction actually triggered on gate pass?
 
 Options identified:
+
 - **(a)** Claude Code `PostToolUse` hook on whatever tool the gate agent uses to write its verdict
 - **(b)** The gate agent itself spawns the compactor as its final action — no Claude Code hook involved
 - **(c)** Slash command only — accept manual invocation as the cost of avoiding hook complexity
@@ -193,6 +200,7 @@ Lean: (b) keeps "main thread is sole orchestrator" intact and avoids interacting
 ### 7.3 Clear-and-reload ownership — who issues `/clear` and reloads the manifest?
 
 Options identified:
+
 - **(a)** The compactor agent itself, as its final action
 - **(b)** The main thread, after observing the compactor's output
 - **(c)** A separate small skill invoked after compaction
@@ -202,6 +210,7 @@ Lean: (b). Agents produce files; the main thread manages context. Mixing those c
 ### 7.4 `PLANS-INDEX.md` format — hot manifest schema
 
 Options identified:
+
 - **(a)** Pure markdown table — most human-readable, hardest to parse
 - **(b)** YAML frontmatter / YAML blocks — most machine-parseable, less browsable
 - **(c)** Hybrid: YAML block per phase for parseability, rendered as a markdown table by a small script for human reading
@@ -212,6 +221,7 @@ Lean: (c) for the artefact itself; (d) is overkill given the file will only have
 ### 7.5 Subagent vs gate-agent extension
 
 Options identified:
+
 - **(a)** Standalone `phase-compactor` subagent (current plan)
 - **(b)** Extend the existing `phase-goals` gate agent to emit compaction artefacts as a side effect
 
@@ -220,6 +230,7 @@ Lean: (a) for separation of concerns, but (b) saves an agent spawn and the gate 
 ### 7.6 What happens on gate fail?
 
 Currently the plan assumes compaction only fires on gate pass. But gate failure also produces useful state worth recording. Options:
+
 - **(a)** No artefact on fail — phase isn't "complete" yet
 - **(b)** Write a partial artefact under a different name (`phase-N-attempt-M.md`) for retry context
 - **(c)** Always write, with a `status: failed` flag
@@ -229,6 +240,7 @@ Lean: (a) for cleanliness, but (b) might help when a phase needs multiple retry 
 ### 7.7 Compactor failure handling
 
 If the compactor errors (git log fails, write permission denied, model output malformed), what should happen?
+
 - Block the next phase?
 - Log and continue with a degraded manifest entry?
 - Retry?
@@ -260,6 +272,7 @@ Existing repository documents that this plan should be consistent with:
 - `.claude/skills/setup-with-claude/SKILL.md` — for how new components get bootstrapped into projects
 
 External:
+
 - Claude Code best practices on `/compact`, subagents, and hooks — confirm current hook event names and `PostToolUse` semantics before implementing Phase 4
 
 ---

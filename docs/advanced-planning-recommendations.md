@@ -146,6 +146,7 @@ The `loop-orchestrator` agent is retained but repurposed as a **top-level agent 
 For the coding-worker subagent, combine both available mechanisms so skill content is guaranteed to be present and acted upon:
 
 **Layer 1 — Frontmatter injection (loaded at spawn):**
+
 ```yaml
 ---
 name: coding-worker
@@ -155,6 +156,7 @@ skills:
 ```
 
 **Layer 2 — Explicit preflight read instruction in agent body:**
+
 ```markdown
 ## Mandatory Preflight
 Before starting any task, read the skill file path provided in your task brief.
@@ -172,6 +174,7 @@ The main orchestrator, informed by `plan-skill-identification`, includes the rel
 Every coding-worker must return a structured handoff block as its final output. The orchestrator validates this block before making a stop/go decision. An absent or malformed block is itself a failure state.
 
 **Handoff block format (returned by worker):**
+
 ```yaml
 ## Handoff
 status: complete | partial | failed
@@ -200,6 +203,7 @@ acceptance_met: true | false
 The slash commands are the most reliable activation point for skill loading because they run in the main thread. Each command must begin with mandatory skill reads before any other action.
 
 **`/next-loop` activation sequence:**
+
 ```
 1. Read .claude/skills/ralph-loop-planner/SKILL.md
 2. Read .claude/skills/plan-todos/SKILL.md
@@ -208,6 +212,7 @@ The slash commands are the most reliable activation point for skill loading beca
 ```
 
 **`/next-phase` activation sequence:**
+
 ```
 1. Read .claude/skills/ralph-loop-planner/SKILL.md
 2. Read .claude/skills/phase-plan-creator/SKILL.md

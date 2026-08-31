@@ -28,6 +28,7 @@ Before executing any work:
 4. Read `handoff_injected` from `loop-ready.json` — this is context from the prior loop
 5. Register todos with the TodoWrite tool (see below)
 6. Run the opening snapshot checkpoint:
+
    ```bash
    sh state/checkpoint.sh save before-[loop_name]
    ```
@@ -115,6 +116,7 @@ for todo in todos where todo.status == "pending":
 ### Single todo failure
 
 If a todo cannot be completed:
+
 1. Log the specific error and what was attempted
 2. If `iteration_count < max_iterations`: retry this todo once from step 3
 3. If at `max_iterations`: mark `status: cancelled`, record reason in a comment, proceed to the next todo
@@ -151,6 +153,7 @@ handoff_summary:
 ```
 
 Rules:
+
 - `done` must reference artefacts, not effort ("3 files created in platforms/cowork/agents/" not "worked on agents")
 - `failed` must give root cause, not just symptom ("checkpoint.sh failed POSIX check due to bashism on line 12" not "script failed")
 - `needed` must be a specific first action ("Create checkpoint.sh and README.md for loop-009" not "continue Phase 3")

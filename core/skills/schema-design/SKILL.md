@@ -26,6 +26,7 @@ sufficient. Use this skill when the artefact is Markdown with YAML frontmatter.
 ### 1. Identify the artefact
 
 Determine:
+
 - The file name pattern and canonical path (e.g. `.advanced-plans/phases/phase-N/handoff.md`)
 - The purpose of the artefact (who writes it, who reads it, when)
 - Any existing style reference to mirror (check `docs/` for existing schemas)
@@ -33,6 +34,7 @@ Determine:
 ### 2. Define frontmatter fields
 
 For each field:
+
 - Name: lowercase, underscore-separated
 - Type: `string`, `integer`, `boolean`, `list of strings`
 - Required: Yes / No
@@ -42,12 +44,14 @@ For each field:
 Lay out as a Markdown table with columns: `Field | Type | Required | Valid Values | Example`.
 
 Write field rules immediately below the table:
+
 - One rule per bullet; reference the field name in backticks
 - State the rule as a constraint, not an aspiration ("must not exceed 2000" not "should be short")
 
 ### 3. Define body sections
 
 For each required section:
+
 - Use ATX heading level 2 (`## Section Name`)
 - State in one sentence what the section contains
 - List the hard rule for that section (one-liners only, single-line bullets, etc.)
@@ -59,6 +63,7 @@ Order sections as they must appear in the document.
 
 A checklist of observable conditions that can be checked programmatically or by eye.
 Format:
+
 ```
 - [ ] condition (what to check, how)
 ```
@@ -70,6 +75,7 @@ content.
 ### 5. Write a worked example skeleton
 
 A fenced Markdown code block showing a minimal valid artefact:
+
 - All required frontmatter fields with example values
 - All required body sections with one-line placeholder bullets
 - Shows the exact format without real content
@@ -129,6 +135,7 @@ A single Markdown file structured as follows:
 ```
 
 Rules:
+
 - ASCII only: no em-dashes (use `-`), no curly quotes, no Unicode outside ASCII
 - No trailing whitespace on any line
 - Fenced code blocks must carry a language tag (`markdown`, `yaml`, `json`)

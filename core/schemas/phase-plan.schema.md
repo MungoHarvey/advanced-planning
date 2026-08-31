@@ -85,6 +85,7 @@ Bullet list prefixed with `✓`. Each criterion must be **objectively verifiable
 ### Dependencies
 
 Three sub-sections:
+
 - **Must Complete Before**: Hard blockers
 - **Blocked By**: External blockers with status
 - **Optional**: Nice-to-have but not blocking

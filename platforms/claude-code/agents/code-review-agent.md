@@ -43,6 +43,7 @@ Read `CLAUDE.md` in the project root. For each constraint documented there:
 - Flag style violations as **Important**
 
 Key constraints to always check:
+
 - Python 3.10+ compatibility
 - Zero external dependencies in source modules (standard library only)
 - Core files must not reference `.claude/` paths or platform-specific paths
@@ -51,6 +52,7 @@ Key constraints to always check:
 ### 3. No Secrets or Credentials
 
 Scan all files touched in the phase for:
+
 - Hardcoded API keys, tokens, or passwords
 - Private key material or certificate data
 - Connection strings with credentials embedded
@@ -67,6 +69,7 @@ Flag missing tests as **Important**.
 ### 5. No Dead Code
 
 Check for:
+
 - Functions defined but never called within the module
 - Imports that are unused
 - Variables assigned but never read
@@ -103,11 +106,13 @@ The overall `confidence` field in the verdict represents the agent's confidence 
 ## Verdict Determination
 
 Set `verdict: "pass"` when:
+
 - No **Critical** findings with confidence ≥80 remain unresolved
 - All phase success criteria related to code quality are met
 - **Important** findings may exist but do not block the verdict
 
 Set `verdict: "fail"` when:
+
 - Any **Critical** finding with confidence ≥80 is unresolved
 
 In the verdict JSON, include all findings regardless of severity. **Important** findings are listed so the team can address them in subsequent work. **Suggestions** are recorded as `severity: "info"` for reference.

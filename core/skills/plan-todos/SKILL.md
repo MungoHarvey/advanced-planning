@@ -18,6 +18,7 @@ and `plan-subagent-identification` to fill in `skill` and `agent` fields.
 ## Your Input
 
 Provide:
+
 - **Loop file path** (e.g. `.advanced-plans/phases/phase-{N}/loops.md`)
 - Or paste the loop's frontmatter and description directly
 
@@ -42,9 +43,11 @@ Provide:
    - `low` — nice-to-have; can be deferred if complexity bites
 
 4. **Populate frontmatter in-place** maintaining canonical field order:
+
    ```
    id → content → skill → agent → outcome → status → complexity → priority
    ```
+
    Set `skill: NA` and `agent: NA` — these are filled by downstream skills.
    Set `complexity: medium` as the default — adjusted by `plan-subagent-identification` if needed.
 
@@ -86,27 +89,34 @@ todos:
 ## Task Decomposition Patterns
 
 ### Pattern: Output-driven decomposition
+
 For each stated output, create:
+
 1. A task that *produces* the output
 2. A task that *validates* the output (if non-trivial)
 
 ### Pattern: Pipeline decomposition
+
 For sequential data transforms, one TODO per stage:
+
 ```
 Read data → Transform → Validate → Write output → Confirm
 ```
 
 ### Pattern: Research decomposition
+
 ```
 Gather candidates → Evaluate each → Compare → Document recommendation
 ```
 
 ### Pattern: Infrastructure decomposition
+
 ```
 Configure → Deploy → Health-check → Document rollback
 ```
 
 ### Pattern: Migration decomposition
+
 ```
 Read source → Strip platform-specific content → Write to target → Verify portability
 ```

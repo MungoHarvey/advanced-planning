@@ -128,6 +128,7 @@ Skills are identified at three levels during planning. The `skill:` field in a t
 | Todo-level (precise) | `@plan-skill-identification` | `schema-design`, `docx` |
 
 The todo's `skill:` field holds the **todo-level** assignment. It can be:
+
 - `"NA"` — no specialist skill needed
 - `"skill-name"` — a single skill loaded before execution
 - `["skill-1", "skill-2"]` — multiple skills loaded sequentially before execution (YAML flow style is canonical; entries must be unique; later entries override earlier on conflict)

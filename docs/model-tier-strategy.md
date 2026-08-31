@@ -42,6 +42,7 @@ For a typical 4-phase programme with 3 loops per phase and 5 todos per loop:
 | Sonnet (gate) | ~2-4 | Gate agents at phase boundaries (1-2 per phase) |
 
 At approximate 2024 API pricing:
+
 - Opus: ~$0.40–1.20 per invocation → **$2–5 for the programme**
 - Sonnet: ~$0.10–0.30 per invocation → **$1–4 for orchestration; $5–14 for worker todos**
 - Haiku: ~$0.01–0.05 per invocation → **$0.12–0.60 for low-complexity worker todos**
@@ -57,6 +58,7 @@ Total programme cost: roughly **$8–24** for a well-scoped 4-phase programme. H
 The model assignment is specified in the frontmatter of each skill and agent file. To override:
 
 **In a skill file** (`core/skills/my-skill/SKILL.md`):
+
 ```yaml
 ---
 name: my-skill
@@ -67,6 +69,7 @@ description: "What this skill does."
 Skills no longer have a `model:` field — they are model-agnostic instruction sets. The executing agent's model determines capability.
 
 **In an adapter's agent file** (`platforms/claude-code/agents/ralph-loop-worker.md`):
+
 ```yaml
 ---
 model: sonnet  # override default haiku for this deployment

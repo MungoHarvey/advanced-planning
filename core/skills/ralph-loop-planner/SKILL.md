@@ -17,6 +17,7 @@ Decomposes a phase plan into executable ralph loop iterations. Each iteration is
 ## Your Input
 
 Provide:
+
 - **Phase plan** (from phase-plan-creator output, or pasted directly)
 - **Loop count** (approximate; 3–6 is typical per phase)
 - **Output preference** (single file for <10 loops; individual files for 10+)

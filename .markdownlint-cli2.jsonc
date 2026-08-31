@@ -1,0 +1,15 @@
+{
+  // Which files are linted. Rule configuration lives in .markdownlint.json,
+  // which markdownlint-cli2 picks up automatically.
+  "globs": ["**/*.md"],
+
+  // .advanced-plans/ and temp/ are append-only programme records and scratch.
+  // Nobody edits them, so linting them is 4,254 findings of pure noise that
+  // would bury the ones in files people actually read.
+  "ignores": [
+    ".advanced-plans/**",
+    "temp/**",
+    "node_modules/**",
+    ".venv/**"
+  ]
+}

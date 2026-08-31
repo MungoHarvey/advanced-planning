@@ -24,6 +24,7 @@ Unlike Claude Code, Cowork does not have slash commands. This routing skill is y
 entry point — describe what you want to do and the skill dispatches to the right tool.
 
 The two-agent execution cycle uses **Cowork's Agent tool** directly:
+
 - Orchestrator (Sonnet) → spawned via Agent tool to prepare the next loop
 - Worker (Sonnet) → spawned via Agent tool to execute todos with skill injection
 
@@ -73,6 +74,7 @@ Read skills/ralph-loop-planner/references/todo-schema.md
 Follow the skill instructions. Save output to `.advanced-plans/phase-[N]-ralph-loops.md`.
 
 Optionally run the full population pipeline immediately:
+
 ```
 Read skills/plan-todos/SKILL.md              → populate todos[]
 Read skills/plan-skill-identification/SKILL.md → assign skills
@@ -110,11 +112,13 @@ sh state/checkpoint.sh save before-loop-cycle
 ### Step 2 — Spawn the Orchestrator
 
 Use the **Agent tool** with:
+
 - `model: sonnet`
 - Prompt: the full contents of `agents/orchestrator-prompt.md`
 - Include the path to the current workspace as context
 
 The orchestrator will:
+
 - Identify the next pending loop
 - Populate todos/skills/agents if needed
 - Write `state/loop-ready.json`
@@ -131,6 +135,7 @@ Read state/loop-ready.json
 If `"status": "all_complete"`: print "✓ All loops complete. Phase finished." and stop.
 
 Print:
+
 ```
 → Preparing: [loop_name] — [task_name]
   Todos:         [todos_count]
@@ -140,11 +145,13 @@ Print:
 ### Step 4 — Spawn the Worker
 
 Use the **Agent tool** with:
+
 - `model: haiku`
 - Prompt: the full contents of `agents/worker-prompt.md`
 - Include the workspace path and `state/loop-ready.json` contents as context
 
 The worker will:
+
 - Execute all todos using targeted skill injection (one SKILL.md per todo)
 - Update todo statuses in the plan file
 - Write `state/loop-complete.json`
@@ -159,6 +166,7 @@ Read state/loop-complete.json
 ```
 
 Update `planning-state.md`:
+
 - Advance `current_loop` to the next pending loop
 - Increment `todos_done`
 - Copy handoff values to the `last_handoff` section
@@ -179,6 +187,7 @@ sh state/checkpoint.sh save after-[loop_name]
 ```
 
 If `todos_failed > 0`:
+
 ```
 ⚠ [N] todos did not complete. Review .advanced-plans/[loop_file] before continuing.
 ```
@@ -194,6 +203,7 @@ Glob(".advanced-plans/phases/*/loops.md") → read all loop files
 For each loop extract: name, task_name, todo counts (pending/in_progress/completed/cancelled), handoff_summary fields.
 
 Print:
+
 ```
 Phase Plan Status
 ──────────────────────────────────────────────────────────
@@ -222,6 +232,7 @@ Check five areas and report:
 5. **Skill injection**: Did the worker log skill loads in its completion note?
 
 Report:
+
 ```
 EXECUTION HEALTH REPORT
 ────────────────────────────────────────
@@ -250,6 +261,7 @@ Read skills/progress-report/SKILL.md           → model field
 ```
 
 Print the expected model tier table:
+
 ```
 Component                         Expected
 ──────────────────────────────────────────

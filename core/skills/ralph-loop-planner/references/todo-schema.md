@@ -76,6 +76,7 @@ Default all todos to `high` unless you have a specific reason for medium or low.
 The `outcome` field answers: **"What must be true in the world for this todo to be done?"**
 
 ### ❌ Effort-based (Invalid)
+
 ```yaml
 outcome: "Task complete"
 outcome: "Code written"
@@ -85,6 +86,7 @@ outcome: "Done"
 ```
 
 ### ✅ Observable conditions (Valid)
+
 ```yaml
 # File existence with content requirement
 outcome: "core/schemas/foo.schema.md exists with all required sections and a validation checklist"

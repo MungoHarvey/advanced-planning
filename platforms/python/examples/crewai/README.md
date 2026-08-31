@@ -16,6 +16,7 @@ pip install crewai crewai-tools
 ```
 
 Set your API key:
+
 ```bash
 export ANTHROPIC_API_KEY=your_key_here
 ```

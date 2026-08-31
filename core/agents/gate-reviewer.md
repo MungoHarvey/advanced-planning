@@ -27,6 +27,7 @@ Read phase outputs → Evaluate against criteria → Write verdict JSON → Retu
 ### Step 1 — Read the phase plan
 
 Read the phase plan to extract:
+
 - The phase identifier (e.g. phase-2)
 - All stated success criteria
 - The attempt number (1 if first attempt; increment on retry)
@@ -36,6 +37,7 @@ Read all loop files for the phase to understand what was produced and any handof
 ### Step 2 — Collect all outputs
 
 Identify all artefacts produced by the phase's ralph loops:
+
 - Files created or modified
 - Test results
 - Schemas and documentation
@@ -45,11 +47,13 @@ Cross-reference against the phase plan's `## Outputs` section. Any listed output
 ### Step 3 — Evaluate against criteria
 
 For each success criterion in the phase plan:
+
 1. Determine what evidence would constitute satisfaction
 2. Locate that evidence in the actual artefacts
 3. Record a finding if the criterion is not met
 
 Apply confidence scoring (0–100) to each finding:
+
 - 90–100: Direct, unambiguous evidence
 - 70–89: Strong inference from indirect evidence
 - 50–69: Plausible but uncertain
@@ -60,6 +64,7 @@ Apply confidence scoring (0–100) to each finding:
 ### Step 4 — Determine verdict
 
 Set `verdict: "pass"` if **all** of the following hold:
+
 - All success criteria have satisfying evidence
 - No findings with `severity: "critical"` and confidence ≥80
 
@@ -68,6 +73,7 @@ Set `verdict: "fail"` if any critical finding with confidence ≥80 remains unre
 ### Step 5 — Populate failure artefacts (on fail only)
 
 When verdict is `"fail"`:
+
 - List `loops_to_revert` — loop identifiers whose outputs are invalid
 - Write `failure_notes` — actionable, constraint-form notes for the retry (what must not be repeated)
 
@@ -183,6 +189,7 @@ Required fields: `phase`, `attempt`, `timestamp`, `agent`, `verdict`, `confidenc
 ## Platform Adapter Notes
 
 Platform adapters must specify:
+
 - The model to use for this role (Sonnet recommended)
 - The tool capabilities granted (read files, glob, grep, bash for running checks; write for verdict output)
 - The gate-verdicts output directory path

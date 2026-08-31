@@ -3,6 +3,7 @@
 ## When to Create Phase Plans
 
 Use the phase-plan-creator skill when starting:
+
 - A new project or major feature
 - A distinct research or exploration phase
 - A refactoring or migration effort
@@ -94,6 +95,7 @@ Skills needed for this phase (refined to specific skills in ralph loops):
 ### Objective: Goal + Domain + Approach
 
 ✅ Good:
+
 ```
 "Migrate [system] from [old approach] to [new approach] with [property]"
 "Research [domain] approaches for [problem] and document recommendations"
@@ -102,6 +104,7 @@ Skills needed for this phase (refined to specific skills in ralph loops):
 ```
 
 ❌ Vague:
+
 ```
 "Improve the system"
 "Research stuff"
@@ -111,6 +114,7 @@ Skills needed for this phase (refined to specific skills in ralph loops):
 ### Deliverables: Specific Format and Location
 
 ✅ Good:
+
 ```
 | Schema document | Markdown | core/schemas/foo.schema.md |
 | Skill definition | SKILL.md + references/ | core/skills/bar/ |
@@ -118,6 +122,7 @@ Skills needed for this phase (refined to specific skills in ralph loops):
 ```
 
 ❌ Vague:
+
 ```
 - Code for the feature
 - Documentation
@@ -127,6 +132,7 @@ Skills needed for this phase (refined to specific skills in ralph loops):
 ### Success Criteria: Observable, Not Aspirational
 
 ✅ Good:
+
 ```
 - ✓ All four schema documents exist with field specs and validation checklists
 - ✓ Verification scan finds zero platform-specific references in core/skills/
@@ -134,6 +140,7 @@ Skills needed for this phase (refined to specific skills in ralph loops):
 ```
 
 ❌ Vague:
+
 ```
 - ✓ Tests pass
 - ✓ Performance is good
@@ -143,6 +150,7 @@ Skills needed for this phase (refined to specific skills in ralph loops):
 ### Risk Mitigation: Concrete Actions
 
 ✅ Good:
+
 ```
 | Risk | Mitigation |
 | Schema over-abstraction | Constrain every field to something used in practice; flag aspirational fields |
@@ -150,6 +158,7 @@ Skills needed for this phase (refined to specific skills in ralph loops):
 ```
 
 ❌ Vague:
+
 ```
 | Risk | Mitigation |
 | Things might go wrong | Hope it works |
@@ -281,6 +290,7 @@ Once the phase plan is reviewed:
    - Generate execution-ready prompts with handoff injection blocks
 
 Skill refinement example:
+
 ```
 Phase-level skill: `schema-design`
 ↓ Refined for loop:

@@ -67,10 +67,12 @@ Parse `$ARGUMENTS` for `--agents comma-separated-list`. If provided, split on co
 get the agent list.
 
 Default agent list (if `--agents` not provided):
+
 - `code-review-agent`
 - `phase-goals-agent`
 
 Print:
+
 ```
 Gate agents:
   [bullet list of agents]
@@ -336,6 +338,7 @@ Write the parsed verdict dict to:
 `.advanced-plans/gate-verdicts/phase-[N]-attempt-[attempt]-codex.json`
 
 The written JSON must include:
+
 - `"agent": "codex"` (from the parsed verdict — already validated)
 - `"backend": "codex"` (from the parsed verdict — already validated)
 - All other fields from `result["verdict"]`
@@ -530,6 +533,7 @@ retry logic as before.
 ### 11. Print summary
 
 If gate **passes** (current phase — closeout + compaction performed in Step 10.4):
+
 ```
 Gate PASSED — Phase [N] approved, closed out, and compacted.
   Agents:    [comma-separated list (including codex if contributed)]
@@ -548,6 +552,7 @@ NEXT: git push origin main --follow-tags
 ```
 
 If gate **passes** but `--phase` targeted a non-current/historical phase (no closeout):
+
 ```
 Gate PASSED — Phase [N] approved (re-gate of a non-current phase; no advance performed).
   Agents:    [comma-separated list (including codex if contributed)]
@@ -557,6 +562,7 @@ Gate PASSED — Phase [N] approved (re-gate of a non-current phase; no advance p
 ```
 
 If gate **fails**:
+
 ```
 Gate FAILED — Phase [N] did not pass.
   Failed agent: [agent-name]
@@ -610,6 +616,7 @@ Run /next-phase to create versioned retry files and begin retry.
 The primary execution model uses a shell background process (`codex exec ... &`) with
 `wait $CODEX_PID` to join it after `phase-goals-agent` returns. This is the standard
 POSIX background-process pattern and is reliable when:
+
 - The shell session is long-lived (does not reset between tool calls)
 - The Codex process exits cleanly (exit 0 or exit 1)
 - The 120-second timeout is honoured

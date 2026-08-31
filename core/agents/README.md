@@ -67,6 +67,7 @@ In agent frameworks that do not support recursive subagent spawning, subagents c
 **The v8 solution**: the main thread handles all spawning explicitly. It spawns the orchestrator, waits for it to return, then spawns the worker. The worker executes **all** todos inline using its own capabilities — it does not delegate further. The `agent:` field in todos is planning-time metadata used for categorisation; it does not trigger subagent spawning at execution time.
 
 The worker's execution quality comes from two sources:
+
 1. **Frontmatter skill injection** — skills listed in the agent definition's `skills:` frontmatter are loaded at spawn time
 2. **Targeted per-todo skill injection** — the worker reads the specific SKILL.md for each todo immediately before executing it
 

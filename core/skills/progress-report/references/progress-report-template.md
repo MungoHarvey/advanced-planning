@@ -81,6 +81,7 @@ todo completed. If no loop has started, omit this section.
 ### Failed / Blocked Items table
 
 Include a row for:
+
 - Any todo with `status: cancelled` where `handoff_summary.failed` is non-empty
 - Any loop where `status: failed` or `status: partial`
 
@@ -96,6 +97,7 @@ Omit the entire section if nothing failed.
 ### Next Steps
 
 Derive from:
+
 1. The most recent loop's `handoff_summary.needed` field
 2. Any remaining `pending` todos in the current loop
 3. The next unstarted loop name (from loop file order)
@@ -107,25 +109,31 @@ Derive from:
 ### Done field — handoff_summary.done
 
 **Good**: `3 schema files created in core/schemas/ — phase-plan, ralph-loop, and handoff`
+
 - Artefact-focused, names the output, specific count
 
 **Weak**: `Completed the schema work as planned`
+
 - No artefacts named, vague, not verifiable
 
 ### Failed field — handoff_summary.failed
 
 **Good**: `analysis-worker.md write skipped — file existed from prior partial run, manual merge needed`
+
 - Names the file, explains why, says what action is needed
 
 **Weak**: `Some files were not created`
+
 - Which files? Why? What now?
 
 ### Needed field — handoff_summary.needed
 
 **Good**: `Create loop-ready.schema.json before starting state bus integration tests`
+
 - Specific file, specific gate, actionable first step
 
 **Weak**: `Continue with the next part`
+
 - No specifics, not actionable
 
 ---

@@ -14,6 +14,7 @@ presents findings for review, then runs the full planning pipeline.
 ### Step 0: Parse --auto flag
 
 If `$ARGUMENTS` contains `--auto`:
+
 - Set `AUTO_EXECUTE = true`
 - Strip `--auto` from `$ARGUMENTS` before passing to skills
 
@@ -82,6 +83,7 @@ Print: `Planning mode exited — writes re-enabled`
 ### Step 5: PHASE DECOMPOSITION
 
 Resolve the `phase-plan-creator` skill:
+
 1. Check `.claude/skills/phase-plan-creator/SKILL.md`
 2. Fall back to `~/.claude/skills/phase-plan-creator/SKILL.md`
 3. Fall back to the core skills path referenced in CLAUDE.md
@@ -105,6 +107,7 @@ Resolve each skill from `.claude/skills/` first, then `~/.claude/skills/`.
 ### Step 7: Update PLANNING.md
 
 Read `.advanced-plans/PLANNING.md` and update:
+
 - `current_phase:` — set to the new phase number
 - `current_loop:` — set to the first loop
 - `status:` — set to `in_progress`
@@ -120,6 +123,7 @@ python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jso
 ```
 
 If `AUTO_EXECUTE` is false:
+
 ```
 Phase [N] — [phase name] ready for execution
   Loops:      [loop count] loops planned
@@ -132,6 +136,7 @@ Run /next-loop --auto to chain all loops until the phase completes.
 ```
 
 If `AUTO_EXECUTE` is true:
+
 ```
 Phase [N] — [phase name] — planning complete. Beginning autonomous execution...
   Loops:      [loop count] loops planned

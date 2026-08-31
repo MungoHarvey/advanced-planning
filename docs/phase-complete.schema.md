@@ -44,6 +44,7 @@ Three required sections follow the frontmatter, in this order.
 ### `## Goals met`
 
 One bullet per success criterion that was satisfied during this phase. Each bullet must:
+
 - Be exactly one line (no wrapping, no sub-bullets)
 - Reference a concrete evidence pointer: a file path, a commit SHA, or a commit range
 
@@ -52,6 +53,7 @@ One bullet per success criterion that was satisfied during this phase. Each bull
 ### `## Deferred`
 
 One bullet per goal explicitly deferred to a later phase. A deferral is a conscious scope decision, not a failure. Each bullet must:
+
 - Be exactly one line
 - Name the target phase if known (e.g. `→ phase-7`)
 - Include a one-phrase reason why it was deferred
@@ -63,6 +65,7 @@ If nothing was deferred, write: `- (none)`
 ### `## Opened`
 
 One bullet per new question, known issue, or follow-up surfaced during the phase that was not in the original success criteria. Each bullet must:
+
 - Be exactly one line
 - Be actionable or attributable (not vague observations)
 

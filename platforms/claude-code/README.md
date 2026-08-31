@@ -56,21 +56,26 @@ After `--project` install, open a Claude Code session in your project and:
 **1. Add Planning State to your CLAUDE.md**
 
 Copy the `## Planning State` section from the installed template:
+
 ```bash
 cat .claude/claude-md-template.md
 ```
+
 Paste the `## Planning State` block into your project's `CLAUDE.md`.
 
 **2. Create your first phase plan**
 
 Option A — Explore first, then plan (recommended for unfamiliar codebases):
+
 ```
 /plan-and-phase Implement a REST API for user authentication with JWT tokens
 ```
+
 This activates read-only planning mode, explores the codebase, presents findings for review,
 then runs the full planning pipeline.
 
 Option B — Jump straight to planning (when you already know the codebase):
+
 ```
 /new-phase Implement a REST API for user authentication with JWT tokens
 ```
@@ -88,11 +93,13 @@ Review the loops, todos, and skill assignments before execution begins.
 **4. Execute loops**
 
 Single loop:
+
 ```
 /next-loop
 ```
 
 All loops, chained automatically:
+
 ```
 /next-loop --auto
 ```
@@ -114,6 +121,7 @@ markdown report. Useful after an `--auto` run or when resuming work across sessi
 ## Command Reference
 
 ### Planning
+
 | Command | Description | Key Arguments |
 |---------|-------------|---------------|
 | `/plan-and-phase [description]` | Read-only exploration → human review → full planning pipeline | Description of what to accomplish |
@@ -121,11 +129,13 @@ markdown report. Useful after an `--auto` run or when resuming work across sessi
 | `/new-loop [phase]` | Decompose a phase plan into ralph loops only | Phase number or file path |
 
 ### Execution
+
 | Command | Description | Key Arguments |
 |---------|-------------|---------------|
 | `/next-loop` | Execute the next pending loop (two-agent pattern) | `--auto` to chain all loops |
 
 ### Gate Review
+
 | Command | Description | Key Arguments |
 |---------|-------------|---------------|
 | `/run-gate` | Spawn gate agents, aggregate pass/fail verdicts | `--phase N`, `--agents code-review,phase-goals` |
@@ -133,6 +143,7 @@ markdown report. Useful after an `--auto` run or when resuming work across sessi
 | `/run-closeout` | Programme closeout synthesis via programme-reporter agent | None |
 
 ### Diagnostics
+
 | Command | Description | Key Arguments |
 |---------|-------------|---------------|
 | `/progress-report` | Structured report from plan files, handoffs, and git history | `--phase N` to scope to one phase |
