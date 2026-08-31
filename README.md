@@ -20,7 +20,7 @@ The Advanced Planning System addresses each of these failure modes:
 
 The system decomposes work into a three-tier hierarchy: **Phase Plans** (strategic scope) are broken into **Ralph Loops** (bounded iterations), which contain **Todos** (atomic tasks). An orchestrator agent prepares each loop; a worker agent executes it with skill injection; the main thread sequences everything via a filesystem state bus.
 
-```
+```text
 Phase Plan (Opus — strategic)
 ├── Ralph Loop 001 (Sonnet: orchestrate → Sonnet: execute with skill injection)
 ├── Ralph Loop 002 ...
@@ -111,7 +111,7 @@ cd /path/to/your/project && claude
 
 **Option A — Explore first, then plan** (recommended for unfamiliar codebases):
 
-```
+```text
 /plan-and-phase [description of what you want to accomplish]
 ```
 
@@ -119,7 +119,7 @@ This activates read-only planning mode, explores the codebase, presents findings
 
 **Option B — Plan directly** (when you already know the codebase):
 
-```
+```text
 /new-phase [description of what you want to accomplish]
 ```
 
@@ -131,7 +131,7 @@ Both produce execution-ready loop files in `plans/` with fully specified todos.
 
 Run loops one at a time or chain them automatically:
 
-```
+```text
 /next-loop          # execute one loop (orchestrator prepares → worker executes)
 /next-loop --auto   # chain all loops until the phase completes or a loop fails
 ```
@@ -146,7 +146,7 @@ Each loop cycle:
 
 After all loops in a phase complete, run the quality gate:
 
-```
+```text
 /run-gate           # spawn gate agents to evaluate phase outputs
 ```
 
@@ -154,7 +154,7 @@ Gate agents (code-review, phase-goals, and optionally security and test) evaluat
 
 Then advance to the next phase:
 
-```
+```text
 /next-phase         # run gate review → advance on pass, versioned retry on fail
 ```
 
@@ -165,7 +165,7 @@ Then advance to the next phase:
 
 For multi-phase programmes with a master plan, chain everything end-to-end:
 
-```
+```text
 /next-phase --auto  # gate → plan next phase → execute loops → gate → repeat
 ```
 
@@ -175,7 +175,7 @@ This chains across phase boundaries autonomously: gate review → plan next phas
 
 At any point during execution:
 
-```
+```text
 /loop-status        # show all loops with todo counts and handoff summaries
 /progress-report    # structured report from plan files, handoffs, and git history
 /check-execution    # six-area diagnostic if something seems wrong
@@ -184,7 +184,7 @@ At any point during execution:
 
 After all phases complete:
 
-```
+```text
 /run-closeout       # programme closeout — final narrative from the documentary record
 ```
 
@@ -229,7 +229,7 @@ After all phases complete:
 
 ## Architecture
 
-```
+```text
 ┌──────────────────────────────────────────────────┐
 │                      CORE                        │
 │  schemas/    skills/    agents/    state/        │
@@ -272,7 +272,7 @@ The easiest way to use the system in Cowork is via the **Advanced Planning plugi
 The planning system works with a wider ecosystem of specialist skills:
 
 - **[awesome-agent-skills](https://github.com/MungoHarvey/awesome-agent-skills)** — curated catalogue for Claude Code and Cowork, including VoltAgent skill-finder for on-demand marketplace installs
-- **[claude-scientific-skills](https://github.com/anthropics/claude-scientific-skills)** *(community)* — domain-specific skills for scientific and research workflows
+- **[claude-scientific-skills](https://github.com/anthropics/claude-scientific-skills)** _(community)_ — domain-specific skills for scientific and research workflows
 
 To use external skills: place the `SKILL.md` in `.claude/skills/[skill-name]/`. The worker loads it automatically via targeted injection when a todo references it.
 
@@ -280,7 +280,7 @@ To use external skills: place the `SKILL.md` in `.claude/skills/[skill-name]/`. 
 
 ## Repository Structure
 
-```
+```text
 advanced-planning/
 ├── core/                ← Platform-agnostic specifications
 │   ├── schemas/         ← Plan file schemas (phase-plan, ralph-loop, todo, handoff)

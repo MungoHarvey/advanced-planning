@@ -31,13 +31,13 @@ Detection: does `[skills_directory]/brainstorming/SKILL.md` exist?
 >
 > Install from the official marketplace:
 >
-> ```
+> ```text
 > /plugin install superpowers@claude-plugins-official
 > ```
 >
 > Or from the forked version with Advanced Planning integration:
 >
-> ```
+> ```bash
 > git clone https://github.com/obra/superpowers.git
 > ```
 

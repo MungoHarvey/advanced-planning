@@ -2,7 +2,7 @@
 
 Canonical folder layout for the Advanced Planning System. Every file has one home; adapters reference the core, never duplicate it.
 
-```
+```text
 planning-system/
 │
 ├── README.md                           ← Quick-start, what this is, how to install
@@ -162,7 +162,7 @@ planning-system/
 
 ## Runtime Directory (created by adapters, not in repo)
 
-```
+```text
 .claude/                                ← Created in target project by install.sh
 ├── CLAUDE.md                           ← Project conventions + ## Planning State
 ├── .advanced-plans/                    ← Phase plans + ralph loops (v0.11.0+; lives at project root, not inside .claude/)

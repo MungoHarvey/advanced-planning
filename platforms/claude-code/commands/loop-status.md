@@ -14,7 +14,7 @@ accomplished across loops and phases, use `/progress-report`.
 
 ### 1. Find plan files
 
-```
+```text
 Glob(".advanced-plans/phases/*/loops.md")
 ```
 
@@ -30,7 +30,7 @@ loops file. If PLANNING.md is absent, read all loops files found.
 
 ### 3. Print status table
 
-```
+```text
 Phase [N] Loop Status
 ─────────────────────────────────────────────────────────────
 Loop                      | Todos            | State
@@ -60,7 +60,7 @@ Next action: run /next-loop to continue ralph-loop-002
 
 ## Usage
 
-```
+```text
 /loop-status
 ```
 

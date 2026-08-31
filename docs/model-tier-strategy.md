@@ -49,7 +49,7 @@ At approximate 2024 API pricing:
 
 Total programme cost: roughly **$8–24** for a well-scoped 4-phase programme. Higher than all-Haiku execution, but substantially more reliable.
 
-*These are illustrative estimates. Actual costs depend on context length, output length, and provider pricing at the time of use.*
+_These are illustrative estimates. Actual costs depend on context length, output length, and provider pricing at the time of use._
 
 ---
 

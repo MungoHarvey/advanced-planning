@@ -28,7 +28,7 @@ framework - both in the source repository and in an installed target project.
 
 The source repository for the framework itself:
 
-```
+```text
 advanced-planning/
 |
 |-- core/                          <- Platform-agnostic definitions
@@ -66,7 +66,7 @@ advanced-planning/
 
 What `install.sh` / `install.ps1` creates in the target project:
 
-```
+```text
 <target-project>/
 |
 |-- .claude/                       <- Claude Code runtime adapters (NOT data)

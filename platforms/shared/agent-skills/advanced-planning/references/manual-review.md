@@ -8,7 +8,7 @@ This document defines the manual human review gate that blocks phase progression
 
 After a phase plan is produced at `.advanced-plans/phases/phase-N/plan.md`, print exactly:
 
-```
+```text
 REVIEW .advanced-plans/phases/phase-N/plan.md
 
 Reply with exactly one:

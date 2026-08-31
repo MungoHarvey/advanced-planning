@@ -6,7 +6,7 @@
 
 **Produced by**:
 
-```
+```bash
 cd <repo-root>
 codex exec review --ephemeral -m gpt-5.5 \
   "Emit EXACTLY ONE fenced json block ..." \

@@ -63,7 +63,7 @@ The `agent:` field remains valuable for:
 
 **When to assign to a todo:**
 
-The orchestrator is rarely assigned as a `agent:` value in a todo. It is the entity *running* the loop preparation step, not a delegated subagent for individual todos. In exceptional cases you might assign it when:
+The orchestrator is rarely assigned as a `agent:` value in a todo. It is the entity _running_ the loop preparation step, not a delegated subagent for individual todos. In exceptional cases you might assign it when:
 
 - A todo is itself a loop preparation task (e.g. "Prepare loop-006 by running the planning pipeline and writing loop-ready.json")
 - A todo requires Sonnet-level reasoning to produce a structured output that Haiku would likely get wrong
@@ -239,7 +239,7 @@ The `orchestrator` and `worker` roles are platform-agnostic specifications. Each
 - **Host adapter B**: `platforms/cowork/agents/` — host tool prompts passed to the LLM directly
 - **Generic (Python) adapter**: invocation via `platforms/python/` API
 
-When assigning `agent: worker` or `agent: orchestrator`, you are assigning to the *role*. The adapter resolves which concrete implementation to use at execution time.
+When assigning `agent: worker` or `agent: orchestrator`, you are assigning to the _role_. The adapter resolves which concrete implementation to use at execution time.
 
 ## See Also
 

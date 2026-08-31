@@ -31,7 +31,7 @@ Read `$ARGUMENTS`. Accepted flags:
 
 If an unrecognised flag is present, print:
 
-```
+```text
 Error: unrecognised flag '[flag]'.
 Usage: /sync-install [--check] [--layers source,project|source,global|all]
 ```
@@ -48,7 +48,7 @@ repair. The launcher's own diagnostic names `/sync-install` as a repair, so it
 has to actually be one.
 
 This runs **before** the audit, not after it. Step 2 invokes
-`install_audit` *through* the launcher, so a stale or missing record
+`install_audit` _through_ the launcher, so a stale or missing record
 makes the audit itself the thing that fails - and a repair placed after
 it could never be reached in either case it exists for.
 
@@ -67,7 +67,7 @@ python ".advanced-plans/bin/ap.py" --check
 - The launcher is missing entirely (`can't open file`): copy it, then write
   `runtime.json` with `schema_version: 1` and that same `source_root`.
 
-Record the path as one the *interpreter* can open, not only the shell: under
+Record the path as one the _interpreter_ can open, not only the shell: under
 Git Bash on Windows that means `C:/Users/...`, not `/c/Users/...`. Re-running
 the installer does this correctly and is the better repair when it is
 available; this step exists for the case where it is not.
@@ -84,7 +84,7 @@ Capture the output and exit code.
 
 - Exit 0 → all layers are current. Print the audit output and stop:
 
-  ```
+  ```text
   /sync-install: all layers current — nothing to do
   ```
 
@@ -105,7 +105,7 @@ followed by `<surface>/<filename>`. Construct the copy list:
 
 For each stale or missing file:
 
-```
+```text
 source_path  = <repo_root>/<source_dir>/<filename>
 project_path = <repo_root>/.claude/<surface>/<filename>
 global_path  = <global_home>/.claude/<surface>/<filename>
@@ -133,7 +133,7 @@ If the destination directory does not exist, create it first.
 
 Print each copy performed:
 
-```
+```text
   REFRESHED  [layer] <surface>/<filename>
 ```
 
@@ -142,7 +142,7 @@ where `[layer]` is `project` or `global`.
 If writing to the global layer, prefix the line with `[GLOBAL]` to make it
 visually distinct:
 
-```
+```text
   [GLOBAL] REFRESHED  global <surface>/<filename>
 ```
 
@@ -156,13 +156,13 @@ python ".advanced-plans/bin/ap.py" install_audit --layers [resolved_layers]
 
 - Exit 0 → success. Print:
 
-  ```
+  ```text
   /sync-install: refresh complete — all layers now current
   ```
 
 - Exit 1 → some files are still stale/missing. Print:
 
-  ```
+  ```text
   WARNING: drift remains after refresh. Re-run /sync-install or inspect manually.
   ```
 
@@ -170,7 +170,7 @@ python ".advanced-plans/bin/ap.py" install_audit --layers [resolved_layers]
 
 ### 6. Print summary
 
-```
+```text
 /sync-install complete
 ----------------------
 Layers checked : [layers]
@@ -180,7 +180,7 @@ Result         : [all current | drift remains]
 
 ## Usage
 
-```
+```text
 /sync-install
 /sync-install --check
 /sync-install --layers source,project

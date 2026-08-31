@@ -130,7 +130,7 @@ Changes to either schema require an explicit decision logged in this file.
   (`override: true`, `override_reason`) lives on the `history.jsonl` `gate_pass` event (main-thread
   decision), not on the per-agent verdict file; existing verdicts remain fully valid.
 - Phase 15 follow-on (2026-06-09): **gate-pass closeout folded into `/run-gate`.** A passing gate
-  for the *current* phase is now the natural end of that phase, so `/run-gate` Step 10.4 closes it
+  for the _current_ phase is now the natural end of that phase, so `/run-gate` Step 10.4 closes it
   out automatically — moves the phase to `phases.complete`, advances `current_phase`, appends a
   `phase_closed` event (`trigger: run-gate-pass`), commits, and directs to `/phase-compact`. No
   separate `/next-phase` call is needed merely to advance. `/run-gate --phase N` on a non-current
@@ -186,7 +186,7 @@ See `docs/path-conventions.md` for the full canonical path map, deprecated token
 
 `install.sh` creates this structure in the target project (not in this repo):
 
-```
+```text
 .claude/
 ├── commands/    ← Slash commands (copied from platforms/claude-code/commands/)
 ├── skills/      ← Planning skills (symlinked or copied from core/skills/)

@@ -20,7 +20,7 @@ The Cowork adapter gives you a three-tier planning workflow directly in your Cow
 
 Copy (or symlink) this adapter folder into your Cowork skills directory:
 
-```
+```text
 platforms/cowork/SKILL.md  →  your Cowork skills folder
 platforms/cowork/agents/   →  alongside SKILL.md
 platforms/cowork/checkpoint.sh → alongside SKILL.md
@@ -28,7 +28,7 @@ platforms/cowork/checkpoint.sh → alongside SKILL.md
 
 The folder structure Cowork needs:
 
-```
+```text
 skills/
 └── advanced-planning/
     ├── SKILL.md               ← routing entry point
@@ -90,7 +90,7 @@ The planning skill activates on natural language. All of these work:
 
 When you ask to run a loop, the skill orchestrates two agents in sequence:
 
-```
+```text
 You → SKILL.md (routing)
          ↓
     Agent tool (model: sonnet)
@@ -106,7 +106,7 @@ Each agent prompt is self-contained — the full protocol is passed directly to 
 
 ### Spawning the orchestrator (Sonnet)
 
-```
+```text
 Agent tool:
   model: sonnet
   prompt: [contents of agents/orchestrator-prompt.md]
@@ -115,7 +115,7 @@ Agent tool:
 
 ### Spawning the worker (Sonnet)
 
-```
+```text
 Agent tool:
   model: sonnet
   prompt: [contents of agents/worker-prompt.md]
@@ -152,7 +152,7 @@ The worker runs opening and closing snapshots automatically. You can also run th
 
 ## Workspace Layout
 
-```
+```text
 your-workspace/
 ├── planning-state.md          ← current phase/loop/handoff state
 ├── .advanced-plans/

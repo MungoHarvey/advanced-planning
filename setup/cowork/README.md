@@ -107,7 +107,7 @@ and loads the appropriate specialist skill automatically.
 
 When you say "run loop 003":
 
-```
+```text
 1. Claude (orchestrator role) reads the loop file
 2. Populates any empty todos using plan-todos, plan-skill-identification, plan-subagent-identification
 3. Writes loop-ready.json to the state directory
@@ -145,7 +145,7 @@ Snapshots are stored in `state/snapshots/` and excluded from zip packages.
 
 After a few loops, your project folder will look like this:
 
-```
+```text
 your-project/
 ├── advanced-planning/     ← this repo (mounted in Cowork)
 │   ├── core/

@@ -51,7 +51,7 @@ This is a **subset** of the frontmatter schema — `skill`, `agent`, and `outcom
 
 Embed the `outcome` inline in the display content so it remains visible in the task list UI:
 
-```
+```text
 content display: "[task description] → [outcome condition]"
 ```
 

@@ -40,7 +40,7 @@ ls .advanced-plans/phases/*/gate-verdicts/*.json 2>/dev/null || echo "No gate ve
 
 Spawn the `programme-reporter` subagent with the following prompt:
 
-```
+```text
 You are programme-reporter performing the final closeout synthesis.
 
 Documentary record:
@@ -86,7 +86,7 @@ echo '{"event":"closeout","timestamp":"[ISO timestamp]","phases_completed":[N],"
 
 ### 6. Print summary
 
-```
+```text
 Programme closeout complete.
   Report: .advanced-plans/programme-closeout.md
 

@@ -45,7 +45,7 @@ Bash redirects do not.
 
 ## My Single Responsibility
 
-```
+```text
 Read loop-ready.json → Execute ALL todos inline (one skill per todo) → Write loop-complete.json → Return
 ```
 
@@ -87,7 +87,7 @@ Resolve skill paths in this order:
 If none of the three paths exist for a declared skill, log to stdout AND to
 `.advanced-plans/logs/execution.log`:
 
-```
+```text
 WARN: skill '<name>' declared by todo <id> but not installed; proceeding without skill injection
 ```
 
@@ -142,7 +142,7 @@ directly. You are the sole execution agent for this loop.
 
 Skills are loaded by reading SKILL.md files. The `skill:` field determines what to load:
 
-```
+```text
 Single:   skill: "schema-design"      → load 1 SKILL.md
 Multiple: skill: ["schema-design", "documentation"]  → load 2 SKILL.md files in order
 None:     skill: "NA"                 → no skill loaded
@@ -150,7 +150,7 @@ None:     skill: "NA"                 → no skill loaded
 
 **Path resolution** (for each skill name):
 
-```
+```text
 1. Project-local: .claude/skills/[skill-name]/SKILL.md
 2. Global fallback: ~/.claude/skills/[skill-name]/SKILL.md
 ```

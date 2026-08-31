@@ -64,7 +64,7 @@ Order sections as they must appear in the document.
 A checklist of observable conditions that can be checked programmatically or by eye.
 Format:
 
-```
+```text
 - [ ] condition (what to check, how)
 ```
 
@@ -89,7 +89,7 @@ If a schema is LOCKED, state that explicitly with the lock date.
 
 A single Markdown file structured as follows:
 
-```
+```text
 # [Artefact Type] Schema
 
 > [Status line if LOCKED; omit if not locked]

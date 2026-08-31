@@ -47,7 +47,7 @@ Provide:
 
 4. **Update `skill:` field in-place** for each todo, maintaining canonical order:
 
-   ```
+   ```text
    id → content → skill → agent → outcome → status → complexity → priority
    ```
 
@@ -58,7 +58,7 @@ Provide:
 
 Skills are assigned at three levels, each more specific than the last:
 
-```
+```text
 Phase-level (broad):
   `statistical-analysis` — assigned to the whole phase
   ↓

@@ -6,7 +6,7 @@ The planning system uses a **two-agent pattern** for loop execution. Each loop c
 
 ## The Two Agents
 
-```
+```text
 Main Thread
     │
     ├─ Spawn ────────────────► Orchestrator (Sonnet)

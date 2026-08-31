@@ -6,7 +6,7 @@ A ralph loop is a bounded, self-contained unit of work with verifiable outcomes 
 
 ## File Location
 
-```
+```text
 # Single-file mode (recommended for <10 loops per phase):
 .advanced-plans/phases/phase-{N}/loops.md          ← All loops for phase N in one file
 

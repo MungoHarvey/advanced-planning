@@ -24,7 +24,7 @@ A focused, 4-phase technical project with clear deliverables and bounded scope. 
 
 The plan files for this programme live in `plans/` at the repository root (not in this `examples/` directory — the plans were the live working documents, not copies).
 
-```
+```text
 plans/
 ├── PLANS-INDEX.md              ← start here — master tracker
 ├── master-plan.md              ← programme overview and cross-phase principles
@@ -96,6 +96,6 @@ Between Phase 1 and Phase 2, the `handoff` field schema changed from v7 (three f
 
 ## What Wasn't Captured
 
-The plan files show the *what* and *when*, not the full *why* of every micro-decision. The reasoning behind specific wording choices, edge cases considered, and alternatives rejected during execution are in `docs/decisions.md` for the architectural decisions, but the operational decisions (why a particular todo was phrased this way, why a skill was assigned here but not there) are not systematically recorded.
+The plan files show the _what_ and _when_, not the full _why_ of every micro-decision. The reasoning behind specific wording choices, edge cases considered, and alternatives rejected during execution are in `docs/decisions.md` for the architectural decisions, but the operational decisions (why a particular todo was phrased this way, why a skill was assigned here but not there) are not systematically recorded.
 
 This is intentional: the planning system is not a full audit log. It is a coordination mechanism. The decisions worth preserving are the architectural ones; the execution micro-decisions belong in code comments and commit messages.

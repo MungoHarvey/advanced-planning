@@ -37,7 +37,7 @@ sh setup/claude-code/install.sh --project /path/to/your/project
 
 Verify the install:
 
-```
+```text
 your-project/.claude/
   commands/   skills/   agents/   schemas/   state/   settings.json
 ```
@@ -51,7 +51,7 @@ cd /path/to/your/project
 claude
 ```
 
-```
+```text
 /new-phase
 ```
 
@@ -62,14 +62,14 @@ source of truth.
 
 **Expected output:**
 
-```
+```text
 plans/
 └── phase-1.md
 ```
 
 ### Step 3 — Decompose Into Loops
 
-```
+```text
 /decompose-phase 1
 ```
 
@@ -79,7 +79,7 @@ empty `todos[]`, and a blank `handoff_summary`. Todos are populated when each lo
 
 **Expected output:**
 
-```
+```text
 .advanced-plans/phases/phase-1/
 ├── plan.md
 └── loops.md
@@ -87,7 +87,7 @@ empty `todos[]`, and a blank `handoff_summary`. Todos are populated when each lo
 
 ### Step 4 — Run the First Loop
 
-```
+```text
 /next-loop
 ```
 
@@ -100,7 +100,7 @@ Full two-agent cycle:
 
 **Expected output:**
 
-```
+```text
 .advanced-plans/state/
 ├── loop-ready.json
 └── loop-complete.json
@@ -110,11 +110,11 @@ Full two-agent cycle:
 
 ### Step 5 — Check Progress
 
-```
+```text
 /loop-status
 ```
 
-```
+```text
 Phase 1: My Project
 Loop                     Status        Todos
 ─────────────────────────────────────────────
@@ -128,7 +128,7 @@ Run `/next-loop` again for the next pending loop.
 
 If you prefer to explore the codebase before committing to a plan, use this workflow:
 
-```
+```text
 /plan-and-phase [description]   → Read-only exploration → Human review → Phase plan → Loops → Ready
 /next-loop --auto               → Chain all loops until phase complete or failure
 /progress-report                → Structured summary of what was accomplished
@@ -144,7 +144,7 @@ The difference from the standard flow:
 
 For multi-phase programmes with a master plan, chain everything end-to-end:
 
-```
+```text
 /next-phase --auto    → Gate review → plan next phase → execute loops → gate → repeat
 ```
 
@@ -154,7 +154,7 @@ always stop auto mode (manual review required for versioned retry).
 
 ### Step 6 — Gate Review (after all loops complete)
 
-```
+```text
 /run-gate
 ```
 

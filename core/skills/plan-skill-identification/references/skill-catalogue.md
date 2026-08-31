@@ -186,7 +186,7 @@ to produce a structured markdown progress report. Read-only synthesis — never 
 
 ## Pipeline Position Summary
 
-```
+```text
 phase-plan-creator          → Phase plan (phase-{N}.md)
        ↓
 ralph-loop-planner          → Loop stubs (phase-{N}-ralph-loops.md)

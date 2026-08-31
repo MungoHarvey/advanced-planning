@@ -9,7 +9,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Nothing yet._
+### Fixed
+
+- **The Markdown Lint job can now fail.** It ran
+  `markdownlint-cli2 … --config .markdownlint.json || true` against a
+  `.markdownlint.json` that did not exist in this repository, and swallowed the
+  result. It had reported `SUCCESS` on every pull request ever opened here and
+  could not have reported anything else — the same defect class as the rest of
+  `0.18.0`, with a filename standing in for a fact read off the machine. The
+  config now exists, the `|| true` is gone, and the linter version is pinned so
+  an upstream release cannot turn `main` red on a day nobody here committed
+  anything.
+
+  Getting there took two passes over 8,430 default-rule violations. `MD013`
+  (5,062) and `MD060` (1,496) are disabled as style, not defects; `MD024` is
+  `siblings_only` because a CHANGELOG repeats `### Fixed` under every version.
+  `MD038` and `MD029` are disabled for a different reason: **their autofixes
+  are destructive on this repository specifically.** Much of this markdown is
+  agent instructions, where the whitespace inside an inline code span is the
+  content — `` `  anchor_sha: [SHA]` `` tells an agent to print an indented
+  line — and `--fix` strips it, turning ``separated by `, ` `` into
+  ``separated by `,` `` in 18 places. That was caught by checking whether the
+  diff was whitespace-only rather than by trusting the tool.
+
+  The remaining 329 were resolved by hand: 285 untagged code fences, 43 uses of
+  emphasis as a heading, and one duplicate heading whose only inbound link
+  (`#anchor-sha-decision-1`) resolved solely _because_ of the duplication. Two
+  of the 43 are genuine emphasis — a subtitle and a colophon — and carry an
+  inline exemption naming the reason rather than being promoted into sections
+  that do not exist.
 
 ---
 

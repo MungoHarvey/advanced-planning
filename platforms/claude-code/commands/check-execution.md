@@ -113,7 +113,7 @@ grep "WRITE:\|EDIT:" .advanced-plans/logs/execution.log 2>/dev/null | grep "\.ad
 
 After running all six checks, report:
 
-```
+```text
 EXECUTION HEALTH REPORT
 ────────────────────────────────────────────
 Hook env vars:      [real values | unknown — blind]

@@ -44,13 +44,13 @@ Once installed, use the five planning actions in OpenCode:
 
 ### Example: Create a Phase
 
-```
+```text
 $advanced-planning phase Build schema validation for state documents
 ```
 
 This creates `.advanced-plans/phases/phase-N/plan.md` and presents a human review gate. Reply with one of:
 
-```
+```text
 APPROVE phase-N
 REVISE phase-N: <instructions>
 STOP phase-N
@@ -58,7 +58,7 @@ STOP phase-N
 
 ### Example: Execute a Loop
 
-```
+```text
 $advanced-planning loop next
 ```
 
@@ -127,7 +127,7 @@ The installer writes `.advanced-plans/runtime.json` with the absolute path to th
 
 **Fix**: Reply with one of the three valid responses:
 
-```
+```text
 APPROVE phase-N
 REVISE phase-N: <instructions>
 STOP phase-N
@@ -149,7 +149,7 @@ The gate blocks until an explicit response is received. This is the designed beh
 
 ## Architecture
 
-```
+```text
 OpenCode main thread
 ├── advanced-planning skill (router)
 ├── Orchestrator subagent (prepares loop)

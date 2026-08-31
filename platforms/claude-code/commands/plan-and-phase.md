@@ -124,7 +124,7 @@ python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jso
 
 If `AUTO_EXECUTE` is false:
 
-```
+```text
 Phase [N] — [phase name] ready for execution
   Loops:      [loop count] loops planned
   Todos:      [total todos] todos across all loops
@@ -137,7 +137,7 @@ Run /next-loop --auto to chain all loops until the phase completes.
 
 If `AUTO_EXECUTE` is true:
 
-```
+```text
 Phase [N] — [phase name] — planning complete. Beginning autonomous execution...
   Loops:      [loop count] loops planned
   Todos:      [total todos] todos across all loops

@@ -211,7 +211,7 @@ Defined by `on_max_iterations` in frontmatter:
 
 ## Outcome Writing Standards
 
-The `outcome` field answers: *"What must be true in the world for this todo to be done?"*
+The `outcome` field answers: _"What must be true in the world for this todo to be done?"_
 
 ### ❌ Invalid Outcomes
 
@@ -407,7 +407,7 @@ Produce four schema documents in core/schemas/ defining every planning artefact.
 
 ## Execution Workflow
 
-```
+```text
 1. Generate ralph loops (ralph-loop-planner)
 2. Review structure, dependencies, skills
 3. For each loop:

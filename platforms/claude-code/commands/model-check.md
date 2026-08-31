@@ -29,7 +29,7 @@ echo "Current model: ${CLAUDE_MODEL:-unknown}"
 
 Read each skill and agent frontmatter to extract the `model:` field:
 
-```
+```text
 Read .claude/skills/phase-plan-creator/SKILL.md        -> model field
 Read .claude/skills/ralph-loop-planner/SKILL.md        -> model field
 Read .claude/skills/plan-todos/SKILL.md                -> model field
@@ -48,7 +48,7 @@ tail -20 .advanced-plans/logs/execution.log 2>/dev/null || echo "(no execution l
 
 ### 4. Print summary table
 
-```
+```text
 Component                        Expected    Frontmatter
 ─────────────────────────────────────────────────────────
 phase-plan-creator (skill)       opus        [read value]

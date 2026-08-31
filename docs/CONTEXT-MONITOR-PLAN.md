@@ -49,7 +49,7 @@ Both `/next-phase` and `context-agent` read `.claude/state/transcript-path.txt` 
 
 **Token counting via transcript.** Claude Code records every session as a JSONL log; each assistant turn includes a `usage` block. The agent reads the file, walks lines in reverse, and finds the most recent assistant turn carrying a `usage` block. **Tokens used** for that snapshot:
 
-```
+```text
 tokens_used = input_tokens
             + cache_read_input_tokens
             + cache_creation_input_tokens
@@ -158,6 +158,6 @@ Estimated effort: half a day end-to-end. No new dependencies; consistent with th
 
 ## 8. Why this is enough
 
-The temptation with context management is to build infrastructure: durable artefacts, retrieval helpers, cold stores, hot manifests. Those are real ideas, but they assume context will keep getting *more* scarce. The opposite is happening — Claude's windows are growing, `/compact` is getting smarter, and the half-life of any custom compaction tooling we build is probably under a year.
+The temptation with context management is to build infrastructure: durable artefacts, retrieval helpers, cold stores, hot manifests. Those are real ideas, but they assume context will keep getting _more_ scarce. The opposite is happening — Claude's windows are growing, `/compact` is getting smarter, and the half-life of any custom compaction tooling we build is probably under a year.
 
 What stays useful regardless of how the platform evolves is **a clear signal at a clear moment**, telling the user where they stand. This document specifies exactly that, and nothing more.

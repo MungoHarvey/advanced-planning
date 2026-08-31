@@ -87,7 +87,7 @@ A loop with more than 8 todos almost always has scope that would be better split
 
 ## Priority Assignment Guide
 
-```
+```text
 high   → blocking; the next todo cannot start without this one
 medium → important to the loop succeeding but not immediately blocking
 low    → nice-to-have; explicitly stated as non-blocking in the loop's Success Criteria

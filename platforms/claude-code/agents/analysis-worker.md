@@ -58,7 +58,7 @@ Keep `agent: NA` when the task:
 
 When finished, produce a brief completion note:
 
-```
+```text
 ✓ [todo id] complete
   Outcome verified: [what was checked]
   Output: [file path or summary of what was produced]
@@ -66,7 +66,7 @@ When finished, produce a brief completion note:
 
 If blocked:
 
-```
+```text
 ✗ [todo id] blocked
   Reason: [specific blocker — missing file, permission denied, etc.]
   Partial output: [what was produced before the block, if anything]

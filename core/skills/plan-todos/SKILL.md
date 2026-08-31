@@ -44,7 +44,7 @@ Provide:
 
 4. **Populate frontmatter in-place** maintaining canonical field order:
 
-   ```
+   ```text
    id → content → skill → agent → outcome → status → complexity → priority
    ```
 
@@ -92,32 +92,32 @@ todos:
 
 For each stated output, create:
 
-1. A task that *produces* the output
-2. A task that *validates* the output (if non-trivial)
+1. A task that _produces_ the output
+2. A task that _validates_ the output (if non-trivial)
 
 ### Pattern: Pipeline decomposition
 
 For sequential data transforms, one TODO per stage:
 
-```
+```text
 Read data → Transform → Validate → Write output → Confirm
 ```
 
 ### Pattern: Research decomposition
 
-```
+```text
 Gather candidates → Evaluate each → Compare → Document recommendation
 ```
 
 ### Pattern: Infrastructure decomposition
 
-```
+```text
 Configure → Deploy → Health-check → Document rollback
 ```
 
 ### Pattern: Migration decomposition
 
-```
+```text
 Read source → Strip platform-specific content → Write to target → Verify portability
 ```
 

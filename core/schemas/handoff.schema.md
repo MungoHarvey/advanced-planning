@@ -33,7 +33,7 @@ handoff_summary:
 
 3. **`done` references artefacts, not effort.** Name the files written, tests passing, or decisions made — not "worked on X".
 
-4. **`failed` gives root cause, not just symptom.** Include enough context for the next loop to understand *why* something failed, not just *that* it failed.
+4. **`failed` gives root cause, not just symptom.** Include enough context for the next loop to understand _why_ something failed, not just _that_ it failed.
 
 5. **`needed` is an action, not a restatement of the phase goal.** The next loop should know exactly what to do first.
 

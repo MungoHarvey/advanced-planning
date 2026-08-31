@@ -44,13 +44,13 @@ Once installed, use the five planning actions in Codex:
 
 ### Example: Create a Phase
 
-```
+```text
 $advanced-planning phase Build schema validation for state documents
 ```
 
 This creates `.advanced-plans/phases/phase-N/plan.md` and presents a human review gate. Reply with one of:
 
-```
+```text
 APPROVE phase-N
 REVISE phase-N: <instructions>
 STOP phase-N
@@ -58,7 +58,7 @@ STOP phase-N
 
 ### Example: Execute a Loop
 
-```
+```text
 $advanced-planning loop next
 ```
 
@@ -77,7 +77,7 @@ This ensures consistent behavior across hosts and prevents silent overwrites.
 
 ## Checkpoint Ownership
 
-**Codex cannot commit.** This is a sandbox limit, not a policy choice: Codex subagents inherit the parent sandbox and cannot reach a linked worktree's git metadata, which lives in the parent repo's `.git/worktrees/`. Workers on runtimes that *can* reach git commit their own work under the shared worker contract; Codex instead hands the change to the external controller (Herdr/AAW), which owns git sequencing here:
+**Codex cannot commit.** This is a sandbox limit, not a policy choice: Codex subagents inherit the parent sandbox and cannot reach a linked worktree's git metadata, which lives in the parent repo's `.git/worktrees/`. Workers on runtimes that _can_ reach git commit their own work under the shared worker contract; Codex instead hands the change to the external controller (Herdr/AAW), which owns git sequencing here:
 
 1. **Opening checkpoint**: External controller records or creates the opening commit before spawning the orchestrator
 2. **Closing checkpoint**: Codex returns a structured checkpoint request; the external controller validates the diff, commits it outside the Codex sandbox, and returns the full SHA
@@ -139,7 +139,7 @@ The installer writes `.advanced-plans/runtime.json` with the absolute path to th
 
 **Fix**: Reply with one of the three valid responses:
 
-```
+```text
 APPROVE phase-N
 REVISE phase-N: <instructions>
 STOP phase-N
@@ -161,7 +161,7 @@ The gate blocks until an explicit response is received. This is the designed beh
 
 ## Architecture
 
-```
+```text
 Codex main thread
 ├── advanced-planning skill (router)
 ├── Orchestrator subagent (prepares loop)

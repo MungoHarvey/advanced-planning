@@ -62,7 +62,7 @@ for any todo the loop worker executes directly.
 
 5. **Update `agent:` field in-place**, maintaining canonical order:
 
-   ```
+   ```text
    id → content → skill → agent → outcome → status → complexity → priority
    ```
 
@@ -130,7 +130,7 @@ If no agents are configured yet, `plan-subagent-identification` will:
 
 The loop is now fully specified. Full pipeline summary:
 
-```
+```text
 ralph-loop-planner          → loop stubs with skeleton todos[]
 plan-todos                  → todos[] populated (skill: NA, agent: NA)
 plan-skill-identification   → skill: fields assigned

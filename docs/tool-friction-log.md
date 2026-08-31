@@ -235,7 +235,7 @@ entries from here.
 - **Observed**: ralph-orchestrator populated Loop 027 todos with a `complexity:`
   field between `status:` and `priority:`. CLAUDE.md specifies the canonical
   field order as `id/content/skill/agent/outcome/status/priority` — no
-  `complexity` field. However, CLAUDE.md *also* references "`complexity: low`
+  `complexity` field. However, CLAUDE.md _also_ references "`complexity: low`
   todos" in the model-tier routing section, treating complexity as a known
   field.
 - **Friction**: the schema is internally inconsistent. Either `complexity` is
@@ -255,8 +255,8 @@ entries from here.
   `plan-skill-identification` step searched for installed skills with those
   names, found none, and assigned `skill: NA` to all 8 todos in Loop 027.
 - **Friction**: there's no formal distinction in the framework between (a) a
-  taxonomy of *skill domains* used during phase planning to describe broad
-  capabilities and (b) the *installed skill names* used during execution.
+  taxonomy of _skill domains_ used during phase planning to describe broad
+  capabilities and (b) the _installed skill names_ used during execution.
   Both surface as bare strings; the planner can't tell them apart.
 - **Suggested fix**: either (1) require phase plans to use only installed
   skill names (constrains the planner, may miss capabilities not yet
@@ -315,7 +315,7 @@ entries from here.
 
 ## Template for new entries
 
-```
+```text
 ### [Surface] — One-line description
 
 - **Observed**: when, what happened.
@@ -339,7 +339,7 @@ entries from here.
   workflow is design → phase plan → ralph loops as one continuous decomposition.
   Stopping at the phase plan forces the user to remember the next step, switch
   context, and re-invoke. The hand-off is artificial — the phase plan is
-  explicitly *designed* to feed ralph-loop-planner.
+  explicitly _designed_ to feed ralph-loop-planner.
 - **Suggested fix**: amend `~/.claude/skills/phase-plan-creator/SKILL.md` so the
   "Next Steps" section ends with an instruction equivalent to brainstorming's
   terminal step: "After writing the phase plan and updating PLANS-INDEX.md,
@@ -364,7 +364,7 @@ entries from here.
   uncommitted." Recovery required a manual resume-review pass (git diff +
   per-todo status inspection in loops.md) from the main thread.
 - **Suggested fix**: have the worker write a `loop-complete.json` with
-  `status: partial` and per-todo progress as its *first* action would not help
+  `status: partial` and per-todo progress as its _first_ action would not help
   (it dies unpredictably). Better: `/next-loop` should, before spawning the
   orchestrator, detect "loop-ready.json newer than loop-complete.json AND
   working tree dirty" and run a resume-review verification automatically
@@ -379,26 +379,26 @@ entries from here.
 - **Observed**: Loop 036 used a scripted ordered-substitution pass to re-point
   `plans/` → `.advanced-plans/` across 39 files. One rule,
   `plans/PLANS-INDEX.md` → `.advanced-plans/PLANS-INDEX.md`, also matched the
-  `plans/PLANS-INDEX.md` *substring inside already-correct*
+  `plans/PLANS-INDEX.md` _substring inside already-correct_
   `.advanced-plans/PLANS-INDEX.md`, producing `.advanced-.advanced-plans/PLANS-INDEX.md`
   in 4 command files (10 occurrences). Both gate agents independently caught it;
   it was a CRITICAL verdict-blocking defect.
 - **Friction**: (1) substitution rules with no left-anchor/negative-lookbehind
   corrupt text that already contains the replacement as a substring. (2) The
-  Loop 036 grep audit only searched for the *old* patterns, so it structurally
-  could not detect a *new-shape* corruption — it reported "clean" while the
+  Loop 036 grep audit only searched for the _old_ patterns, so it structurally
+  could not detect a _new-shape_ corruption — it reported "clean" while the
   repo was broken. A migration audit that only looks backward is half an audit.
 - **Suggested fix**: (a) substitution rules must be anchored
   (`(?<![.\w-])plans/PLANS-INDEX\.md`) or run idempotently (assert a second
   pass is a no-op). (b) Post-migration audit must ALSO grep for corruption
-  signatures of the *target* scheme (e.g. doubled prefix
+  signatures of the _target_ scheme (e.g. doubled prefix
   `\.advanced-\.advanced-plans`, `\.claude/\.advanced-plans`) — not just
   residual old paths. Add both checks to the loop-036-style audit todo.
 
 ### [Agent tooling] — phase-goals-agent had no Write tool, could not emit its verdict
 
 - **Observed**: the spawned `phase-goals-agent` was provisioned with only
-  Read/Glob/Grep. Its whole job is to *write* a verdict JSON to
+  Read/Glob/Grep. Its whole job is to _write_ a verdict JSON to
   `.advanced-plans/gate-verdicts/...`. It produced the full verdict but had to
   return it as response text; the main thread had to write the file on its
   behalf. The agent type's advertised tool set (Read, Glob, Grep) omits Write.
@@ -451,7 +451,7 @@ entries from here.
   paths that no longer exist is a latent trap — a less context-aware agent (or
   a fresh session) would follow the literal steps, create `.claude/state/`
   sentinels the hooks don't watch, and write verdicts where nothing reads them.
-  The restructure migrated *data* and the command *frontmatter/examples* but
+  The restructure migrated _data_ and the command _frontmatter/examples_ but
   left imperative step text behind. Migration completeness was judged by a
   grep audit that (per the earlier entry) only looked backward and excluded
   the installed command surface from its blocking scope.
@@ -616,7 +616,7 @@ were fixed in the same gate session (source + byte-identical runtime copy):
    even though codex was authenticated. Added a `$USERPROFILE/.codex/auth.json` fallback.
    FIXED.
 
-Also: a *criterion-scoping* gap (not a code bug). A phase success criterion asked codex to
+Also: a _criterion-scoping_ gap (not a code bug). A phase success criterion asked codex to
 confirm a `backend:codex` verdict EXISTS in `gate-verdicts/`, but the isolation rule
 forbids codex reading that directory, so codex marked it `failed` (false-negative). The
 isolation rule is correct and unchanged; instead the run-gate codex prompt now instructs

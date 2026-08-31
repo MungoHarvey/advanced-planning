@@ -8,7 +8,7 @@ The v8 Advanced Planning System is a hierarchical, multi-agent planning framewor
 
 Every programme is structured as a three-level hierarchy:
 
-```
+```text
 Phase Plan (strategic)
 │   Authored once per phase by an Opus-tier agent.
 │   Defines scope, loop sequence, success criteria.
@@ -35,7 +35,7 @@ Phase Plan (strategic)
 
 Each loop cycle involves two agents — an orchestrator and a worker — coordinated by the main thread via the filesystem state bus.
 
-```
+```text
 Main Thread
     │
     ├─ spawn Orchestrator (Sonnet)
@@ -66,7 +66,7 @@ Main Thread
 
 The state bus is the coordination layer between agents. It uses three files:
 
-```
+```text
 state/
 ├── loop-ready.json      ← orchestrator writes; worker reads
 ├── loop-complete.json   ← worker writes; main thread reads
@@ -119,7 +119,7 @@ Written by the worker when the loop finishes:
 
 The worker loads a skill's `SKILL.md` immediately before each todo that has one assigned, then discards it before the next todo begins. No skill is loaded at startup; no skill persists across todo boundaries.
 
-```
+```text
 Worker startup: read loop-ready.json, register todos, open checkpoint
 
   Todo 1 (skill: plan-todos):
@@ -148,7 +148,7 @@ This pattern prevents two failure modes: generic output from skill-less executio
 
 The core (schemas, skills, agent protocols, state bus) is platform-agnostic. Each adapter wraps it in the conventions of its execution environment without changing the core protocol.
 
-```
+```text
 ┌─────────────────────────────────────────┐
 │               CORE                      │
 │  schemas/   skills/   agents/   state/  │
@@ -234,7 +234,7 @@ Keeping the core platform-agnostic means all adapters benefit from improvements 
 
 ## Repository Structure
 
-```
+```text
 advanced-planning/
 ├── core/
 │   ├── schemas/      ← JSON/Markdown schemas for all plan file types

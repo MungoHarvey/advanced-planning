@@ -24,7 +24,7 @@ Extract the verb (first word) and arguments (remainder). Valid verbs are: `phase
 
 If the verb is unknown, print:
 
-```
+```text
 Unknown action: <verb>
 Valid actions: phase, loop, gate, resume, compact
 ```
@@ -70,7 +70,7 @@ Never `python -m platforms.python.<module>`, never `python platforms/python/<mod
 
 2. When the phase plan is written, print the plan and the human gate instruction:
 
-   ```
+   ```text
    REVIEW .advanced-plans/phases/phase-N/plan.md
 
    Reply with exactly one:
@@ -255,7 +255,7 @@ Never `python -m platforms.python.<module>`, never `python platforms/python/<mod
 
 3. If the host exposes a native context-compaction command, print it for the user. Otherwise print:
 
-   ```
+   ```text
    Start a new session and run the resume trigger.
    ```
 

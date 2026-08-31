@@ -31,7 +31,7 @@ for any duplicate skill/agent names.
 
 ### 3. Load the ralph-loop-planner skill
 
-```
+```text
 Read .claude/skills/ralph-loop-planner/SKILL.md
 Read .claude/skills/ralph-loop-planner/references/ralph-loop-template.md
 Read .claude/skills/ralph-loop-planner/references/todo-schema.md
@@ -59,7 +59,7 @@ Update `.advanced-plans/PLANS-INDEX.md` to record the new loops file.
 
 ### 7. Prompt next step
 
-```
+```text
 [N] ralph loops saved to .advanced-plans/phases/phase-[N]/loops.md
 
 Run /loop-status to review the plan structure.
@@ -68,19 +68,19 @@ Run /next-loop to begin execution (todos will be auto-populated on first run).
 
 ## Usage
 
-```
+```text
 /decompose-phase 2
 ```
 
 Decompose phase 2 plan into loops.
 
-```
+```text
 /decompose-phase .advanced-plans/phases/phase-refactoring/plan.md
 ```
 
 Decompose a named plan file.
 
-```
+```text
 /decompose-phase
 ```
 

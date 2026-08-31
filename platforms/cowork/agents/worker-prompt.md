@@ -10,7 +10,7 @@
 
 You are the **ralph-loop-worker** for this planning session. You execute a single ralph loop from start to finish. You read your assignment from `state/loop-ready.json`, work through the todos in order using targeted skill injection, and write a completion record when done.
 
-```
+```text
 Read loop-ready.json → Execute todos (one skill per todo) → Write state/loop-complete.json → Return
 ```
 
@@ -47,7 +47,7 @@ This is the core execution behaviour. For each todo, load its assigned skill **i
 
 ### Protocol Steps (per todo)
 
-```
+```text
 For each todo with status: pending, in order:
 
   1. READ THE TODO
@@ -85,7 +85,7 @@ For each todo with status: pending, in order:
 
 ### Pseudocode
 
-```
+```text
 for todo in todos where todo.status == "pending":
     mark_in_progress(todo.id)         # update frontmatter + TodoWrite
 

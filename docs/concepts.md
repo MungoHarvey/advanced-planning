@@ -62,7 +62,7 @@ With targeted injection, each task gets exactly one skill's instructions, at the
 
 **Example**: A loop with three todos — one assigned `plan-todos`, one assigned `skill-creator`, one unassigned — loads and unloads skills as follows:
 
-```
+```text
 Todo 1: load plan-todos/SKILL.md → execute → verify → unload
 Todo 2: load skill-creator/SKILL.md → execute → verify → unload
 Todo 3: (no skill) → execute → verify

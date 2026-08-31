@@ -120,7 +120,7 @@ The next loop's `prompt` has a `## Context from prior loop` block with `[inject 
 
 ## Skill Refinement Pattern
 
-```
+```text
 Phase-level skill: `data-processing`
 ↓ Refined for this loop:
   Broad (from phase plan):
@@ -145,7 +145,7 @@ Always distinguish: **Broad** (from phase plan) / **Specific** (refined for this
 
 ## Output Locations
 
-```
+```text
 .advanced-plans/phases/phase-{N}/loops.md      ← All loops for phase N (< 10 loops)
 .advanced-plans/phases/phase-{N}/loops.md           ← Individual file (10+ loops)
 .advanced-plans/PLANS-INDEX.md                ← Update Ralph Loops table with new entries
