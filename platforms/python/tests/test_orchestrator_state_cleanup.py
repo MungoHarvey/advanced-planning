@@ -139,9 +139,10 @@ class TestArchiveCrossPhaseState:
 
         assert result is None
 
-    def test_no_archive_when_phase_field_absent(self, tmp_path: Path) -> None:
-        """If loop-ready.json lacks a 'phase' field, treat as matching and skip
-        archive.  This maintains backwards compatibility with older state files.
+    def test_phase_field_absent_is_archived_as_stale(self, tmp_path: Path) -> None:
+        """If loop-ready.json lacks a 'phase' field, it cannot be shown to belong
+        to this phase and must be archived as stale.  A state file with no phase
+        is the bug this test guards against.
         """
         state_dir = tmp_path / "state"
         state_dir.mkdir()
@@ -153,8 +154,9 @@ class TestArchiveCrossPhaseState:
 
         result = archive_cross_phase_state(state_dir, current_phase="phase-11")
 
-        assert result is None
-        assert ready.exists() is True
+        assert result is not None, "loop-ready.json without phase must be archived as stale"
+        assert result.exists(), "Archived file must exist"
+        assert ready.exists() is False, "Original file must no longer exist in state_dir"
 
     def test_loop_complete_not_touched_when_only_ready_is_stale(
         self, tmp_path: Path

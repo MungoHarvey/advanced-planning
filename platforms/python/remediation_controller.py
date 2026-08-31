@@ -170,6 +170,9 @@ def validate_diff_allowlist(
 ) -> tuple:
     """Validate that all changed paths are in the allowlist and none are in never-touch.
 
+    A path is a violation if it is never-touch OR not on the allowlist.
+    Never-touch takes precedence over allowlist when a path is on both lists.
+
     Parameters
     ----------
     changed_paths:
@@ -177,14 +180,17 @@ def validate_diff_allowlist(
 
     Returns
     -------
-    tuple (ok: bool, violations: list[str])
+    tuple (ok: bool, violations: list[tuple[str, str]])
         ``ok`` is True only if no violations were found.
-        ``violations`` lists the forbidden paths found (empty if ok).
+        ``violations`` is a list of (path, reason) tuples where reason is either
+        ``"never_touch"`` or ``"not_allowlisted"``.
     """
     violations = []
     for p in changed_paths:
         if is_path_never_touch(p):
-            violations.append(p)
+            violations.append((p, "never_touch"))
+        elif not is_path_in_allowlist(p):
+            violations.append((p, "not_allowlisted"))
     return (len(violations) == 0, violations)
 
 
@@ -285,6 +291,11 @@ def validate_regateverdict_criteria_outcomes(
 ) -> tuple:
     """Validate that a re-gate verdict covers all frozen criteria in criteria_outcomes.
 
+    An empty ``frozen_criteria`` list means the criteria file was empty, unparsed,
+    or never loaded — this is a failure to *read* the criteria, not a phase with
+    no criteria.  Return not-ok with an explicit reason distinguishable from
+    "criteria are missing from the verdict".
+
     Parameters
     ----------
     verdict:
@@ -296,8 +307,10 @@ def validate_regateverdict_criteria_outcomes(
     Returns
     -------
     tuple (ok: bool, missing: list[str])
-        ``ok`` is True if all criteria are present in ``criteria_outcomes``.
-        ``missing`` lists criteria not found in the verdict's criteria_outcomes.
+        ``ok`` is False if ``frozen_criteria`` is empty (reason: ``"empty_criteria"``).
+        Otherwise, ``ok`` is True if all criteria are present in ``criteria_outcomes``.
+        ``missing`` lists criteria not found in the verdict's criteria_outcomes,
+        or ``["empty_criteria"]`` if the frozen criteria list was empty.
 
     Notes
     -----
@@ -307,6 +320,9 @@ def validate_regateverdict_criteria_outcomes(
     legacy dict form (criterion-string keys) is also tolerated so older verdicts
     validate unchanged; malformed entries are skipped rather than raising.
     """
+    if not frozen_criteria:
+        return (False, ["empty_criteria"])
+    
     outcomes = verdict.get("criteria_outcomes", [])
     if isinstance(outcomes, dict):
         # Legacy form: criterion strings as dict keys.

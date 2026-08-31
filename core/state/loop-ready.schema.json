@@ -3,8 +3,13 @@
   "title": "loop-ready",
   "description": "Written by the orchestrator to signal that a loop is prepared and ready for execution. Read by the main thread and the worker agent.",
   "type": "object",
-  "required": ["loop_name", "loop_file", "task_name", "todos_count", "prepared_at", "status", "handoff_injected"],
+  "required": ["phase", "loop_name", "loop_file", "task_name", "todos_count", "prepared_at", "status", "handoff_injected"],
   "properties": {
+    "phase": {
+      "type": "string",
+      "pattern": "^phase-\\d+$",
+      "description": "Phase identifier, e.g. phase-16. Derived from loop_file path or provided explicitly."
+    },
     "loop_name": {
       "type": "string",
       "pattern": "^ralph-loop-\\d{3}$",

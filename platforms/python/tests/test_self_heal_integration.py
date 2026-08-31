@@ -161,7 +161,7 @@ class TestSyntheticTriageRouting:
         assert not ok, (
             "A diff touching a NEVER-TOUCH path must fail the allowlist check."
         )
-        assert never_touch_path in violations, (
+        assert any(v[0] == never_touch_path for v in violations), (
             f"{never_touch_path!r} must appear in the violations list."
         )
 
@@ -226,7 +226,7 @@ class TestDiffAllowlistBreachEscalation:
         assert not ok, (
             f"Diff touching {forbidden_path!r} must fail allowlist check."
         )
-        assert forbidden_path in violations
+        assert any(v[0] == forbidden_path for v in violations)
 
     def test_allowlist_breach_escalation_no_commit(self):
         """
@@ -258,7 +258,7 @@ class TestDiffAllowlistBreachEscalation:
         assert not commit_would_proceed, (
             "commit_would_proceed must be False when a NEVER-TOUCH violation is found."
         )
-        assert ".advanced-plans/phases/phase-14/loops.md" in violations
+        assert any(v[0] == ".advanced-plans/phases/phase-14/loops.md" for v in violations)
 
     def test_clean_diff_allows_regate(self):
         """
@@ -505,7 +505,7 @@ class TestFullSyntheticRemediationTrace:
         assert not commit_proceeded, (
             "commit_proceeded must remain False when allowlist is breached."
         )
-        assert never_touch_path in violations
+        assert any(v[0] == never_touch_path for v in violations)
         assert allowlist_ok is False
 
     def test_clean_remediation_proceeds_to_regate(self, tmp_path):
