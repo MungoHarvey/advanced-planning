@@ -82,9 +82,27 @@ do_cp() {
 
 do_ln() {
     # do_ln SRC DEST (symlink)
+    # Uses -n to treat DEST as a normal file even if it exists as a directory
+    # (prevents creating the link inside an existing real directory).
+    # Only removes DEST if it is already a symlink; refuses real directories.
     if [ "$DRY_RUN" = true ]; then
-        echo "  [dry-run] ln -sf $1 $2"
+        echo "  [dry-run] ln -sfn $1 $2"
     else
+        # Check if destination exists and is a real directory (not a symlink)
+        if [ -e "$2" ] || [ -L "$2" ]; then
+            if [ -L "$2" ]; then
+                # It's a symlink — safe to replace
+                rm -f "$2"
+            elif [ -d "$2" ]; then
+                # Real directory — refuse to delete
+                echo "ERROR: $2 exists as a real directory. Remove or rename it before installing." >&2
+                exit 1
+            elif [ -f "$2" ]; then
+                # Regular file — refuse to delete
+                echo "ERROR: $2 exists as a regular file. Remove or rename it before installing." >&2
+                exit 1
+            fi
+        fi
         ln -sf "$1" "$2"
     fi
 }
@@ -483,8 +501,18 @@ if [ "$SELF_INSTALL" = true ]; then
         echo "  [dry-run] ln -sf each .md from $REPO_ROOT/core/agents and $REPO_ROOT/platforms/claude-code/agents into $CLAUDE_DIR/agents"
         echo "  [dry-run] ln -sf $REPO_ROOT/core/schemas $CLAUDE_DIR/schemas"
     else
-        # Remove existing dirs/links before creating symlinks
-        rm -rf "$CLAUDE_DIR/commands" "$CLAUDE_DIR/skills" "$CLAUDE_DIR/schemas"
+        # Remove existing symlinks before creating new ones; refuse real directories.
+        # This is self-install (repo installing into itself), so the paths are known
+        # and under the repo's control — but still refuse to delete a real directory
+        # that might have been created by hand or by another tool.
+        for dir in "$CLAUDE_DIR/commands" "$CLAUDE_DIR/skills" "$CLAUDE_DIR/schemas"; do
+            if [ -L "$dir" ]; then
+                rm -f "$dir"
+            elif [ -e "$dir" ]; then
+                echo "ERROR: $dir exists as a real directory/file. Remove or rename it before self-install." >&2
+                exit 1
+            fi
+        done
         ln -sf "$REPO_ROOT/platforms/claude-code/commands" "$CLAUDE_DIR/commands"
         say "  + commands -> platforms/claude-code/commands"
         ln -sf "$REPO_ROOT/core/skills" "$CLAUDE_DIR/skills"
@@ -492,7 +520,12 @@ if [ "$SELF_INSTALL" = true ]; then
         ln -sf "$REPO_ROOT/core/schemas" "$CLAUDE_DIR/schemas"
         say "  + schemas -> core/schemas"
         # Agents: symlink core/agents; copy platform-specific ones alongside
-        rm -rf "$CLAUDE_DIR/agents"
+        if [ -L "$CLAUDE_DIR/agents" ]; then
+            rm -f "$CLAUDE_DIR/agents"
+        elif [ -e "$CLAUDE_DIR/agents" ]; then
+            echo "ERROR: $CLAUDE_DIR/agents exists as a real directory/file. Remove or rename it before self-install." >&2
+            exit 1
+        fi
         mkdir -p "$CLAUDE_DIR/agents"
         for agent in "$REPO_ROOT/core/agents/"*.md; do
             [ -f "$agent" ] || continue
@@ -560,9 +593,13 @@ fi
 
 # Write settings.json
 SETTINGS="$CLAUDE_DIR/settings.json"
+SETTINGS_PLANNING="$CLAUDE_DIR/settings.planning.json"
 say "Writing settings.json..."
 if [ "$DRY_RUN" = false ]; then
-    cat > "$SETTINGS" <<EOF
+    if [ -f "$SETTINGS" ]; then
+        # settings.json already exists — preserve it byte-identical
+        # Write the planning settings to settings.planning.json instead
+        cat > "$SETTINGS_PLANNING" <<EOF
 {
   "permissions": {
     "allow": [
@@ -580,8 +617,37 @@ if [ "$DRY_RUN" = false ]; then
   }
 }
 EOF
+        say "  ! $SETTINGS already exists — preserved as-is"
+        say "  + $SETTINGS_PLANNING (merge permissions and planning keys by hand if needed)"
+    else
+        # No existing settings.json — write it as normal
+        cat > "$SETTINGS" <<EOF
+{
+  "permissions": {
+    "allow": [
+      "Read(.advanced-plans/**)",
+      "Write(.advanced-plans/**)",
+      "Edit(.advanced-plans/**)",
+      "MultiEdit(.advanced-plans/**)"
+    ]
+  },
+  "planning": {
+    "state_dir": ".advanced-plans/state",
+    "skills_dir": ".claude/skills",
+    "agents_dir": ".claude/agents",
+    "plans_dir": ".advanced-plans"
+  }
+}
+EOF
+        say "  + $SETTINGS"
+    fi
 else
-    echo "  [dry-run] write $SETTINGS"
+    # Dry run: report which branch would be taken
+    if [ -f "$SETTINGS" ]; then
+        echo "  [dry-run] $SETTINGS exists — would write $SETTINGS_PLANNING instead"
+    else
+        echo "  [dry-run] write $SETTINGS"
+    fi
 fi
 
 say ""
