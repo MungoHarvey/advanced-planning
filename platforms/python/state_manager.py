@@ -57,6 +57,7 @@ def write_loop_ready(
     handoff_done: str = "",
     handoff_failed: str = "",
     handoff_needed: str = "",
+    phase: str | None = None,
 ) -> Path:
     """Write ``loop-ready.json`` to signal the worker that a loop is prepared.
 
@@ -79,13 +80,36 @@ def write_loop_ready(
         ``failed`` field from the prior loop's handoff_summary.
     handoff_needed:
         ``needed`` field from the prior loop's handoff_summary.
+    phase:
+        Explicit phase identifier (e.g. ``"phase-16"``). If not provided, derived
+        from ``loop_file`` (the directory name under ``phases/``). If the path does
+        not match the expected shape and no explicit phase is given, raises.
 
     Returns
     -------
     Path
         Absolute path to the written file.
+
+    Raises
+    ------
+    ValueError
+        If ``phase`` is not provided and ``loop_file`` does not contain a
+        ``phase-N`` segment, since a state file without a phase cannot be
+        shown to belong to any phase.
     """
+    # Derive phase from loop_file if not explicitly provided
+    if phase is None:
+        phase_match = re.search(r"phases/(phase-\d+)/", loop_file.replace("\\", "/"))
+        if phase_match:
+            phase = phase_match.group(1)
+        else:
+            raise ValueError(
+                f"loop_file {loop_file!r} does not contain a phase-N segment; "
+                "an explicit phase= keyword must be provided"
+            )
+    
     payload: dict[str, Any] = {
+        "phase": phase,
         "loop_name": loop_name,
         "loop_file": loop_file,
         "task_name": task_name,
@@ -416,6 +440,9 @@ def archive_cross_phase_state(
     Called by the orchestrator at startup (Step 0 of the stale-state cleanup
     protocol documented in core/agents/orchestrator.md).
 
+    A state file with no ``phase`` field (or an empty one) cannot be shown to
+    belong to this phase, so it is archived as stale.
+
     Parameters
     ----------
     state_dir:
@@ -440,8 +467,13 @@ def archive_cross_phase_state(
     data = json.loads(ready_path.read_text(encoding="utf-8"))
     old_phase = data.get("phase", "")
 
-    if not old_phase or old_phase == current_phase:
-        # Phase matches or field absent -- nothing to archive.
+    # A missing or empty phase field means the file cannot be shown to belong
+    # to this phase — archive it as stale.
+    if not old_phase:
+        # Phase field absent or empty — treat as stale and archive
+        pass  # Continue to archive
+    elif old_phase == current_phase:
+        # Phase matches — this is the current phase's file, do not archive
         return None
 
     # Build archive directory and timestamp.

@@ -67,20 +67,22 @@ class TestWriteReadLoopReady:
         write_loop_ready(
             state_dir,
             loop_name="ralph-loop-001",
-            loop_file=".advanced-plans/x.md",
+            loop_file=".advanced-plans/phases/phase-1/loops.md",
             task_name="T",
             todos_count=1,
         )
         data = read_loop_ready(state_dir)
         # ISO 8601 strings contain 'T' separator
         assert "T" in data["prepared_at"]
+        # Verify phase was derived
+        assert data["phase"] == "phase-1"
 
     def test_creates_state_dir_if_absent(self, tmp_path):
         new_state = tmp_path / "new" / "nested" / "state"
         write_loop_ready(
             new_state,
             loop_name="ralph-loop-001",
-            loop_file=".advanced-plans/x.md",
+            loop_file=".advanced-plans/phases/phase-1/loops.md",
             task_name="T",
             todos_count=1,
         )
@@ -190,10 +192,11 @@ class TestGetStatus:
         write_loop_ready(
             state_dir,
             loop_name="ralph-loop-001",
-            loop_file=".advanced-plans/x.md",
+            loop_file=".advanced-plans/phases/phase-1/loops.md",
             task_name="T",
             todos_count=2,
         )
         s = get_status(state_dir)
         assert s["has_loop_ready"] is True
         assert s["loop_ready"]["loop_name"] == "ralph-loop-001"
+        assert s["loop_ready"]["phase"] == "phase-1"

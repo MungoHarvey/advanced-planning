@@ -42,6 +42,7 @@ def schema_dir():
 def valid_loop_ready():
     """A valid loop-ready document."""
     return {
+        "phase": "phase-1",
         "loop_name": "ralph-loop-001",
         "loop_file": ".advanced-plans/phases/phase-1/loops.md",
         "task_name": "Schema Definitions",

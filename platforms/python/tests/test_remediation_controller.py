@@ -176,7 +176,11 @@ class TestIsPathNeverTouch:
 
 
 class TestValidateDiffAllowlist:
-    """validate_diff_allowlist: rejects diffs touching forbidden paths."""
+    """validate_diff_allowlist: rejects diffs touching forbidden paths.
+    
+    Returns (ok, violations) where violations is a list of (path, reason) tuples.
+    Reason is either "never_touch" or "not_allowlisted".
+    """
 
     def test_clean_diff_passes(self):
         ok, violations = validate_diff_allowlist([
@@ -192,7 +196,8 @@ class TestValidateDiffAllowlist:
             ".advanced-plans/phases/phase-13/loops.md",  # forbidden
         ])
         assert not ok
-        assert ".advanced-plans/phases/phase-13/loops.md" in violations
+        # violations is list of (path, reason) tuples
+        assert any(v[0] == ".advanced-plans/phases/phase-13/loops.md" for v in violations)
 
     def test_multiple_forbidden_paths_all_reported(self):
         ok, violations = validate_diff_allowlist([
@@ -226,7 +231,7 @@ class TestValidateDiffAllowlist:
         ]
         ok, violations = validate_diff_allowlist(gaming_diff)
         assert not ok, "Gaming attempt touching loops.md must fail allowlist check"
-        assert ".advanced-plans/phases/phase-13/loops.md" in violations
+        assert any(v[0] == ".advanced-plans/phases/phase-13/loops.md" for v in violations)
         # Controller must escalate to versioned-retry+STOP, not re-gate:
         should_escalate = not ok
         assert should_escalate, "validate_diff_allowlist failure must drive escalation"
@@ -257,7 +262,26 @@ class TestValidateDiffAllowlist:
             "Editing criteria-frozen.md is a never-touch violation — "
             "it must be rejected as a gate-gaming attempt."
         )
-        assert ".advanced-plans/phases/phase-13/criteria-frozen.md" in violations
+        assert any(v[0] == ".advanced-plans/phases/phase-13/criteria-frozen.md" for v in violations)
+
+    def test_not_allowlisted_path_is_violation(self):
+        """A path not on the allowlist (and not never-touch) is a violation."""
+        ok, violations = validate_diff_allowlist([
+            ".github/workflows/ci.yml",  # not on allowlist
+        ])
+        assert not ok
+        assert any(v[0] == ".github/workflows/ci.yml" and v[1] == "not_allowlisted" for v in violations)
+
+    def test_never_touch_and_not_allowlisted_are_distinguishable(self):
+        """Never-touch and not-allowlisted violations have distinct reasons."""
+        ok, violations = validate_diff_allowlist([
+            ".advanced-plans/phases/phase-13/loops.md",  # never_touch
+            ".github/workflows/ci.yml",  # not_allowlisted
+        ])
+        assert not ok
+        reasons = {v[1] for v in violations}
+        assert "never_touch" in reasons
+        assert "not_allowlisted" in reasons
 
 
 # ---------------------------------------------------------------------------
@@ -407,11 +431,14 @@ class TestValidateRegateVerdictCriteriaOutcomes:
         assert not ok
         assert set(missing) == {"criterion A", "criterion B"}
 
-    def test_empty_frozen_criteria_always_passes(self):
-        """Edge case: no frozen criteria — nothing to check."""
+    def test_empty_frozen_criteria_is_not_ok(self):
+        """
+        An empty frozen_criteria list means the criteria file was empty,
+        unparsed, or never loaded — this is a failure, not success.
+        """
         ok, missing = validate_regateverdict_criteria_outcomes({}, [])
-        assert ok
-        assert missing == []
+        assert not ok, "Empty frozen_criteria must not report ok"
+        assert "empty_criteria" in missing
 
     def test_extra_criteria_in_verdict_ok(self):
         """Verdict may have MORE criteria than frozen — that is fine."""
