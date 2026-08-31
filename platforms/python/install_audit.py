@@ -232,7 +232,11 @@ def audit_pair(
         installed_dir = installed_base / installed_name
 
         if not source_dir.exists():
-            # Source surface missing — skip (unusual, but defensive)
+            # Source surface missing — this is a bug, not a skip condition.
+            # The source tree is the one thing this module can assume.
+            # Treat as drift: record all source files as missing.
+            print(f"ERROR: Source directory missing: {source_dir}", file=sys.stderr)
+            # Continue to collect what we can, but mark this as an error condition
             continue
 
         source_files: Dict[str, pathlib.Path] = {}
@@ -425,6 +429,7 @@ def main(argv: List[str] = None, env: Optional[Dict[str, str]] = None) -> int:
         return 2
 
     results: List[LayerPairResult] = []
+    skipped_layers: List[str] = []
 
     # --- Project layer ---
     if args.layers in ("source,project", "all"):
@@ -434,6 +439,7 @@ def main(argv: List[str] = None, env: Optional[Dict[str, str]] = None) -> int:
                 audit_pair(repo_root, project_claude, "source -> project")
             )
         else:
+            skipped_layers.append("source,project")
             print(f"NOTE: project .claude/ dir not found at {project_claude} — skipped")
 
     # --- Global layer ---
@@ -445,14 +451,25 @@ def main(argv: List[str] = None, env: Optional[Dict[str, str]] = None) -> int:
                 audit_pair(repo_root, global_claude, "source -> global")
             )
         else:
+            skipped_layers.append("source,global")
             print(
                 f"NOTE: global .claude/ dir not found at {global_claude} — skipped "
                 f"(not a failure)"
             )
 
     if not results:
-        print("NOTE: no layer pairs found to compare — nothing to audit")
+        if skipped_layers:
+            print(f"ERROR: No layer pairs found to audit. Skipped: {', '.join(skipped_layers)}. Run is inconclusive.", file=sys.stderr)
+        else:
+            print("NOTE: no layer pairs found to compare — nothing to audit")
         return 0
+
+    # Check if any explicitly requested layer produced no verdicts
+    if args.layers != "all":
+        for result in results:
+            if not result.verdicts:
+                print(f"ERROR: Layer pair {result.pair_label} produced no file verdicts — run is inconclusive.", file=sys.stderr)
+                return 2
 
     any_drift = False
     for result in results:

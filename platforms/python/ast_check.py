@@ -170,10 +170,18 @@ def _collect_py_files(paths: List[str]) -> List[pathlib.Path]:
     -------
     list of pathlib.Path
         Deduplicated, sorted list of absolute paths.
+
+    Raises
+    ------
+    SystemExit
+        If any PATH argument does not exist (exit code 2).
     """
     result = set()
     for raw in paths:
         p = pathlib.Path(raw).resolve()
+        if not p.exists():
+            print(f"ERROR: PATH does not exist: {raw}", file=sys.stderr)
+            sys.exit(2)
         if p.is_dir():
             for f in p.rglob("*.py"):
                 result.add(f)
@@ -230,18 +238,26 @@ def main(argv: List[str] = None) -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
 
-    # Apply exclusion patterns
+    # Apply exclusion patterns against path relative to cwd, not absolute path
     exclude_patterns = args.exclude
     if exclude_patterns:
         filtered = []
+        cwd = pathlib.Path.cwd().resolve()
         for f in all_files:
             excluded = False
+            try:
+                rel_path = f.relative_to(cwd)
+            except ValueError:
+                # File is not under cwd; use absolute path for matching
+                rel_path = f
+            rel_posix = rel_path.as_posix()
             for pattern in exclude_patterns:
-                if pathlib.PurePosixPath(f.as_posix()).match(pattern):
+                # Match against relative path segments, not absolute path
+                if pathlib.PurePosixPath(rel_posix).match(pattern):
                     excluded = True
                     break
-                # Also check if 'pattern' appears as a path segment
-                if pattern.rstrip("/") in [part for part in f.parts]:
+                # Also check if 'pattern' appears as a path segment in the relative path
+                if pattern.rstrip("/") in [part for part in rel_path.parts]:
                     excluded = True
                     break
             if not excluded:
@@ -249,8 +265,9 @@ def main(argv: List[str] = None) -> int:
         all_files = filtered
 
     if not all_files:
-        print("No .py files found to check.")
-        return 0
+        searched_paths = ", ".join(args.paths)
+        print(f"ERROR: No .py files found to check. Searched: {searched_paths}", file=sys.stderr)
+        return 2
 
     all_violations: List[Violation] = []
     for f in all_files:
