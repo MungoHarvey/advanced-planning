@@ -9,11 +9,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_Nothing yet._
+
+---
+
+## [0.17.0] - 2026-08-31
+
+Adapter expansion, and the checks that caught what it broke. Driven from the
+Advanced AI Workflows controller programme rather than this repository's own
+loop machinery, so there are no loop numbers to cite: the work arrived as seven
+stacked branches and a nine-finding cross-model review that grew to fifteen.
+
+Two new host adapters (Codex, OpenCode) join claude-code, sharing one skill tree
+through an ownership mechanism so neither uninstall removes the other's
+registrations. Plannotator is gone. A zero-dependency JSON Schema validator and
+three schemas make the controller/worker contract checkable. And a run of
+repairs to checks that could not fail -- the recurring defect of this release,
+found in five separate places.
+
+### Added
+
+- **Codex adapter** -- `setup/codex/install.{sh,ps1}`, uninstallers for both,
+  and a shared routing skill. `skill-ownership.json` records which hosts
+  registered which skills, so the last approved owner leaving does not strip a
+  third party's registrations.
+- **OpenCode adapter** -- `setup/opencode/`, the Codex scripts with the
+  host-specific changes applied, and `setup/opencode` brought into the install
+  audit.
+- **A zero-dependency JSON Schema validator** (`minischema`) and three schemas:
+  the external task envelope (controller to worker), collected evidence
+  (post-execution), and run contracts. Wired into CI as its own job, with
+  fixtures.
+- `platforms/python/state_validate.py` -- validates `.advanced-plans/state/`
+  against the schemas, anchored on the package location so it resolves from any
+  working directory (Contract 6: an installed project has no `core/`).
+- **Host-neutrality enforcement** in `path_audit` -- host directories, host-only
+  tool names and host permission syntax, scoped to `core/`, with the violations
+  it found resolved.
+- `platforms/python/tests/test_adapter_lifecycle.py` -- install/uninstall pairs
+  for every adapter, and the `AP_REQUIRE_ADAPTER_INTERPRETERS` escalation that
+  turns a missing `sh` or `pwsh` from a silent skip into a failure.
+- `.gitattributes` -- absent until now, which is how CRLF had been arriving
+  unnoticed.
+- An uninstall path for `setup/`, and the destination-link guard it needed.
+
+### Changed
+
+- `minischema` promoted from test helper to production module.
+- CI's Path Convention Audit installs a real global layer and audits against it,
+  rather than auditing a layer a fresh checkout cannot have.
+
+### Removed
+
+- **Plannotator.** The deprecation had been declared complete in two documents
+  and was half done: `/plan-and-phase` Step 5b still detected the plugin and
+  invoked it, and `companion-detection` still told a user without it installed
+  to `git clone` it -- on the same branch whose new adapter READMEs asserted "No
+  Plannotator". Now removed, with a detector that carries its own self-test.
+
 ### Fixed
 
 - **The shared Python runtime is reachable from an installed project.** 14 call
   sites across 6 command files invoked `.advanced-plans/bin/ap.py`, but no
-  installer had ever shipped `platforms/python/` into a project — so every
+  installer had ever shipped `platforms/python/` into a project -- so every
   command died on the interpreter's own "can't open file", naming neither the
   product nor the repair. The installers now record `runtime.json` and copy the
   launcher (outside the scaffold guard, so an upgrade refreshes a stale
@@ -26,7 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   install would otherwise land where native Python never looks.
 - **The manifest walk stops at a project boundary.** A project holding
   `.advanced-plans/` without a manifest, or any `.git` without one, no longer
-  borrows an enclosing checkout's runtime — it falls through to the global
+  borrows an enclosing checkout's runtime -- it falls through to the global
   record, and names both places it looked when there is none. A linked worktree
   or submodule (`.git` as a *file*, not a directory) is recognised.
 - **The in-line `runpy` call sites print the guard, not a traceback.**
@@ -35,6 +93,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   permanently stale: the install-time launcher path is canonical, not drift,
   and is normalised out before hashing. Source call sites are quoted and
   raw-prefixed so the installers' rewrite swaps only the path.
+- **Install no longer strips CRLF.** Source line endings are preserved in both
+  hosts, with a self-detecting test.
+- **Installers point at documentation that exists**, pinned so it stays that way.
+- Skill trees are walked recursively when checking and rewriting, and `--global`
+  is compared against what it would actually write rather than the raw source.
+- The uninstall ownership merge is correct in both `sh` and `ps1`, and prunes
+  `.agents/` properly.
+- Workers may commit, and sign their commits, so authorship is visible in the
+  history rather than inferred.
+
+### Fixed -- checks that could not fail
+
+The recurring defect of this release. A check whose subject is a string someone
+interpolated, rather than a fact read off the machine, reports success without
+having looked at anything. Five instances, each now carrying a test proven to
+fail when the defect is put back:
+
+- **Two differential tests could pass vacuously** -- the detector matched
+  nothing, so the comparison was between two empty sets.
+- **`test_removal_counts_agree` could not fail** at all.
+- **The Path Convention Audit job had never once been able to pass.** It audited
+  `--layers source,project`; `.gitignore` excludes `.claude/*` but tracks
+  `.claude/settings.json`, so on a runner `.claude/` exists while its
+  subdirectories do not, and the "not found -- skipped" guard tests directory
+  presence. One tracked file defeated it and all 27 source files reported
+  missing. The minimal repair would have been vacuous in the other direction --
+  a missing layer is skipped and returns 0 -- so the runner now installs a real
+  global layer, which makes a pass mean the installer reproduces every source
+  file byte-for-byte.
+- **A test module that could not pass on Linux.**
+  `test_home_resolution_agreement.py` set `HOME` to a path that does not exist.
+  Windows `pwsh` does not care; Linux `pwsh` exits 70 building its own profile,
+  before the function under test runs. Six cases had failed on every Linux run
+  since the module was introduced, and passed on Windows throughout. Invisible
+  from a Windows machine, and found only by opening the pull requests.
+- **A CI step no branch had ever reached.** `pytest` failed ahead of "Verify no
+  external dependencies", so `ast_check` had never executed on any branch in the
+  chain. Fixing the module above is what exposed it.
+
+### Changed -- the import allow-set
+
+`platforms` joins `core/constraints.json`'s `allowed_imports`. It is this
+project's own package, not an external dependency, so the stdlib-only policy is
+unchanged. The cost is recorded beside the entry rather than left implicit: an
+installer copies `ap_launcher.py` into a directory where the package does not
+exist, so a `platforms` import *there* breaks the installed launcher and
+`ast_check` no longer catches it.
+
+`TestShippedModulesImportStdlibOnly` restores that protection for exactly the
+modules an installer ships. It reads which modules those are off the installers
+rather than naming one, so a module that starts being shipped is covered the day
+it starts -- and reading it properly corrected the finding from one shipping
+site to six, across all three hosts.
 
 ---
 
