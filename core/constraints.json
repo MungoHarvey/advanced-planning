@@ -15,7 +15,8 @@
     "textwrap",
     "argparse",
     "asyncio",
-    "runpy"
+    "runpy",
+    "platforms"
   ],
   "explicitly_excluded": [
     "__future__"
@@ -24,6 +25,7 @@
     "__future__ is explicitly excluded: it is not an external dependency but its presence historically indicated feature-flag usage incompatible with this framework's stdlib-only policy.",
     "All entries in allowed_imports are top-level module names. Sub-module imports (e.g. pathlib.Path) are permitted when the top-level name is in the allow-set.",
     "Test files under platforms/python/tests/ are exempt from this constraint (pytest is allowed in tests).",
-    "runpy was added for platforms/python/ap_launcher.py, the shared-runtime launcher. It reproduces `python -m <module>` semantics exactly - including __name__ == '__main__' - for call sites that used to shell out with -m. The alternative, importing the module and calling main(), assumes every module in the runtime exposes one; the alternative of __import__ would pass this check by hiding from it, which is worse than widening it. runpy is standard library, so the stdlib-only policy is unaffected."
+    "runpy was added for platforms/python/ap_launcher.py, the shared-runtime launcher. It reproduces `python -m <module>` semantics exactly - including __name__ == '__main__' - for call sites that used to shell out with -m. The alternative, importing the module and calling main(), assumes every module in the runtime exposes one; the alternative of __import__ would pass this check by hiding from it, which is worse than widening it. runpy is standard library, so the stdlib-only policy is unaffected.",
+    "platforms was added for platforms/python/state_validate.py, which imports minischema and anchors core/state resolution to the package location - Contract 6: an installed project has no core/ directory, so resolution cannot go through os.getcwd(). platforms is this project's own package rather than an external dependency, so the stdlib-only policy is unaffected. The cost is real and is recorded here deliberately: setup/claude-code/install.sh copies ap_launcher.py to bin/ap.py, where the platforms package does not exist, so a platforms import in that one module would break the installed launcher and this check no longer catches it. install.sh states that no install ships the other modules, so ap_launcher.py is the whole of the exposure. The alternative considered was to scope the exemption to unshipped modules and make ap_launcher.py stdlib-only an explicit test; widening was chosen over it."
   ]
 }

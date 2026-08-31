@@ -80,6 +80,23 @@ class TestLoadAllowedImports:
             # of an installed project. Standard library, so the stdlib-only
             # policy is unchanged. See core/constraints.json notes.
             "runpy",
+            # Added for platforms/python/state_validate.py, which imports
+            # minischema and anchors core/state resolution to the package
+            # location (Contract 6: an installed project has no core/, so
+            # resolution cannot go through os.getcwd()). platforms is this
+            # project's own package rather than an external dependency, so the
+            # stdlib-only policy is unchanged.
+            #
+            # What this stops catching, stated plainly because the entry is
+            # what removes it: setup/claude-code/install.sh copies
+            # ap_launcher.py to bin/ap.py, where the platforms package does not
+            # exist. A platforms import in that one module would break the
+            # installed launcher, and this check no longer sees it. install.sh
+            # ships none of the other modules, so ap_launcher.py is the whole
+            # of the exposure. The alternative was to scope the exemption to
+            # unshipped modules and make ap_launcher.py stdlib-only its own
+            # test; widening was chosen over it.
+            "platforms",
         }
         result = load_allowed_imports()
         assert expected == result, (
