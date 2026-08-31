@@ -6,6 +6,7 @@ when the ownership registry cannot be read, unless --force-no-registry is passed
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -15,6 +16,40 @@ import pytest
 
 
 # ── Helper utilities ────────────────────────────────────────────────────────────
+
+def _find_git_bash():
+    """Return a path to Git Bash, or None.
+
+    Deliberately not shutil.which("bash"): on Windows that finds WSL,
+    which resolves /mnt/c/... and so cannot open a Windows path. Git Bash
+    runs these scripts on Windows without trouble.
+    """
+    if sys.platform != "win32":
+        return shutil.which("bash")
+    candidates = [
+        Path(os.environ.get("ProgramFiles", r"C:\Program Files"))
+        / "Git" / "bin" / "bash.exe",
+        Path(os.environ.get("LOCALAPPDATA", ""))
+        / "Programs" / "Git" / "bin" / "bash.exe",
+        Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)"))
+        / "Git" / "bin" / "bash.exe",
+    ]
+    for candidate in candidates:
+        try:
+            if candidate.is_file():
+                return str(candidate)
+        except OSError:
+            continue
+    return None
+
+
+GIT_BASH = _find_git_bash()
+
+
+def _fwd(path) -> str:
+    """A Windows path in the forward-slash form Git Bash accepts."""
+    return str(path).replace(os.sep, "/")
+
 
 def _setup_fake_install(base_dir: Path, adapter: str) -> Path:
     """Create a fake install with skills, bin/ap.py, and runtime.json.
@@ -46,7 +81,9 @@ def _setup_fake_install(base_dir: Path, adapter: str) -> Path:
 def _run_shell_uninstall(project_dir: Path, adapter: str, extra_args: list[str] | None = None) -> tuple[int, str, str]:
     """Run the shell uninstall script and return (returncode, stdout, stderr)."""
     script_path = Path(__file__).parents[3] / "setup" / adapter / "uninstall.sh"
-    cmd = [str(script_path), "--project", str(project_dir)]
+    # An interpreter is required: a .sh is not directly executable on
+    # Windows, and the bash on PATH there is WSL.
+    cmd = [GIT_BASH, _fwd(script_path), "--project", _fwd(project_dir)]
     if extra_args:
         cmd.extend(extra_args)
     
@@ -54,6 +91,8 @@ def _run_shell_uninstall(project_dir: Path, adapter: str, extra_args: list[str] 
         cmd,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         cwd=str(project_dir),
     )
     return result.returncode, result.stdout, result.stderr
@@ -71,22 +110,22 @@ def _run_powershell_uninstall(project_dir: Path, adapter: str, extra_args: list[
         cmd,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         cwd=str(project_dir),
     )
     return result.returncode, result.stdout, result.stderr
 
 
 def _check_bash_available() -> bool:
-    """Check if bash is available and can run our scripts.
-    
-    On Windows, the system bash.exe is WSL which cannot directly run
-    Windows path shell scripts, so we report bash as unavailable.
+    """Whether Git Bash was found on this machine.
+
+    This used to return False for every Windows host, which skipped the
+    entire shell half of this file on the only platform it runs on. The
+    WSL-on-PATH problem it was reacting to is real; refusing to look for
+    Git Bash was not the remedy.
     """
-    if sys.platform == "win32":
-        # WSL bash on Windows cannot run Windows shell scripts directly
-        return False
-    bash_path = shutil.which("bash")
-    return bash_path is not None
+    return GIT_BASH is not None
 
 
 def _check_pwsh_available() -> bool:
@@ -416,14 +455,70 @@ class TestOpencodeAdapter:
 
 class TestSkipTracking:
     """Ensure tests are not silently skipped."""
-    
-    def test_bash_available_for_reporting(self):
-        """Report whether bash is available."""
-        bash_available = _check_bash_available()
-        # This test always passes but the assertion below tracks it
-        assert bash_available or True, "bash availability tracked for reporting"
-    
-    def test_pwsh_available_for_reporting(self):
-        """Report whether pwsh is available."""
-        pwsh_available = _check_pwsh_available()
-        assert pwsh_available or True, "pwsh availability tracked for reporting"
+
+    def test_at_least_one_host_was_exercised(self):
+        """Fail if both hosts are missing and every test above skipped.
+
+        The previous version of this class asserted `available or True`
+        on each host -- a tautology, in the class named for catching
+        exactly this.
+        """
+        hosts = []
+        if _check_bash_available():
+            hosts.append(f"Git Bash ({GIT_BASH})")
+        if _check_pwsh_available():
+            hosts.append("pwsh")
+        assert hosts, (
+            "Neither Git Bash nor pwsh is available, so every uninstall "
+            "test in this file skipped and this run proved nothing about "
+            "the fail-closed behaviour."
+        )
+
+
+# ── Static checks the shells cannot make for themselves ──────────────────
+
+SCRIPT_DIR = Path(__file__).parents[3] / 'setup'
+SHELL_SCRIPTS = [SCRIPT_DIR / a / 'uninstall.sh' for a in ('codex', 'opencode')]
+
+# A heredoc fed to python, e.g.  python - "$a" "$b" <<'PYEOF'
+_PY_HEREDOC = re.compile(
+    r"^[ \t]*python3?\b[^\n]*<<\s*'?([A-Za-z_]+)'?[ \t]*\n(.*?)\n\1[ \t]*\n",
+    re.S | re.M,
+)
+
+
+class TestScriptStaticChecks:
+    """Checks on the scripts themselves, independent of any host."""
+
+    @pytest.mark.parametrize('script', SHELL_SCRIPTS, ids=lambda p: p.parent.name)
+    def test_embedded_python_compiles(self, script):
+        """The ownership logic lives in a heredoc, where `bash -n` cannot see it.
+
+        A syntax error there -- a mis-indented line, say -- leaves the shell
+        script syntactically valid and only fails at run time, on the exact
+        path that is supposed to protect the user's files. This was not
+        hypothetical: an edit to the remediation message landed at the wrong
+        indent and `bash -n` passed it.
+        """
+        text = script.read_text(encoding='utf-8')
+        blocks = _PY_HEREDOC.findall(text)
+        assert blocks, (
+            f'{script}: no python heredoc found, so this test compiled nothing. '
+            'Either the script changed shape or the pattern is stale.'
+        )
+        for tag, body in blocks:
+            try:
+                compile(body, f'{script}:<<{tag}>>', 'exec')
+            except SyntaxError as exc:
+                pytest.fail(
+                    f'{script} heredoc <<{tag}>> line {exc.lineno}: {exc.msg}'
+                )
+
+    @pytest.mark.parametrize('script', SHELL_SCRIPTS, ids=lambda p: p.parent.name)
+    def test_malformed_advice_is_not_self_defeating(self, script):
+        """Do not tell the user to delete a file whose absence is also refused."""
+        text = script.read_text(encoding='utf-8')
+        assert 'delete it and re-run without' not in text, (
+            f'{script} advises deleting the malformed registry, but a missing '
+            'registry is refused on the very next branch. The advice cannot work.'
+        )

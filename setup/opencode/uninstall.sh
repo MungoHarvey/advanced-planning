@@ -213,7 +213,8 @@ else:
     except (json.JSONDecodeError, ValueError) as exc:
         if not force_no_registry:
             sys.stderr.write(f"uninstall.sh: {owner_file} is malformed JSON ({exc})\n")
-            sys.stderr.write("uninstall.sh: fix: repair the file or delete it and re-run without --force-no-registry.\n")
+            sys.stderr.write("uninstall.sh: fix: repair the JSON so it parses, or re-run the adapter installer to regenerate the registry.\n")
+            sys.stderr.write("uninstall.sh: deleting the file does not help: a missing registry is refused for the same reason.\n")
             sys.stderr.write(f"uninstall.sh: to proceed anyway (DANGEROUS: may delete shared files including bin/ap.py and runtime.json), re-run with --force-no-registry.\n")
             sys.exit(1)
         # force_no_registry=True: proceed with empty registry after warning

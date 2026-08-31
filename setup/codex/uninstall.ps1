@@ -144,7 +144,8 @@ function Invoke-ApOwnershipRemoval([string]$SkillsDir, [string]$OwnershipFile) {
         } catch {
             if (-not $ForceNoRegistry) {
                 Write-Error "uninstall.ps1: $OwnershipFile is malformed JSON ($_)"
-                Write-Error "uninstall.ps1: fix: repair the file or delete it and re-run without -ForceNoRegistry."
+                Write-Error "uninstall.ps1: fix: repair the JSON so it parses, or re-run the adapter installer to regenerate the registry."
+                Write-Error "uninstall.ps1: deleting the file does not help: a missing registry is refused for the same reason."
                 Write-Error "uninstall.ps1: to proceed anyway (DANGEROUS: may delete shared files including bin\ap.py and runtime.json), re-run with -ForceNoRegistry."
                 exit 1
             }
