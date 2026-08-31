@@ -53,7 +53,7 @@ sh setup/claude-code/install.sh --project /path/to/your/project
 
 This creates `.claude/` in your project:
 
-```
+```text
 .claude/
 ├── commands/     ← Slash commands (11 files)
 │   ├── plan-and-phase.md, new-phase.md, new-loop.md, next-loop.md
@@ -80,7 +80,7 @@ This creates `.claude/` in your project:
 
 Plans and gate verdicts are stored in the project root:
 
-```
+```text
 plans/
 ├── phase-N.md, phase-N-ralph-loops.md    ← plan files
 ├── PLANS-INDEX.md                        ← master tracker with version columns
@@ -110,7 +110,7 @@ sh setup/claude-code/install.sh --global
 
 This installs into `~/.claude/`:
 
-```
+```text
 ~/.claude/
 ├── commands/     ← Slash commands available in every project
 ├── skills/       ← Core planning skills (global fallback)
@@ -218,7 +218,7 @@ After installation, these commands are available in Claude Code:
 
 ## How `/next-loop` Works
 
-```
+```text
 1. Main thread reads plans/ to find the next pending loop
 2. Spawns orchestrator (Sonnet): reads loop, populates todos if needed, writes loop-ready.json
 3. Spawns worker (Sonnet): reads loop-ready.json, executes todos with targeted skill injection
@@ -231,7 +231,7 @@ thread (the `/next-loop` command) handles all sequencing.
 
 ## How `/run-gate` Works
 
-```
+```text
 1. Main thread verifies all loops in the phase are complete
 2. Creates gate-review-mode sentinel (restricts agents to read-only + verdict writes)
 3. Spawns gate agents sequentially (default: code-review-agent, phase-goals-agent)
@@ -242,7 +242,7 @@ thread (the `/next-loop` command) handles all sequencing.
 
 ## How `/next-phase` Works
 
-```
+```text
 1. Runs gate review (same as /run-gate)
 2. On pass: marks phase complete, updates CLAUDE.md, prompts for /new-phase
 3. On fail: creates versioned retry file (phase-N-ralph-loops-v2.md),
@@ -262,27 +262,27 @@ claude  # opens Claude Code in this project
 
 In the Claude Code session:
 
-```
+```text
 /plan-and-phase
 ```
 
 Claude explores the codebase read-only, presents findings for review, then runs the full
 planning pipeline. Alternatively, if you already know what you want to build:
 
-```
+```text
 /new-phase
 ```
 
 Then run:
 
-```
+```text
 /next-loop          ← execute one loop at a time
 /next-loop --auto   ← chain all loops until the phase is done
 ```
 
 Check progress at any time:
 
-```
+```text
 /progress-report
 ```
 
@@ -290,7 +290,7 @@ Check progress at any time:
 
 ## Project Layout After First Loop
 
-```
+```text
 your-project/
 ├── .claude/               ← installed by setup/claude-code/install.sh
 │   ├── commands/
@@ -368,7 +368,7 @@ The right-hand column is the reason this is not `rm -rf .advanced-plans`. The
 shared Python runtime lives in the same directory as your planning record — the
 installer creates that directory and migrates a legacy `plans/` folder into it —
 so removing the directory would remove your work along with the mechanism.
-Uninstalling is therefore a removal of a *known set of names*, and a file the
+Uninstalling is therefore a removal of a _known set of names_, and a file the
 checkout does not provide is treated as yours.
 
 `settings.json` is reported and never removed. The installer writes it only when

@@ -53,7 +53,7 @@ Prints the paths to reference skills manually, without copying any files:
 
 After `--project` install, open a Claude Code session in your project and:
 
-**1. Add Planning State to your CLAUDE.md**
+### 1. Add Planning State to your CLAUDE.md
 
 Copy the `## Planning State` section from the installed template:
 
@@ -63,11 +63,11 @@ cat .claude/claude-md-template.md
 
 Paste the `## Planning State` block into your project's `CLAUDE.md`.
 
-**2. Create your first phase plan**
+### 2. Create your first phase plan
 
 Option A — Explore first, then plan (recommended for unfamiliar codebases):
 
-```
+```text
 /plan-and-phase Implement a REST API for user authentication with JWT tokens
 ```
 
@@ -76,40 +76,40 @@ then runs the full planning pipeline.
 
 Option B — Jump straight to planning (when you already know the codebase):
 
-```
+```text
 /new-phase Implement a REST API for user authentication with JWT tokens
 ```
 
 Both options generate a structured phase plan and automatically decompose it into executable ralph loops.
 
-**3. Check what was planned**
+### 3. Check what was planned
 
-```
+```text
 /loop-status
 ```
 
 Review the loops, todos, and skill assignments before execution begins.
 
-**4. Execute loops**
+### 4. Execute loops
 
 Single loop:
 
-```
+```text
 /next-loop
 ```
 
 All loops, chained automatically:
 
-```
+```text
 /next-loop --auto
 ```
 
 Claude spawns `ralph-orchestrator` (Sonnet) to prepare each loop, then `ralph-loop-worker` (Haiku)
 to execute it. Each todo is worked with its assigned skill loaded just-in-time.
 
-**5. Review progress**
+### 5. Review progress
 
-```
+```text
 /progress-report
 ```
 
@@ -155,7 +155,7 @@ markdown report. Useful after an `--auto` run or when resuming work across sessi
 
 ## Directory Structure After Install
 
-```
+```text
 your-project/
 └── .claude/
     ├── commands/           ← Slash commands (11 files)
@@ -192,7 +192,7 @@ your-project/
 
 Each `/next-loop` cycle runs two agents sequentially:
 
-```
+```text
 /next-loop (main thread)
     │
     ├─ Spawn ralph-orchestrator (Sonnet)

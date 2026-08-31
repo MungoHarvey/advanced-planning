@@ -10,7 +10,7 @@ Run the complete planning pipeline end-to-end. No manual steps required.
 
 ## Pipeline
 
-```
+```text
 1. phase-plan-creator           → generate structured phase plan
 2. ralph-loop-planner           → decompose into loop stubs
 3. plan-todos                   → populate todos[] for every loop
@@ -42,7 +42,7 @@ Otherwise: `AUTO_EXECUTE = false` (default).
 
 ### 1. Load phase planning skill
 
-```
+```text
 Read .claude/skills/phase-plan-creator/SKILL.md
 Read .claude/skills/phase-plan-creator/references/phase-plan-template.md
 ```
@@ -59,7 +59,7 @@ Follow the phase-plan-creator instructions.
 
 ### 3. Load loop planning skill
 
-```
+```text
 Read .claude/skills/ralph-loop-planner/SKILL.md
 Read .claude/skills/ralph-loop-planner/references/ralph-loop-template.md
 Read .claude/skills/ralph-loop-planner/references/todo-schema.md
@@ -76,7 +76,7 @@ Follow the ralph-loop-planner instructions.
 
 ### 5. Load todo derivation skill
 
-```
+```text
 Read .claude/skills/plan-todos/SKILL.md
 ```
 
@@ -90,7 +90,7 @@ Follow the plan-todos instructions.
 
 ### 7. Load skill identification skill
 
-```
+```text
 Read .claude/skills/plan-skill-identification/SKILL.md
 ```
 
@@ -104,7 +104,7 @@ Follow the plan-skill-identification instructions.
 
 ### 9. Load subagent identification skill
 
-```
+```text
 Read .claude/skills/plan-subagent-identification/SKILL.md
 ```
 
@@ -136,7 +136,7 @@ python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jso
 
 If `AUTO_EXECUTE` is false:
 
-```
+```text
 Planning complete
 
 Phase [N]: [name]
@@ -148,7 +148,7 @@ Run /next-loop to begin execution.
 
 If `AUTO_EXECUTE` is true:
 
-```
+```text
 Planning complete. Beginning autonomous execution...
 
 Phase [N]: [name]

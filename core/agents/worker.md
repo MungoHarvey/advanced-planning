@@ -16,7 +16,7 @@ The worker does **not** plan, restructure, or sequence loops. It executes what t
 
 ## Single Responsibility
 
-```
+```text
 Read loop-ready.json → Execute todos (with skill injection per todo) → Write loop-complete.json → Return
 ```
 
@@ -45,7 +45,7 @@ This is the core execution innovation. The worker loads a skill **immediately be
 
 ### Protocol Steps (per todo)
 
-```
+```text
 For each todo with status: pending, in order:
 
   1. READ THE TODO
@@ -111,7 +111,7 @@ For each todo with status: pending, in order:
 
 ### Pseudocode
 
-```
+```text
 for todo in todos where todo.status == "pending":
     mark_in_progress(todo.id)
 

@@ -42,7 +42,7 @@ python ".advanced-plans/bin/ap.py" install_audit --layers source,project
 If the command exits non-zero (drift detected), print a one-line warning and
 continue — this does **not** block the gate:
 
-```
+```text
 WARN: .claude/ copies are stale vs source — run /sync-install to refresh
 ```
 
@@ -73,7 +73,7 @@ Default agent list (if `--agents` not provided):
 
 Print:
 
-```
+```text
 Gate agents:
   [bullet list of agents]
 ```
@@ -171,7 +171,7 @@ after the join.
 
 Spawn via the Agent tool:
 
-```
+```text
 You are code-review-agent performing a gate review.
 
 Phase: [N]
@@ -267,7 +267,7 @@ send SIGTERM and set `codex_timed_out = true`.
 
 Spawn via the Agent tool while Codex runs in the background:
 
-```
+```text
 You are phase-goals-agent performing a gate review.
 
 Phase: [N]
@@ -417,7 +417,7 @@ If `agg["result"] == "fail"` **OR** `agg["conflicts"]` is non-empty:
 **Unless an auto-remediation policy is configured** (e.g. via a `--auto-remediate` flag
 or a policy field in `PLANNING.md`), pause and ask the user via `AskUserQuestion`:
 
-```
+```text
 Gate review complete.
 
 Overall result: [PASS|FAIL]
@@ -520,7 +520,7 @@ after the `gate_pass` event is written (Step 10.3):
 
    **Push reminder:** after the compact commit, print:
 
-   ```
+   ```text
    NEXT: git push origin main --follow-tags
    ```
 
@@ -534,7 +534,7 @@ retry logic as before.
 
 If gate **passes** (current phase — closeout + compaction performed in Step 10.4):
 
-```
+```text
 Gate PASSED — Phase [N] approved, closed out, and compacted.
   Agents:    [comma-separated list (including codex if contributed)]
   Attempt:   [N]
@@ -553,7 +553,7 @@ NEXT: git push origin main --follow-tags
 
 If gate **passes** but `--phase` targeted a non-current/historical phase (no closeout):
 
-```
+```text
 Gate PASSED — Phase [N] approved (re-gate of a non-current phase; no advance performed).
   Agents:    [comma-separated list (including codex if contributed)]
   Attempt:   [N]
@@ -563,7 +563,7 @@ Gate PASSED — Phase [N] approved (re-gate of a non-current phase; no advance p
 
 If gate **fails**:
 
-```
+```text
 Gate FAILED — Phase [N] did not pass.
   Failed agent: [agent-name]
   Verdict:      [verdict file path]

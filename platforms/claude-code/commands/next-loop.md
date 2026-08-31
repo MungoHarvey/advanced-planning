@@ -109,7 +109,7 @@ DIRTY=$(git status --porcelain | wc -l | tr -d ' ')
     or `~/.claude/skills/resume-review/SKILL.md`).
   - Print the following and **PAUSE for operator acknowledgment** before continuing:
 
-    ```
+    ```text
     WARN: mid-loop death detected.
       loop-ready.json is newer than loop-complete.json AND the working tree is dirty.
       This may mean a previous worker died before completing its loop.
@@ -169,7 +169,7 @@ is loaded.** Do not carry skill context across steps.
 After all three skills have run, the loop's `todos[]` must be fully populated (content,
 skill, agent, outcome, status, priority all set). Print:
 
-```
+```text
 --full: stub loop populated via plan-todos → plan-skill-identification → plan-subagent-identification
   Todos populated: [count]
 ```
@@ -265,7 +265,7 @@ If any validation fails: print the specific error (e.g. `Validation failed: loop
 
 Print:
 
-```
+```text
 -> Preparing: [loop_name] — [task_name]
   Todos:         [todos_count]
   Prior context: [handoff_injected.done, or "first loop" if empty]
@@ -292,7 +292,7 @@ it independently:
    or `~/.claude/skills/[skill]/SKILL.md` (global fallback)
 4. Build the worker prompt addendum:
 
-```
+```text
 Loop: [loop_name]
 Loop file: [loop_file path]
 Todos: [count]
@@ -359,7 +359,7 @@ This is a convention note; no new machinery is required — use the same `histor
 
 ### 10. Print cycle summary
 
-```
+```text
 [loop_name] complete
   Done:   [loop_complete.handoff.done]
   Failed: [loop_complete.handoff.failed or "none"]
@@ -370,7 +370,7 @@ Run /next-loop to continue with the next loop.
 
 If `todos_failed > 0`:
 
-```
+```text
 [N] todos did not complete. Review .advanced-plans/phases/[phase]/loops.md before continuing.
 ```
 
@@ -382,7 +382,7 @@ If `AUTO_MODE` is true:
 
 - **status is "failed"** → stop. Print:
 
-  ```
+  ```text
   Auto-chain stopped: [loop_name] failed.
     Review .advanced-plans/phases/[phase]/loops.md and .advanced-plans/state/loop-complete.json.
     Fix the issue, then run /next-loop to resume.
@@ -390,7 +390,7 @@ If `AUTO_MODE` is true:
 
 - **All loops complete** → stop. Print:
 
-  ```
+  ```text
   Phase complete. All loops finished.
     Run /progress-report to see a summary of what was accomplished.
   ```

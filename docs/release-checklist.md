@@ -284,7 +284,7 @@ because `python-tests` is a matrix over Python 3.10, 3.11 and 3.12:
 
 | Check | What it proves |
 |---|---|
-| Markdown Lint | **Nothing — see below** |
+| Markdown Lint | every shipped `.md` passes the configured rules |
 | JSON Schema Validation | `core/state/*.json` parse |
 | Python Tests (3.10 / 3.11 / 3.12) | the suite passes on all three |
 | Path Convention Audit | path audit clean, then install-layer drift clean |
@@ -299,19 +299,37 @@ because `python-tests` is a matrix over Python 3.10, 3.11 and 3.12:
   Expected: `mergeState: CLEAN` and `SUCCESS` six times. An empty conclusion
   means the check is still running, not that it passed.
 
-> **Known gap — Markdown Lint cannot fail.** The job runs
-> `markdownlint-cli2 … --config .markdownlint.json || true`, and
-> `.markdownlint.json` does not exist in this repository. It has reported
-> `SUCCESS` on every pull request ever opened here and could not have reported
-> anything else. Do not read it as evidence of anything.
+- [ ] **Markdown lints clean locally**
+
+  ```bash
+  out=$(npx markdownlint-cli2 2>&1); rc=$?
+  echo "rc=$rc"
+  ```
+
+  Expected: `rc=0` and `Summary: 0 issues in 0 files` over **94 files**. Run it
+  bare — the globs and the rule config both live in
+  `.markdownlint-cli2.jsonc`, so a bare run is exactly what CI runs. Passing
+  `--config` or a glob on the command line makes the local check diverge from
+  the gate, which is how the gate came to be vacuous in the first place.
+
+> **This check was vacuous until 2026-08-31.** It ran
+> `markdownlint-cli2 … --config .markdownlint.json || true` against a
+> `.markdownlint.json` that **did not exist**, and swallowed the result. It
+> reported `SUCCESS` on every pull request ever opened here and could not have
+> reported anything else. Both halves are now fixed: the config exists, and the
+> `|| true` is gone.
 >
-> Measured 2026-08-31: on default rules the repository has **8,430 violations
-> across all 161 markdown files**. Excluding `.advanced-plans/` and `temp/`
-> (historical records nobody edits) and disabling `MD013` line-length and
-> `MD060` table-column-style leaves **834 across 94 files**; of those, `--fix`
-> resolves 505 mechanically and **329 remain**, 285 of them a code fence
-> missing its language tag. So making this check real is roughly one mechanical
-> commit plus an afternoon of tagging fences — not a rewrite.
+> Scale of what it had been hiding, measured 2026-08-31: **8,430 violations
+> across all 161 markdown files** on default rules; **834 across 94 files**
+> after excluding `.advanced-plans/` and `temp/` and disabling `MD013` and
+> `MD060`; **329** after the safe autofixes, of which 285 were an untagged code
+> fence and 43 were emphasis used as a heading.
+>
+> The version is pinned to `markdownlint-cli2@0.23.2` in the workflow. That is
+> deliberate: a floating linter changes the active ruleset with no commit in
+> this repository, so an upstream release would turn `main` red on a day nobody
+> here touched anything. Bump it as an explicit commit and fix the fallout in
+> the same PR.
 
 ---
 
@@ -366,7 +384,11 @@ protected by the six checks above, so nothing here pushes to it directly.
 Recorded rather than quietly omitted. None blocks a release; all mislead
 someone eventually.
 
-- **Markdown Lint cannot fail.** Measured above.
+- **`.advanced-plans/` and `temp/` are not linted at all.** They are excluded in
+  `.markdownlint-cli2.jsonc` as append-only programme records and scratch that
+  nobody edits — 4,254 findings of noise that would bury the ones in files
+  people read. That is a deliberate trade, not an oversight, but it does mean
+  the gate says nothing about those 67 files.
 
 - **Three of five adapter READMEs have no Troubleshooting section.**
   `platforms/claude-code` and `platforms/cowork` do; `codex`, `opencode` and
@@ -391,7 +413,7 @@ someone eventually.
   ```
 
   Not destructive — pre-existing files survive — but the install is silently
-  broken. This is the third adapter (F11): it is *not* an unmaintained
+  broken. This is the third adapter (F11): it is _not_ an unmaintained
   leftover, which is worth stating because its 280 lines beside the `setup/`
   installer's 674 invite that assumption. It is covered by
   `test_ap_launcher.py` and `test_home_resolution_agreement.py`, it writes a

@@ -6,7 +6,7 @@ A phase plan defines **what** needs to be accomplished and **why**, at a strateg
 
 ## File Location
 
-```
+```text
 .advanced-plans/phases/phase-{N}/plan.md
 ```
 
@@ -40,7 +40,7 @@ Every phase plan MUST contain these sections in this order:
 
 Single sentence. Pattern: `[Action] [thing] [into/for] [goal]`.
 
-```
+```text
 ✅ "Design and implement the platform-independent core of the planning system as a clean foundation for multi-platform adapters."
 ❌ "Do the core stuff."
 ```
@@ -49,7 +49,7 @@ Single sentence. Pattern: `[Action] [thing] [into/for] [goal]`.
 
 Bullet list of concrete deliverables. Each item should be specific enough that you could verify its existence.
 
-```
+```text
 ✅ "Schema definitions (4): Phase plan, ralph loop, todo, and handoff schemas as standalone markdown reference documents"
 ❌ "Schemas"
 ```
@@ -58,7 +58,7 @@ Bullet list of concrete deliverables. Each item should be specific enough that y
 
 Bullet list of things that are out of scope for this phase, with a note on where they belong.
 
-```
+```text
 ✅ "Claude Code-specific commands, agents, or settings (Phase 2)"
 ❌ (omitting this section entirely)
 ```
@@ -77,7 +77,7 @@ Table with three columns: Deliverable, Format, Location.
 
 Bullet list prefixed with `✓`. Each criterion must be **objectively verifiable** — a colleague could check it without asking the author.
 
-```
+```text
 ✅ "✓ Schema completeness: All four schemas define every field with type, requirement level, valid values, and one worked example"
 ❌ "✓ Schemas look good"
 ```
@@ -94,7 +94,7 @@ Three sub-sections:
 
 Bullet list of broad skill categories with purpose. These are refined to specific skills at the ralph loop level.
 
-```
+```text
 - `skill-creator`: Crafting well-structured SKILL.md files
 ```
 

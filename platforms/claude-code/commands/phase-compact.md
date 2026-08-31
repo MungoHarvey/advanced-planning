@@ -22,7 +22,7 @@ the `phase-` prefix if present and set `N` to the resulting integer.
 
 If `$ARGUMENTS` is empty or does not resolve to a positive integer:
 
-```
+```text
 Error: /phase-compact requires a phase-id argument.
 Usage: /phase-compact <phase-id>   (e.g. /phase-compact 6  or  /phase-compact phase-6)
 ```
@@ -41,7 +41,7 @@ ls .advanced-plans/phases/phase-[N]/plan.md 2>/dev/null
 
 If no file is found:
 
-```
+```text
 Error: Phase plan not found. Expected .advanced-plans/phases/phase-[N]/plan.md.
 Cannot compact a phase with no plan on disk.
 ```
@@ -72,7 +72,7 @@ Set `ANCHOR_SHA` to the result.
 
 If neither path resolves a SHA:
 
-```
+```text
 Error: Cannot determine anchor SHA for phase [N].
   Checked: .advanced-plans/phases/phase-[N]/plan.md frontmatter (anchor_sha field absent)
   Checked: .advanced-plans/state/history.jsonl (no events for phase [N] found)
@@ -285,7 +285,7 @@ awk '/^- phase: [N]$/,/^- phase: [0-9]/' .advanced-plans/PLANS-INDEX.md | head -
 
 If **any** checklist item fails, stop and print a diff of the failing item:
 
-```
+```text
 Error: Schema validation failed.
   Checklist item: [exact item text from schema doc]
   Expected: [expected value or condition]
@@ -297,7 +297,7 @@ Do not silently write a non-conforming artefact.
 
 ### 12. Print summary
 
-```
+```text
 Phase [N] compacted.
 
   Cold artefact:  .advanced-plans/phases/phase-[N]/complete.md
@@ -346,13 +346,13 @@ ls .advanced-plans/phases/phase-[N]/handoff.md
 
 Print:
 
-```
+```text
   Handoff digest: .advanced-plans/phases/phase-[N]/handoff.md  (ceiling OK)
 ```
 
 If the script exits non-zero:
 
-```
+```text
 Error: handoff.md generation failed.
   [script output]
 Fix the offending sections before continuing.
@@ -373,7 +373,7 @@ this is a graceful degrade. Continue regardless.
 
 Present the output to the user with the following framing:
 
-```
+```text
 Context occupancy report
 ------------------------
 [paste context_meter --report output here]
@@ -388,7 +388,7 @@ What this means:
 
 If occupancy is unavailable, print:
 
-```
+```text
 Context occupancy report
 ------------------------
   occupancy: unavailable (no session transcript found)
@@ -434,7 +434,7 @@ Procedure:
 
 Print:
 
-```
+```text
   CLAUDE.md ## Compaction Instructions: updated (points at phase-[N] handoff.md)
 ```
 
@@ -446,7 +446,7 @@ emits the ready line for the user to run.
 
 Ask the user:
 
-```
+```text
 AskUserQuestion: Artefacts written and validated:
   - .advanced-plans/phases/phase-[N]/complete.md   (schema-valid cold artefact)
   - .advanced-plans/phases/phase-[N]/handoff.md    (ceiling-OK resume digest)
@@ -461,7 +461,7 @@ Would you like to compact the conversation context now? (yes / no)
 
 Present the ready `/compact` line for the user to run:
 
-```
+```text
 Ready to compact. Copy and run the following line:
 
 /compact Retain verbatim: .advanced-plans/phases/phase-[N]/handoff.md (the
@@ -477,7 +477,7 @@ context.
 
 Print closing summary:
 
-```
+```text
 Phase [N] compaction artefacts complete.
 
   Artefacts written and validated:
@@ -495,7 +495,7 @@ Phase [N] compaction artefacts complete.
 
 **If no:**
 
-```
+```text
 Phase [N] compaction artefacts complete. Context not compacted.
 
   The /compact line and ## Compaction Instructions block in CLAUDE.md remain

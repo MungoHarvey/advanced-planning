@@ -89,7 +89,7 @@ The framework's answer is to record where the checkout is and read the record:
 | | |
 |---|---|
 | Manifest | `.advanced-plans/runtime.json`, written by the adapter's installer |
-| Key | `source_root` — an absolute path the *interpreter that will read it* can open |
+| Key | `source_root` — an absolute path the _interpreter that will read it_ can open |
 | Launcher | `.advanced-plans/bin/ap.py`, copied from `platforms/python/ap_launcher.py` |
 | Module call | `python ".advanced-plans/bin/ap.py" <module> [args]` |
 | In-line call | `runpy.run_path(r'.advanced-plans/bin/ap.py')['bootstrap']()` before the import |
@@ -99,7 +99,7 @@ The framework's answer is to record where the checkout is and read the record:
 The manifest sits in `.advanced-plans/`, not in any adapter's own directory,
 because every adapter resolves the runtime by this same route. An adapter that
 put it under `.claude/` or `.codex/` would make the next adapter write a second
-one. The same rule decides where a *global* install records the runtime: the
+one. The same rule decides where a _global_ install records the runtime: the
 home-directory copy is `<home>/.advanced-plans/`, **not** `<home>/.claude/`,
 for exactly the reason above.
 
@@ -125,12 +125,12 @@ three things, not one:
    is the reference implementation.
 
 **Leave the source call sites in the substitutable form.** The rewrite in (2)
-must change the *path* and nothing else, because `install_audit` normalises one
+must change the _path_ and nothing else, because `install_audit` normalises one
 canonical launcher path back out before hashing so that an installed copy is
 not perpetually "stale". That only converges if the quoting is identical either
 side of the swap — hence `python ".advanced-plans/…"` and
 `runpy.run_path(r'.advanced-plans/…')` in the source, quoted and raw-prefixed
-even though a relative path needs neither. An installer that has to *add* the
+even though a relative path needs neither. An installer that has to _add_ the
 quotes produces drift no `/sync-install` can settle. This is pinned by
 `test_every_source_call_site_is_in_the_substitutable_form`.
 
@@ -140,16 +140,16 @@ Planning command names. Invoked from a subdirectory the interpreter fails to
 open it and exits 2, before the launcher's guard can say anything useful — so
 an adapter must not `cd` between resolving the project and calling a command.
 The launcher's upward walk for `runtime.json` is what covers an adapter that
-names the launcher by an *absolute* path instead.
+names the launcher by an _absolute_ path instead.
 
 Two traps, both found by running it:**
 
-*A path the shell can open is not always a path the interpreter can open.* Under
+_A path the shell can open is not always a path the interpreter can open._ Under
 Git Bash on Windows, `$REPO_ROOT` is `/c/Users/...`; native Python cannot open
 it. `install.sh` normalises with `cygpath -m`. Any adapter installer that runs
 under MSYS needs the same.
 
-*The recorded path is absolute, so it breaks when the checkout moves.* That is
+_The recorded path is absolute, so it breaks when the checkout moves._ That is
 the accepted cost of this mechanism, and it is why the launcher's guard is not
 optional: every failure names the manifest, the key, and the repair, and exits
 `3` so a caller can tell an unreachable runtime from a module that ran and
@@ -205,7 +205,7 @@ No slash commands exist in Cowork. The routing skill replaces them.
 
 The `SKILL.md` instructs the main session to use Cowork's Agent tool:
 
-```
+```text
 Agent tool:
   model: sonnet
   prompt: [full contents of agents/orchestrator-prompt.md]
@@ -228,7 +228,7 @@ The workspace path is passed as context to each agent at spawn time.
 
 The worker prompt specifies:
 
-```
+```text
 skills/[skill-name]/SKILL.md
 ```
 

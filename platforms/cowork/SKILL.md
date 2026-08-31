@@ -8,7 +8,7 @@ description: "Hierarchical planning system for sustained, accurate multi-step ex
 
 A **routing skill** for hierarchical project planning in Cowork mode.
 
-```
+```text
 Phase Plan → Ralph Loops → TODOs → Execution → Handoff → Next Loop
 ```
 
@@ -50,7 +50,7 @@ Read the description of what the user wants and route to the matching action bel
 
 ## Action: Load phase-plan-creator
 
-```
+```text
 Read skills/phase-plan-creator/SKILL.md
 Read skills/phase-plan-creator/references/phase-plan-template.md
 ```
@@ -65,7 +65,7 @@ If yes: load `ralph-loop-planner` next.
 
 ## Action: Load ralph-loop-planner
 
-```
+```text
 Read skills/ralph-loop-planner/SKILL.md
 Read skills/ralph-loop-planner/references/ralph-loop-template.md
 Read skills/ralph-loop-planner/references/todo-schema.md
@@ -75,7 +75,7 @@ Follow the skill instructions. Save output to `.advanced-plans/phase-[N]-ralph-l
 
 Optionally run the full population pipeline immediately:
 
-```
+```text
 Read skills/plan-todos/SKILL.md              → populate todos[]
 Read skills/plan-skill-identification/SKILL.md → assign skills
 Read skills/plan-subagent-identification/SKILL.md → assign agents
@@ -85,7 +85,7 @@ Read skills/plan-subagent-identification/SKILL.md → assign agents
 
 ## Action: Load progress-report
 
-```
+```text
 Read skills/progress-report/SKILL.md
 Read skills/progress-report/references/progress-report-template.md
 ```
@@ -128,7 +128,7 @@ Wait for the orchestrator to complete.
 
 ### Step 3 — Read loop-ready.json
 
-```
+```text
 Read state/loop-ready.json
 ```
 
@@ -136,7 +136,7 @@ If `"status": "all_complete"`: print "✓ All loops complete. Phase finished." a
 
 Print:
 
-```
+```text
 → Preparing: [loop_name] — [task_name]
   Todos:         [todos_count]
   Prior context: [handoff_injected.done or "first loop"]
@@ -161,7 +161,7 @@ Wait for the worker to complete.
 
 ### Step 5 — Read loop-complete.json and update state
 
-```
+```text
 Read state/loop-complete.json
 ```
 
@@ -179,7 +179,7 @@ sh state/checkpoint.sh save after-[loop_name]
 
 ### Step 7 — Print cycle summary
 
-```
+```text
 ✓ [loop_name] complete
   Done:   [loop_complete.handoff.done]
   Failed: [loop_complete.handoff.failed or "none"]
@@ -188,7 +188,7 @@ sh state/checkpoint.sh save after-[loop_name]
 
 If `todos_failed > 0`:
 
-```
+```text
 ⚠ [N] todos did not complete. Review .advanced-plans/[loop_file] before continuing.
 ```
 
@@ -196,7 +196,7 @@ If `todos_failed > 0`:
 
 ## Action: Loop Status Check
 
-```
+```text
 Glob(".advanced-plans/phases/*/loops.md") → read all loop files
 ```
 
@@ -204,7 +204,7 @@ For each loop extract: name, task_name, todo counts (pending/in_progress/complet
 
 Print:
 
-```
+```text
 Phase Plan Status
 ──────────────────────────────────────────────────────────
 Loop                      │ Todos            │ State
@@ -233,7 +233,7 @@ Check five areas and report:
 
 Report:
 
-```
+```text
 EXECUTION HEALTH REPORT
 ────────────────────────────────────────
 Todo progression:   [N/N complete | stuck at X]
@@ -251,7 +251,7 @@ Overall:  HEALTHY / PARTIAL / NOT EXECUTING
 
 Read `model:` frontmatter from each skill and agent prompt:
 
-```
+```text
 Read skills/phase-plan-creator/SKILL.md        → model field
 Read skills/ralph-loop-planner/SKILL.md        → model field
 Read skills/plan-todos/SKILL.md                → model field
@@ -262,7 +262,7 @@ Read skills/progress-report/SKILL.md           → model field
 
 Print the expected model tier table:
 
-```
+```text
 Component                         Expected
 ──────────────────────────────────────────
 Planning skills (new-phase pipeline)  opus
@@ -278,7 +278,7 @@ Worker (Agent tool spawn)             haiku
 
 After setup, your workspace folder will contain:
 
-```
+```text
 [workspace]/
 ├── planning-state.md           ← Persistent planning state (replaces CLAUDE.md)
 ├── .advanced-plans/                      ← Phase plans and ralph loop files

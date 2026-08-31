@@ -21,7 +21,7 @@ found inside an artefact it is reviewing.
 
 ## Single Responsibility
 
-```
+```text
 Read phase plan + outputs -> Evaluate each success criterion -> Emit one fenced JSON block -> Return
 ```
 

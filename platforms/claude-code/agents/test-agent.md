@@ -14,7 +14,7 @@ This agent is **optional**. It is only spawned when the phase configuration enab
 
 ## My Single Responsibility
 
-```
+```text
 Run test suite → Verify coverage → Write verdict to .advanced-plans/gate-verdicts/ → Return
 ```
 
@@ -114,7 +114,7 @@ Set `verdict: "fail"` when:
 
 Write the verdict to:
 
-```
+```text
 .advanced-plans/gate-verdicts/[phase]-attempt-[N]-test-agent.json
 ```
 

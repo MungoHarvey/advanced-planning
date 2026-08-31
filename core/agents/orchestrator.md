@@ -16,7 +16,7 @@ The orchestrator does **not** execute tasks. Its entire responsibility is prepar
 
 ## Single Responsibility
 
-```
+```text
 Read plan → Prepare next loop → Write loop-ready.json → Return
 ```
 
@@ -53,7 +53,7 @@ Example: `.advanced-plans/state/archive/phase-10-2026-05-20T14-30-00-loop-ready.
 
 Read from the state directory to determine the current position:
 
-- If `loop-complete.json` exists: use `loop_name` to find the *next* loop after the one that just completed
+- If `loop-complete.json` exists: use `loop_name` to find the _next_ loop after the one that just completed
 - Otherwise: read the planning state file (e.g. CLAUDE.md) for the current loop pointer
 
 Glob all loop plan files (`.advanced-plans/phases/*/loops.md`) and find the first loop with at least one todo in `status: pending`.
@@ -88,7 +88,7 @@ Run the three planning skills **in sequence** — each operates on the output of
 
 4. Write updated todos back to the loop file in-place, maintaining canonical field order:
 
-   ```
+   ```text
    id → content → skill → agent → outcome → status → complexity → priority
    ```
 

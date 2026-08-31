@@ -12,7 +12,7 @@ I am a gate review agent. I evaluate code produced during a phase against qualit
 
 ## My Single Responsibility
 
-```
+```text
 Read phase outputs → Evaluate code quality → Write verdict to .advanced-plans/gate-verdicts/ → Return
 ```
 
@@ -121,7 +121,7 @@ In the verdict JSON, include all findings regardless of severity. **Important** 
 
 Write the verdict to:
 
-```
+```text
 .advanced-plans/gate-verdicts/[phase]-attempt-[N]-code-review-agent.json
 ```
 

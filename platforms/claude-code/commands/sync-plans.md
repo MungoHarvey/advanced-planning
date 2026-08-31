@@ -22,7 +22,7 @@ integer.
 
 If `$ARGUMENTS` is empty or does not resolve to a positive integer:
 
-```
+```text
 Error: /sync-plans requires a phase-id argument.
 Usage: /sync-plans <phase-id>   (e.g. /sync-plans 15  or  /sync-plans phase-15)
 ```
@@ -35,13 +35,13 @@ Print: `-> Syncing phase [N]`
 
 Locate the phase plan:
 
-```
+```text
 .advanced-plans/phases/phase-[N]/plan.md
 ```
 
 If the file does not exist:
 
-```
+```text
 Error: Phase plan not found. Expected .advanced-plans/phases/phase-[N]/plan.md.
 Cannot sync a phase with no plan on disk.
 ```
@@ -64,7 +64,7 @@ Compute the loop range string from the `loops:` list:
 
 Locate the loops file:
 
-```
+```text
 .advanced-plans/phases/phase-[N]/loops.md
 ```
 
@@ -90,7 +90,7 @@ Read `.advanced-plans/PLANS-INDEX.md` in full.
 
 If the file does not exist:
 
-```
+```text
 Error: .advanced-plans/PLANS-INDEX.md not found. Cannot sync index.
 ```
 
@@ -100,7 +100,7 @@ Stop.
 
 Locate the Phases table in PLANS-INDEX.md. The table header is:
 
-```
+```text
 | Phase | Name | File | Status | Loops | Outcome |
 ```
 
@@ -110,7 +110,7 @@ table row.
 **If no row is found for phase N:** append a new row at the end of the Phases
 table in ascending phase-number order. Construct the row:
 
-```
+```text
 | [N] | [name] | [`phase-[N]/plan.md`](phases/phase-[N]/plan.md) | **[status]** | [loop-range] | [name] |
 ```
 
@@ -133,13 +133,13 @@ leave it unchanged.
 
 Print for each corrected field:
 
-```
+```text
   Phases row [N]: [field] "[old]" → "[new]"
 ```
 
 If no fields differ, print:
 
-```
+```text
   Phases row [N]: no drift
 ```
 
@@ -147,7 +147,7 @@ If no fields differ, print:
 
 Locate the Ralph Loops table in PLANS-INDEX.md. The table header is:
 
-```
+```text
 | Loop | Phase | Name | File | Status | Active File | Attempt |
 ```
 
@@ -168,7 +168,7 @@ For each field that differs, record the drift and update the row cell. The
 **If no row is found for a loop in the loops file:** append a new row for that
 loop at the end of the Ralph Loops table in ascending loop-number order:
 
-```
+```text
 | [NNN] | [N] | [task_name] | `phases/phase-[N]/loops.md` | [status] | — | 1 |
 ```
 
@@ -176,7 +176,7 @@ Record as a drift correction.
 
 Print for each loop that had drift:
 
-```
+```text
   Loop [NNN]: [field] "[old]" → "[new]"
 ```
 
@@ -189,19 +189,19 @@ using the Edit tool to apply each cell replacement in-place.
 
 Print:
 
-```
+```text
   PLANS-INDEX.md updated ([N] drift corrections applied)
 ```
 
 If no drift was detected:
 
-```
+```text
   PLANS-INDEX.md already in sync — no changes made
 ```
 
 ### 8. Print drift report
 
-```
+```text
 /sync-plans phase [N] complete
 -------------------------------
 Phase plan:   .advanced-plans/phases/phase-[N]/plan.md
@@ -216,7 +216,7 @@ No content was invented. All corrections propagated from plan → index.
 
 ## Usage
 
-```
+```text
 /sync-plans 15
 /sync-plans phase-15
 ```

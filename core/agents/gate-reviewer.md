@@ -16,7 +16,7 @@ The gate reviewer does **not** execute tasks. Its entire responsibility is evalu
 
 ## Single Responsibility
 
-```
+```text
 Read phase outputs → Evaluate against criteria → Write verdict JSON → Return
 ```
 

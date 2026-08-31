@@ -1,5 +1,6 @@
 # Advanced Planning Architecture: Recommendations & Redesign Specification
 
+<!-- markdownlint-disable-next-line MD036 -- a subtitle under the H1, not a section of its own -->
 **Subagent Injection, Ralph Loop Integration & Handoff Protocol**
 
 ---
@@ -22,7 +23,7 @@ Each recommendation is grounded in the specific behaviour and known constraints 
 
 The ralph-loop plugin is an **official, first-party Anthropic plugin** maintained at `anthropics/claude-plugins-official`. It is not a community tool or third-party implementation — it is part of Anthropic's own plugin catalogue, available via:
 
-```
+```text
 /plugin install ralph-wiggum@claude-plugins-official
 ```
 
@@ -73,7 +74,7 @@ The plugin has a documented Windows issue: an undocumented `jq` dependency and t
 
 The current execution chain is:
 
-```
+```text
 /next-loop  (main thread)
   └─ spawns loop-orchestrator  (subagent)          ✓ works
        └─ tries to spawn coding-worker  (subagent)  ✗ silently ignored
@@ -127,7 +128,7 @@ The `/next-loop` command should also incorporate the **completion promise mechan
 
 Move all orchestration logic into the main thread. The `/next-loop` and `/next-phase` commands should themselves act as the orchestrator — reading skills, managing state, and spawning coding workers directly.
 
-```
+```text
 Before:
 /next-loop (main thread)
   └─ spawns loop-orchestrator (subagent) → cannot spawn workers
@@ -204,7 +205,7 @@ The slash commands are the most reliable activation point for skill loading beca
 
 **`/next-loop` activation sequence:**
 
-```
+```text
 1. Read .claude/skills/ralph-loop-planner/SKILL.md
 2. Read .claude/skills/plan-todos/SKILL.md
 3. Confirm reads complete
@@ -213,7 +214,7 @@ The slash commands are the most reliable activation point for skill loading beca
 
 **`/next-phase` activation sequence:**
 
-```
+```text
 1. Read .claude/skills/ralph-loop-planner/SKILL.md
 2. Read .claude/skills/phase-plan-creator/SKILL.md
 3. Read .claude/skills/plan-todos/SKILL.md
@@ -230,7 +231,7 @@ The key principle: the command body forces the main agent to ingest the orchestr
 
 Incorporating the completion promise mechanic from the plugin into the interactive command gives it the same guarantees without requiring autonomous mode:
 
-```
+```text
 1. Spawn coding-worker with task brief and acceptance criteria
 2. Receive and parse handoff block
 3. Evaluate acceptance_met against stated criteria
@@ -244,7 +245,7 @@ Incorporating the completion promise mechanic from the plugin into the interacti
 
 ## 5. Updated File Structure
 
-```
+```text
 .claude/
 ├── commands/
 │   ├── next-loop.md          # Main orchestrator. Reads ralph skills, drives
@@ -338,4 +339,5 @@ Ordered by dependency — complete in sequence:
 
 ---
 
-*Advanced Planning Architecture — Internal Design Document*
+<!-- markdownlint-disable-next-line MD036 -- an italic colophon closing the document, not a section -->
+_Advanced Planning Architecture — Internal Design Document_

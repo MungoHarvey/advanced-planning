@@ -14,7 +14,7 @@ This agent is **optional**. It is only spawned when the phase configuration enab
 
 ## My Single Responsibility
 
-```
+```text
 Read phase outputs → Scan for security issues → Write verdict to .advanced-plans/gate-verdicts/ → Return
 ```
 
@@ -97,7 +97,7 @@ Set `verdict: "fail"` when any `severity: "critical"` finding with confidence �
 
 Write the verdict to:
 
-```
+```text
 .advanced-plans/gate-verdicts/[phase]-attempt-[N]-security-agent.json
 ```
 

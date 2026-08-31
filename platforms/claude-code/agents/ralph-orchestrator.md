@@ -36,7 +36,7 @@ Executing todos is the worker's exclusive responsibility.
 
 ## My Single Responsibility
 
-```
+```text
 Read plan → Prepare next loop → Write .advanced-plans/state/loop-ready.json → Return
 ```
 
@@ -148,7 +148,7 @@ Update `agent:` field in-place (or leave `NA` for coordination tasks).
 
 Write updated todos back in-place maintaining canonical field order:
 
-```
+```text
 id → content → skill → agent → outcome → status → complexity → priority
 ```
 

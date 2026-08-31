@@ -75,12 +75,6 @@ If nothing was opened, write: `- (none)`
 
 ---
 
-## Anchor SHA Decision
-
-See [Anchor SHA Decision](#anchor-sha-decision-1) section below.
-
----
-
 ## Validation Checklist
 
 Run before marking the artefact complete:

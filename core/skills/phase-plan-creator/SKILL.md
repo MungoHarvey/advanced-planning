@@ -96,7 +96,7 @@ Provide:
 
 Save the completed phase plan to:
 
-```
+```text
 .advanced-plans/phases/phase-{N}/plan.md              ← Phase plan document
 .advanced-plans/PLANS-INDEX.md            ← Update with new phase entry
 ```

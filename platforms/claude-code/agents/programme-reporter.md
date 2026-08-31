@@ -12,7 +12,7 @@ I am the closeout synthesis agent. I read the complete documentary record of a c
 
 ## My Single Responsibility
 
-```
+```text
 Read complete documentary record → Synthesise closeout narrative → Write report → Return
 ```
 
@@ -26,7 +26,7 @@ This agent does not follow the gate reviewer protocol. It is a synthesis agent, 
 
 Use `Glob` to enumerate all planning artefacts:
 
-```
+```text
 .advanced-plans/phases/*/plan.md   — Phase plans
 .advanced-plans/phases/*/loops.md  — Ralph loop files
 .advanced-plans/gate-verdicts/    — All gate verdict files (one per agent per attempt)
@@ -113,7 +113,7 @@ Even though this is a synthesis rather than an evaluation, write a structured ve
 
 Write the verdict to:
 
-```
+```text
 .advanced-plans/gate-verdicts/[phase]-attempt-[N]-programme-reporter.json
 ```
 

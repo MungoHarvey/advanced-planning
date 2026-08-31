@@ -12,7 +12,7 @@ This document formalises the gate review sub-phase extension to the Advanced Pla
 
 The Advanced Planning System is a hierarchical, multi-agent planning framework proven across 9 phases and 56+ ralph loops in production use. It structures complex programmes as bounded, verifiable loops organised in a three-tier hierarchy:
 
-```
+```text
 Phase Plan (strategic — Opus)
 ├── Ralph Loop 001 (tactical — Sonnet orchestrates, Haiku executes)
 │   ├── Todo 1 (with targeted skill injection)
@@ -54,7 +54,7 @@ Phase 1 delivered the platform-independent foundation:
 
 Every loop cycle follows the same sequence:
 
-```
+```text
 Main Thread
 ├── spawn Orchestrator (Sonnet) → writes loop-ready.json → returns
 ├── reads loop-ready.json
@@ -86,7 +86,7 @@ The gate review design rests on a fundamental distinction between two kinds of i
 
 **Documentary record** captures what happened, what was decided, what failed, what was learned. Handoff summaries, gate verdicts, failure notes, and loop prompts are evidence. They must never be overwritten. Overwriting destroys the audit trail and the learned context that makes retries smarter than the original attempt.
 
-```
+```text
 MUTABLE (status only)              IMMUTABLE (append or version)
 ─────────────────────              ─────────────────────────────
 todo.status                        todo.content
@@ -155,7 +155,7 @@ When a gate fails and triggers a retry, the system creates new plan files for th
 
 **First attempt:**
 
-```
+```text
 plans/
   phase-2.md
   phase-2-ralph-loops.md              ← v1, attempted, gate failed
@@ -165,7 +165,7 @@ plans/
 
 **After gate failure, retry:**
 
-```
+```text
 plans/
   phase-2.md                          ← unchanged
   phase-2-ralph-loops.md              ← v1, untouched, status frozen
@@ -341,7 +341,7 @@ The implementation is structured as ralph loops within a new phase, following th
 
 The Advanced Planning System maps naturally to the Claude Code plugin structure:
 
-```
+```text
 advanced-planning-plugin/
 ├── .claude-plugin/
 │   └── plugin.json                    # Plugin manifest
@@ -511,5 +511,5 @@ Submit to the official Anthropic marketplace via the submission form at `claude.
 
 ---
 
-*Document version: 1.0 — 22 March 2026*
-*Status: Design specification — ready for implementation*
+_Document version: 1.0 — 22 March 2026_
+_Status: Design specification — ready for implementation_

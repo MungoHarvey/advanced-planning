@@ -25,7 +25,7 @@ Filesystem-based coordination between the orchestrator, worker, and main thread.
 
 ## Protocol Sequence
 
-```
+```text
 Main Thread          Orchestrator (Sonnet)       Worker (Haiku)
     │
     ├─ Spawn ────────►│
@@ -139,7 +139,7 @@ Four additional event types are appended by the main thread when gate review run
 
 ## Runtime Directory
 
-```
+```text
 .advanced-plans/state/                  ← or equivalent for non-Claude Code platforms
 ├── loop-ready.json             ← Current assignment (overwritten each cycle)
 ├── loop-complete.json          ← Current result (overwritten each cycle)
@@ -168,7 +168,7 @@ The gate review sub-phase runs between phase completion and phase advancement. G
 
 Each gate agent writes a verdict to `gate-verdicts/` when it completes its review. Verdict files are immutable — one file per agent per attempt, never overwritten. File naming convention:
 
-```
+```text
 gate-verdicts/{phase}-attempt-{N}-{agent}.json
 ```
 
@@ -178,7 +178,7 @@ See `gate-verdict.schema.json` for the full JSON Schema.
 
 ### Gate Review Sequence
 
-```
+```text
 Main Thread          Gate Agent(s)
     │
     ├─ Spawn ────────►│

@@ -15,18 +15,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Pinned deliberately: a floating version changes the active ruleset
+      # without a commit in this repository, which would turn `main` red on
+      # somebody else's release day.
       - name: Install markdownlint-cli2
-        run: npm install -g markdownlint-cli2
+        run: npm install -g markdownlint-cli2@0.23.2
 
+      # No globs and no --config. .markdownlint-cli2.jsonc carries both, so CI
+      # lints exactly what a bare `npx markdownlint-cli2` lints locally.
+      #
+      # The previous invocation passed `--config .markdownlint.json`, a file
+      # that did not exist in this repository, and swallowed the result with
+      # `|| true`. It reported SUCCESS on every pull request ever opened here
+      # and could not have reported anything else. The `|| true` is gone: this
+      # check can now fail, which is the only thing that makes it a check.
       - name: Lint Markdown files
-        run: |
-          markdownlint-cli2 \
-            "**/*.md" \
-            "!node_modules/**" \
-            "!.venv/**" \
-            --config .markdownlint.json || true
-        # || true: lint warnings don't fail the build on first release;
-        # remove once all docs conform to the style guide.
+        run: markdownlint-cli2
 
   # ── Job 2: JSON schema validation ──────────────────────────────────────────
   schema-validation:

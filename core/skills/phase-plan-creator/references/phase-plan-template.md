@@ -96,7 +96,7 @@ Skills needed for this phase (refined to specific skills in ralph loops):
 
 ✅ Good:
 
-```
+```text
 "Migrate [system] from [old approach] to [new approach] with [property]"
 "Research [domain] approaches for [problem] and document recommendations"
 "Design [component] satisfying [constraint] as a foundation for [next phase]"
@@ -105,7 +105,7 @@ Skills needed for this phase (refined to specific skills in ralph loops):
 
 ❌ Vague:
 
-```
+```text
 "Improve the system"
 "Research stuff"
 "Build feature"
@@ -115,7 +115,7 @@ Skills needed for this phase (refined to specific skills in ralph loops):
 
 ✅ Good:
 
-```
+```text
 | Schema document | Markdown | core/schemas/foo.schema.md |
 | Skill definition | SKILL.md + references/ | core/skills/bar/ |
 | Protocol spec | Markdown + JSON Schema | core/state/ |
@@ -123,7 +123,7 @@ Skills needed for this phase (refined to specific skills in ralph loops):
 
 ❌ Vague:
 
-```
+```text
 - Code for the feature
 - Documentation
 - Tests
@@ -133,7 +133,7 @@ Skills needed for this phase (refined to specific skills in ralph loops):
 
 ✅ Good:
 
-```
+```text
 - ✓ All four schema documents exist with field specs and validation checklists
 - ✓ Verification scan finds zero platform-specific references in core/skills/
 - ✓ A colleague reading the protocol document alone can implement the state bus
@@ -141,7 +141,7 @@ Skills needed for this phase (refined to specific skills in ralph loops):
 
 ❌ Vague:
 
-```
+```text
 - ✓ Tests pass
 - ✓ Performance is good
 - ✓ Code is clean
@@ -151,7 +151,7 @@ Skills needed for this phase (refined to specific skills in ralph loops):
 
 ✅ Good:
 
-```
+```text
 | Risk | Mitigation |
 | Schema over-abstraction | Constrain every field to something used in practice; flag aspirational fields |
 | Domain examples too specific | Use generic examples in core; domain examples go in examples/ only |
@@ -159,7 +159,7 @@ Skills needed for this phase (refined to specific skills in ralph loops):
 
 ❌ Vague:
 
-```
+```text
 | Risk | Mitigation |
 | Things might go wrong | Hope it works |
 ```
@@ -291,7 +291,7 @@ Once the phase plan is reviewed:
 
 Skill refinement example:
 
-```
+```text
 Phase-level skill: `schema-design`
 ↓ Refined for loop:
   - `json-schema`: Draft-07 pattern constraints for the state bus schemas

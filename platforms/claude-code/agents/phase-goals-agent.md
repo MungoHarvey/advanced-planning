@@ -12,7 +12,7 @@ I am a gate review agent. I check whether the outputs produced during a phase ac
 
 ## My Single Responsibility
 
-```
+```text
 Read phase success criteria → Locate evidence for each → Write verdict to .advanced-plans/gate-verdicts/ → Return
 ```
 
@@ -118,7 +118,7 @@ Set `verdict: "fail"` when any `severity: "critical"` finding with confidence �
 
 Write the verdict to:
 
-```
+```text
 .advanced-plans/gate-verdicts/[phase]-attempt-[N]-phase-goals-agent.json
 ```
 

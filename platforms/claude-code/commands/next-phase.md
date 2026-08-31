@@ -75,7 +75,7 @@ If `--force` is set, note it for use in Step 7.
 
 Run the full gate review inline (same logic as `/run-gate`):
 
-**3a. Verify all loops complete**
+#### 3a. Verify all loops complete
 
 ```bash
 grep -rn "status: pending\|status: in_progress" .advanced-plans/phases/phase-[N]/loops.md 2>/dev/null || echo "0"
@@ -85,7 +85,7 @@ If any incomplete todos found:
 print `Gate review blocked: [N] todos are not yet completed. Finish all loops first.`
 and stop.
 
-**3b. Determine agents and attempt number**
+#### 3b. Determine agents and attempt number
 
 Default gate agents: `code-review-agent`, `phase-goals-agent`
 
@@ -97,18 +97,18 @@ ls .advanced-plans/gate-verdicts/phase-[N]-attempt-*.json 2>/dev/null | wc -l
 
 Set `attempt = (existing_count / agent_count) + 1`, minimum 1.
 
-**3c. Create gate-verdicts directory and sentinel**
+#### 3c. Create gate-verdicts directory and sentinel
 
 ```bash
 mkdir -p .advanced-plans/gate-verdicts
 echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .advanced-plans/state/gate-review-mode
 ```
 
-**3d. Spawn each gate agent sequentially**
+#### 3d. Spawn each gate agent sequentially
 
 For each agent, spawn via Agent tool with the prompt:
 
-```
+```text
 You are [agent-name] performing a gate review.
 
 Phase: [N]
@@ -124,13 +124,13 @@ output path following gate-verdict.schema.json. Then return.
 
 Wait for each agent before spawning the next.
 
-**3e. Remove sentinel**
+#### 3e. Remove sentinel
 
 ```bash
 rm .advanced-plans/state/gate-review-mode
 ```
 
-**3f. Aggregate verdicts**
+#### 3f. Aggregate verdicts
 
 Read all verdict files for this phase+attempt. Check each `verdict` field:
 
@@ -157,7 +157,7 @@ If `GATE_RESULT = fail` and `--force` was provided:
 
 Print:
 
-```
+```text
 WARNING: Gate review FAILED but --force was used. Advancing anyway.
   Failing agent: [agent-name]
   Verdict file:  [path]
@@ -180,7 +180,7 @@ git add -A && git commit -m "complete: phase-[N] gate passed — advancing to ph
 
 Print:
 
-```
+```text
 Phase [N] gate PASSED.
   Status updated in .advanced-plans/PLANNING.md.
 ```
@@ -235,7 +235,7 @@ git add -A && git commit -m "plan: phase-[N+1] — [phase name], [loop count] lo
 
 Print:
 
-```
+```text
 Phase [N+1] planned: [phase name]
   Loops: [count]
   Todos: [count]
@@ -294,7 +294,7 @@ to evaluate this phase before advancing further.
 
 Print:
 
-```
+```text
 Phase [N+1] loops complete. Running gate review...
 ```
 
@@ -318,7 +318,7 @@ Phase [N+1] loops complete. Running gate review...
 This section runs ONLY when `AUTO_PHASE_MODE = true`. If `AUTO_PHASE_MODE = false`,
 skip directly to **Step 7a** (versioned-retry + STOP path).
 
-**7-AUTO-a. Count remediation cycles from history.jsonl**
+##### 7-AUTO-a. Count remediation cycles from history.jsonl
 
 Count the number of `gate_fail` events for `phase-[N]` already appended to
 `.advanced-plans/state/history.jsonl` (the current failing event was appended in Step 4,
@@ -334,7 +334,7 @@ If `cycles >= 2`:
 
 - Print:
 
-  ```
+  ```text
   Phase [N] gate FAILED (attempt [attempt]) — cycle bound reached (cycles=[cycles]).
   Escalating to versioned retry from pre-remediation snapshot.
   ```
@@ -344,7 +344,7 @@ If `cycles >= 2`:
   bound without a prior cycle), use the current HEAD.
 - Proceed to **Step 7a** (versioned-retry + STOP).
 
-**7-AUTO-b. First-cycle setup (if cycles == 1)**
+##### 7-AUTO-b. First-cycle setup (if cycles == 1)
 
 On the first remediation cycle (`cycles == 1`):
 
@@ -373,7 +373,7 @@ On the first remediation cycle (`cycles == 1`):
    If any untracked/modified files exist that are NOT part of the expected loop outputs,
    print:
 
-   ```
+   ```text
    ESCALATE: dirty working tree before remediation — unrelated changes detected.
    Commit or stash them before /next-phase --auto.
    ```
@@ -391,7 +391,7 @@ On the first remediation cycle (`cycles == 1`):
 
    Store as `CRITERIA_HASH`.
 
-**7-AUTO-c. Triage findings**
+##### 7-AUTO-c. Triage findings
 
 Import and call `triage_findings` from `platforms/python/remediate.py`:
 
@@ -408,7 +408,7 @@ If `result["unfixable"]` is non-empty:
 
 - Print:
 
-  ```
+  ```text
   ESCALATE: unfixable finding(s) detected — no actionable location and no structural revert covers them.
   ```
 
@@ -418,14 +418,14 @@ If `result["conflict"]` is non-empty:
 
 - Print:
 
-  ```
+  ```text
   ESCALATE: contradictory findings (remediation_conflict) — same location targeted by multiple
   incompatible findings. Human review required.
   ```
 
 - Proceed to **Step 7a** (versioned-retry + STOP).
 
-**7-AUTO-d. Assert sentinel is absent**
+##### 7-AUTO-d. Assert sentinel is absent
 
 Before dispatching any fix, the `gate-review-mode` sentinel MUST be removed
 (Step 3e already removes it after the gate; this is a defense-in-depth ASSERT):
@@ -439,7 +439,7 @@ fi
 
 If the sentinel exists: escalate (proceed to **Step 7a**, do NOT continue).
 
-**7-AUTO-e. Write failure context sidecar**
+##### 7-AUTO-e. Write failure context sidecar
 
 Write the failure context to the worker-only sidecar
 (`.advanced-plans/phases/phase-[N]/retry-context.json`). Call
@@ -458,7 +458,7 @@ inject_failure_context(
 This writes `.advanced-plans/phases/phase-[N]/retry-context.json`. It does NOT modify
 `loops.md` frontmatter.
 
-**7-AUTO-f. Dispatch remediation**
+##### 7-AUTO-f. Dispatch remediation
 
 Dispatch based on triage result. Both paths may be active if both `structural` and
 `localized` are non-empty (overlap is harmless — the re-run will also fix the localized
@@ -484,7 +484,7 @@ For each loop id in `result["structural"]`:
 6. If loop `status: failed`: this is a **loop-fail STOP** (not a remediation cycle).
    Print:
 
-   ```
+   ```text
    Loop [loop_id] FAILED during structural remediation — not a remediation cycle.
    STOP: manual review required.
    ```
@@ -495,7 +495,7 @@ For each loop id in `result["structural"]`:
 
 Spawn `analysis-worker` with a focused-fix prompt:
 
-```
+```text
 You are analysis-worker performing a focused remediation fix.
 
 Phase: [N]
@@ -517,7 +517,7 @@ Instructions:
 
 Wait for the agent to return.
 
-**7-AUTO-g. Validate the diff allowlist**
+##### 7-AUTO-g. Validate the diff allowlist
 
 After all fix dispatches complete, validate that only allowlisted source files were touched.
 
@@ -555,7 +555,7 @@ For each changed file:
 
 - If it matches the NEVER-TOUCH list: print:
 
-  ```
+  ```text
   ESCALATE: remediation touched a forbidden path: [path]
   This is a gate-gaming attempt or a configuration error.
   ```
@@ -570,14 +570,14 @@ If the diff of allowlisted source paths (excluding transient files:
 
 - Print:
 
-  ```
+  ```text
   ESCALATE: remediation produced no change to allowlisted source files.
   The fix had no effect — cannot re-gate.
   ```
 
 - Proceed to **Step 7a** (versioned-retry + STOP from `PRE_REMEDIATION_SHA`).
 
-**7-AUTO-h. Commit the remediation**
+##### 7-AUTO-h. Commit the remediation
 
 Stage ONLY the allowlisted source paths that were actually changed. NEVER use `git add -A`.
 
@@ -592,7 +592,7 @@ Append the `gate_remediation` event to `history.jsonl`:
 echo '{"event":"gate_remediation","phase":"phase-[N]","cycle":[cycles],"timestamp":"[ISO timestamp]","structural_count":[len(result.structural)],"localized_count":[len(result.localized)]}' >> .advanced-plans/state/history.jsonl
 ```
 
-**7-AUTO-i. Assert frozen criteria still match**
+##### 7-AUTO-i. Assert frozen criteria still match
 
 Before spawning the re-gate, verify the frozen criteria have not changed:
 
@@ -611,7 +611,7 @@ print('criteria hash OK:', h)
 If the hash does not match: proceed to **Step 7a** (versioned-retry + STOP from
 `PRE_REMEDIATION_SHA`).
 
-**7-AUTO-j. Re-gate (fresh agents, frozen criteria)**
+##### 7-AUTO-j. Re-gate (fresh agents, frozen criteria)
 
 Run a new gate review — this is the same as Step 3, with the following differences:
 
@@ -626,7 +626,7 @@ After each gate agent returns its verdict, before aggregating:
   criterion listed in `criteria-frozen.md`.
 - If any criterion is missing from `criteria_outcomes`: print:
 
-  ```
+  ```text
   ESCALATE: re-gate verdict from [agent-name] is missing criteria_outcomes for criterion: [criterion].
   A fresh agent must evaluate ALL frozen criteria.
   ```
@@ -645,7 +645,7 @@ If `GATE_RESULT = pass`:
 
 - Print:
 
-  ```
+  ```text
   Phase [N] gate PASSED after [cycles] remediation cycle(s).
   Note: passed_after_remediation=true recorded in history.
   ```
@@ -662,11 +662,11 @@ If `GATE_RESULT = fail`:
 
 #### Versioned-retry + STOP (non-auto default, and escalation path)
 
-**7a. Determine next attempt number**
+##### 7a. Determine next attempt number
 
 `next_attempt = attempt + 1`
 
-**7b. Read failure context from verdict**
+##### 7b. Read failure context from verdict
 
 Read the failing agent's verdict file. Extract:
 
@@ -674,7 +674,7 @@ Read the failing agent's verdict file. Extract:
 - `loops_to_revert`: list of loop names that must be revisited
 - `failure_notes`: prose summary of what went wrong
 
-**7c. Create versioned loop file**
+##### 7c. Create versioned loop file
 
 Copy the current active loop file to a versioned path:
 
@@ -682,7 +682,7 @@ Copy the current active loop file to a versioned path:
 cp .advanced-plans/phases/phase-[N]/loops.md .advanced-plans/phases/phase-[N]/loops-v[next_attempt].md
 ```
 
-**7d. Inject gate_failure_context block**
+##### 7d. Inject gate_failure_context block
 
 Edit the new versioned file (`.advanced-plans/phases/phase-[N]/loops-v[next_attempt].md`). In the
 YAML frontmatter of each loop listed in `loops_to_revert`, add a `gate_failure_context`
@@ -701,18 +701,18 @@ gate_failure_context:
     - "[finding description 2]"
 ```
 
-**7e. Reset todo statuses in versioned file**
+##### 7e. Reset todo statuses in versioned file
 
 In the versioned file, for each loop listed in `loops_to_revert`, change all
 `status: completed` todos to `status: pending` so they are re-executed on retry.
 
-**7f. Freeze the original loop file**
+##### 7f. Freeze the original loop file
 
 In the original loop file (`.advanced-plans/phases/phase-[N]/loops.md`), change any
 `status: pending` or `status: in_progress` todos to `status: frozen` to prevent
 the original from being modified during retry.
 
-**7g. Update PLANS-INDEX.md**
+##### 7g. Update PLANS-INDEX.md
 
 Read `.advanced-plans/PLANS-INDEX.md`. Update the Phase [N] entry:
 
@@ -722,21 +722,21 @@ Read `.advanced-plans/PLANS-INDEX.md`. Update the Phase [N] entry:
 
 If `PLANS-INDEX.md` does not exist, create it with a Phase [N] entry.
 
-**7h. Append phase_retry event to history.jsonl**
+##### 7h. Append phase_retry event to history.jsonl
 
 ```bash
 echo '{"event":"phase_retry","phase":"phase-[N]","attempt":[next_attempt],"timestamp":"[ISO timestamp]","new_loop_file":".advanced-plans/phases/phase-[N]/loops-v[next_attempt].md","original_loop_file":".advanced-plans/phases/phase-[N]/loops.md"}' >> .advanced-plans/state/history.jsonl
 ```
 
-**7i. Git commit**
+##### 7i. Git commit
 
 ```bash
 git add -A && git commit -m "retry: phase-[N] attempt [next_attempt] — gate failed on [failing-agent]"
 ```
 
-**7j. Print failure summary**
+##### 7j. Print failure summary
 
-```
+```text
 Phase [N] gate FAILED (attempt [attempt]).
   Failed agent:  [agent-name]
   Verdict file:  [path]

@@ -112,7 +112,7 @@ self-install mode.
 
 After a self-install, open Claude Code in this directory and run:
 
-```
+```text
 /loop-status
 ```
 
@@ -278,7 +278,7 @@ Skills are model-agnostic — they are loaded as instructions into whatever agen
 
 ## Repository Map
 
-```
+```text
 advanced-planning/
 ├── core/                     <- Platform-agnostic. Shared by all adapters.
 │   ├── schemas/              <- Markdown schema docs for plan file types

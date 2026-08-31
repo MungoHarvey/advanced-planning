@@ -21,5 +21,14 @@
 
   // Same reason. Its autofix renumbered a procedure's steps 4. and 5. to 1. and
   // 2., which reads as a new list rather than a continuation.
-  "MD029": false
+  "MD029": false,
+
+  // Pinned rather than left on "consistent". Under "consistent" the rule takes
+  // its expected style from whichever emphasis appears FIRST in a file, so
+  // editing the top of a document silently re-judges the whole of it: adding a
+  // CHANGELOG entry above `_Nothing yet._` flipped the file from underscore to
+  // asterisk and reported two errors 440 lines away, in text nobody had
+  // touched. A verdict that depends on document order is not a verdict. The
+  // repository already writes underscore 64 times to asterisk's 1.
+  "MD049": { "style": "underscore" }
 }
