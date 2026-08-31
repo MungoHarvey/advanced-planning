@@ -1044,3 +1044,126 @@ def test_no_command_invokes_python3_by_name():
         "these call sites invoke python3 rather than python: %s. Use `python`, "
         "which is what every other call site and every installer uses."
         % ", ".join(offenders))
+
+
+# ---------------------------------------------------------------------------
+# The guard the F15 allow-set decision removed
+# ---------------------------------------------------------------------------
+
+SETUP_DIR = _REPO_ROOT / "setup"
+
+# The two installer forms that copy a module out of platforms/python/ into a
+# directory where the platforms package does not exist. Anchored on the copy
+# verb, not on the path alone: install.sh also NAMES ap_launcher.py in a
+# comment, and a check that counted comments would keep passing on a repo that
+# had stopped shipping anything at all.
+_SH_COPY = re.compile(
+    r'do_cp\s+"\$REPO_ROOT/platforms/python/([A-Za-z0-9_]+\.py)"')
+_PS1_COPY = re.compile(
+    r'Do-Copy\s+\(Join-Path\s+\$RepoRoot\s+'
+    r'"platforms\\python\\([A-Za-z0-9_]+\.py)"\)')
+
+
+def _shipped_modules():
+    """Every platforms/python module an installer copies, read off the installers.
+
+    Returns
+    -------
+    dict
+        {module filename: sorted list of "<host>/<installer>:<line>" sites}.
+    """
+    found = {}
+    installers = (sorted(SETUP_DIR.glob("*/install.sh"))
+                  + sorted(SETUP_DIR.glob("*/install.ps1")))
+    for installer in installers:
+        text = io.open(str(installer), encoding="utf-8", newline="").read()
+        pattern = _SH_COPY if installer.suffix == ".sh" else _PS1_COPY
+        for match in pattern.finditer(text):
+            line = text.count("\n", 0, match.start()) + 1
+            site = "%s/%s:%d" % (installer.parent.name, installer.name, line)
+            found.setdefault(match.group(1), []).append(site)
+    return dict((name, sorted(sites)) for name, sites in found.items())
+
+
+class TestShippedModulesImportStdlibOnly:
+    """A shipped module may not import the package that is not shipped with it.
+
+    core/constraints.json now admits ``platforms`` to the allow-set, so
+    ast_check no longer catches this. That was a deliberate decision -- see the
+    note in that file -- and it is correct for the sixteen modules no install
+    ships, whose imports resolve because they only ever run from the checkout.
+
+    It is not correct for the ones that ARE shipped. An installer copies
+    ap_launcher.py to ``<project>/.advanced-plans/bin/ap.py``, where no
+    platforms package exists; a ``platforms`` import there is the exact
+    unreachable-runtime failure this module's other tests were written for.
+    Nothing checked that any more. This does.
+
+    The subject is read off the installers rather than typed here, so a module
+    that starts being shipped is covered the day it starts, and the first test
+    below fails if that reading ever stops finding anything.
+    """
+
+    def test_the_discovery_finds_the_installers(self):
+        """The guard's subject must be a real reading, not an empty set.
+
+        A regex that silently stops matching turns the guard below into a loop
+        over nothing, which passes. That is the failure this suite exists to
+        catch, so it is checked before the thing it enables.
+        """
+        shipped = _shipped_modules()
+        assert shipped, (
+            "no installer was found to copy anything out of platforms/python/. "
+            "Either the copy verb changed and _SH_COPY/_PS1_COPY need "
+            "updating, or nothing is shipped any more -- in which case this "
+            "whole class should go rather than pass over an empty set.")
+        assert "ap_launcher.py" in shipped, (
+            "ap_launcher.py is the module this guard was written for and the "
+            "installers no longer appear to ship it. Found instead: %s"
+            % ", ".join(sorted(shipped)))
+
+        sites = shipped["ap_launcher.py"]
+        kinds = set(site.split("/")[1].split(":")[0] for site in sites)
+        assert kinds == set(["install.sh", "install.ps1"]), (
+            "only %s matched, so one of the two installer patterns has gone "
+            "stale and half the shipping sites are invisible to this guard. "
+            "Sites: %s" % (", ".join(sorted(kinds)), ", ".join(sites)))
+
+        hosts = set(site.split("/")[0] for site in sites)
+        assert len(hosts) >= 2, (
+            "ap_launcher.py was found shipped by only one host (%s). Every "
+            "adapter ships it, so this reading is incomplete."
+            % ", ".join(sorted(hosts)))
+
+    def test_shipped_modules_import_stdlib_only(self, monkeypatch):
+        """The guard proper: no shipped module may import platforms."""
+        from platforms.python import ast_check
+
+        full = ast_check.load_allowed_imports()
+        assert "platforms" in full, (
+            "this class exists only because 'platforms' is in the allow-set. "
+            "If the exemption has since been scoped to unshipped modules, "
+            "ast_check covers the shipped ones again and this class should be "
+            "deleted rather than adjusted until it passes.")
+
+        stdlib_only = full - set(["platforms"])
+        monkeypatch.setattr(
+            ast_check, "load_allowed_imports", lambda: stdlib_only)
+
+        offenders = []
+        for name, sites in sorted(_shipped_modules().items()):
+            source = _REPO_ROOT / "platforms" / "python" / name
+            assert source.is_file(), (
+                "%s is copied by %s but does not exist in platforms/python/"
+                % (name, ", ".join(sites)))
+            for violation in ast_check.check_file(source):
+                offenders.append(
+                    "%s:%d imports %r -- shipped by %s"
+                    % (name, violation.line, violation.imported_name,
+                       ", ".join(sites)))
+
+        assert not offenders, (
+            "these modules are copied into a directory that has no platforms "
+            "package, so these imports fail at runtime in every installed "
+            "project:\n  %s\nEither drop the import or stop shipping the "
+            "module." % "\n  ".join(offenders))
