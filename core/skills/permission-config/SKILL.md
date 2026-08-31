@@ -28,9 +28,9 @@ Scope: only the three files listed above and agent frontmatter `tools:` lines.
 Determine which file(s) need editing:
 - **Agent frontmatter** (`platforms/claude-code/agents/<name>.md` or
   `core/agents/<name>.md`): change the `tools:` field on the YAML frontmatter line
-- **`settings.json`** (`.claude/settings.json` in the target project, or the template
+    - **`settings.json`** (`[settings_directory]/settings.json` in the target project, or the template
   written by `install.sh`): change the `permissions.allow` or `permissions.deny` array
-- **`hooks.json`** (`.claude/settings.json` `hooks` block, or a dedicated `hooks.json`):
+    - **`hooks.json`** (`[settings_directory]/settings.json` `hooks` block, or a dedicated `hooks.json`):
   add, edit, or remove a `PreToolUse` / `PostToolUse` entry
 
 ### 2. Read the file before editing
@@ -74,7 +74,7 @@ After saving the file:
 ### 5. Note runtime propagation
 
 Permission changes in `settings.json` and `hooks.json` take effect the next time
-a Claude Code session is started (they are read at session startup, not live-reloaded).
+the host session is started (they are read at session startup, not live-reloaded).
 Agent frontmatter `tools:` changes take effect the next time the agent is spawned.
 
 Document in the commit message whether the change is:

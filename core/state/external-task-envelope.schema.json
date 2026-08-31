@@ -1,0 +1,191 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "external-task-envelope",
+  "description": "Written by the controller once before dispatching a task to an external worker. Immutable — amendment creates a new envelope with supersedes_run_id pointing to the replaced one. Validated before dispatch.",
+  "type": "object",
+  "required": ["schema_version", "run_id", "project_id", "task_id", "title", "kind", "duration", "isolation", "provider", "manager", "repository", "base_ref", "base_sha", "branch", "allowed_paths", "forbidden_paths", "spec_paths", "acceptance_checks", "required_evidence", "created_at"],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version; always 1 for this version of the envelope"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^\\d{8}T\\d{6}Z-[a-z0-9-]+$",
+      "description": "Unique run identifier. Resolved before dispatch; must not be empty. Format: YYYYMMDDTHHMMSSZ-slug."
+    },
+    "project_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Project identifier, e.g. advanced-ai-workflows. Resolved before dispatch; must not be empty."
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Task identifier within the run, e.g. phase-01-loop-02-todo-03. Must not be empty."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable task title. Must not be empty."
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["implementation", "sync", "release", "review", "analysis"],
+      "description": "Task kind. 'implementation' and 'sync' require isolation: worktree unless override_with_shared_write is true. 'sync' and 'release' require allowed_paths to be present."
+    },
+    "duration": {
+      "type": "string",
+      "enum": ["short", "medium", "long"],
+      "description": "Expected task duration tier"
+    },
+    "isolation": {
+      "type": "string",
+      "enum": ["worktree", "shared"],
+      "description": "Execution isolation level. 'worktree' = isolated git worktree; 'shared' = shared checkout (requires override_with_shared_write justification)."
+    },
+    "override_with_shared_write": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, allows isolation: 'shared' for implementation or sync tasks. Controller must record explicit justification elsewhere. Rule 2: implementation/sync tasks must use worktree unless this is true."
+    },
+    "provider": {
+      "type": "string",
+      "enum": ["claude", "codex", "opencode", "cursor", "agy"],
+      "description": "AI provider/CLI that will execute the task"
+    },
+    "manager": {
+      "type": "string",
+      "enum": ["herdr", "native"],
+      "description": "Execution manager. 'herdr' = herdr-managed pane; 'native' = direct CLI invocation."
+    },
+    "repository": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Absolute path to the repository root on the local filesystem. Resolved before dispatch; must not be empty."
+    },
+    "base_ref": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable git ref for the base branch, e.g. upstream/main or main. Resolved before dispatch; must not be empty. Rule 6: base_sha holds the resolved 40-character SHA."
+    },
+    "base_sha": {
+      "type": "string",
+      "minLength": 40,
+      "maxLength": 40,
+      "pattern": "^[0-9a-f]{40}$",
+      "description": "Full 40-character commit SHA resolved from base_ref before dispatch. Abbreviated SHAs must fail validation. Rule 6: this field exists because base_ref alone is insufficient — the SHA is the immutable anchor."
+    },
+    "branch": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Branch name for worker commits. Resolved before dispatch; must not be empty."
+    },
+    "allowed_paths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Paths the worker is permitted to modify. Rule 3: required (non-empty array) for sync and release tasks; may be broad for other kinds."
+    },
+    "forbidden_paths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "contains": {
+        "const": ".advanced-plans/state/"
+      },
+      "description": "Paths the worker must not touch. Rule 4: must contain '.advanced-plans/state/' — the controller's mutable planning state. Enforced via 'contains' with const."
+    },
+    "spec_paths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Paths to specification documents the worker must read. May be empty if no specs apply."
+    },
+    "acceptance_checks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Test commands or fixtures the worker must pass. Each entry is a human-readable check name or command."
+    },
+    "required_evidence": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["git_diff", "tests", "agent_summary", "review", "screenshots", "logs"]
+      },
+      "description": "Evidence types the worker must produce on completion. Enum constrains to known evidence categories."
+    },
+    "supersedes_run_id": {
+      "type": "string",
+      "pattern": "^\\d{8}T\\d{6}Z-[a-z0-9-]+$",
+      "description": "Optional. If present, this envelope amends a prior dispatch. Points to the run_id being superseded. The envelope is immutable; amendment means a new envelope, not an edit."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the envelope was created"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "enum": ["implementation", "sync"]
+          }
+        },
+        "required": ["kind"]
+      },
+      "then": {
+        "anyOf": [
+          {
+            "properties": {
+              "isolation": {
+                "const": "worktree"
+              }
+            },
+            "required": ["isolation"]
+          },
+          {
+            "properties": {
+              "override_with_shared_write": {
+                "const": true
+              }
+            },
+            "required": ["override_with_shared_write"]
+          }
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "enum": ["sync", "release"]
+          }
+        },
+        "required": ["kind"]
+      },
+      "then": {
+        "properties": {
+          "allowed_paths": {
+            "minItems": 1
+          }
+        },
+        "required": ["allowed_paths"]
+      }
+    }
+  ],
+  "additionalProperties": false
+}

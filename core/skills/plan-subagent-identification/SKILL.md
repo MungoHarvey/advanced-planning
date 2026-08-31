@@ -8,7 +8,7 @@ description: "Read the todos[] array in a ralph loop's YAML frontmatter and upda
 Reads a ralph loop's todos (with skills already assigned) and categorises which tasks are
 execution-focused versus coordination-focused. Updates the `agent:` field in-place.
 
-**Note**: In platforms where the worker cannot spawn subagents (e.g. Claude Code), the `agent:`
+**Note**: In platforms where the worker cannot spawn subagents, the `agent:`
 field is planning-time metadata — it categorises the task type but does not trigger separate
 spawning during loop execution. The worker executes all todos inline. The field remains valuable
 for planning clarity, future platform adapters, and cost/complexity signalling.

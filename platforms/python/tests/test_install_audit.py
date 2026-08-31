@@ -11,11 +11,14 @@ Covers:
 """
 
 import pathlib
+import re
 
 import pytest
 
 from platforms.python.install_audit import (
+    _VALID_LAYER_PAIRS,
     FileVerdict,
+    _file_hash,
     LayerPairResult,
     audit_pair,
     has_drift,
@@ -366,3 +369,233 @@ class TestLayersSelection:
         captured = capsys.readouterr()
         assert "project" not in captured.out
         assert rc == 0
+
+
+# ---------------------------------------------------------------------------
+# 7. the install-time launcher rewrite is canonical, not drift
+# ---------------------------------------------------------------------------
+
+
+class TestLauncherPathNormalisation:
+    """A --global install rewrites the launcher path in every command it
+    copies, because a project-relative path is meaningless from a project the
+    installer never touched. Without normalising that one path back out, every
+    globally installed command reports stale forever and no /sync-install can
+    settle it -- observed as "6 stale" on a clean install before this landed.
+    """
+
+    def test_the_installers_absolute_path_hashes_as_the_source_form(self, tmp_path):
+        src = tmp_path / "src.md"
+        src.write_text(
+            'python ".advanced-plans/bin/ap.py" history_log\n'
+            "import runpy; runpy.run_path(r'.advanced-plans/bin/ap.py')\n",
+            encoding="utf-8",
+        )
+        installed = tmp_path / "installed.md"
+        installed.write_text(
+            'python "C:/Users/bob/.advanced-plans/bin/ap.py" history_log\n'
+            "import runpy; "
+            "runpy.run_path(r'C:/Users/bob/.advanced-plans/bin/ap.py')\n",
+            encoding="utf-8",
+        )
+        assert _file_hash(src) == _file_hash(installed)
+
+    def test_a_backslash_path_normalises_too(self, tmp_path):
+        """install.ps1 writes forward slashes today, but the launcher accepts
+        either and a future installer changing its mind must not read as drift.
+        """
+        src = tmp_path / "src.md"
+        src.write_text('python ".advanced-plans/bin/ap.py" run_gate\n',
+                       encoding="utf-8")
+        installed = tmp_path / "installed.md"
+        installed.write_text(
+            'python "C:\\Users\\bob\\.advanced-plans\\bin\\ap.py" run_gate\n',
+            encoding="utf-8")
+        assert _file_hash(src) == _file_hash(installed)
+
+    def test_normalisation_does_not_mask_a_real_edit(self, tmp_path):
+        """The narrow point. Normalisation that swallowed the rest of the line
+        would turn install_audit into a no-op for exactly the files it most
+        needs to police.
+        """
+        src = tmp_path / "src.md"
+        src.write_text('python ".advanced-plans/bin/ap.py" history_log\n',
+                       encoding="utf-8")
+        tampered = tmp_path / "tampered.md"
+        tampered.write_text(
+            'python "C:/Users/bob/.advanced-plans/bin/ap.py" rm_rf\n',
+            encoding="utf-8")
+        assert _file_hash(src) != _file_hash(tampered)
+
+
+# ---------------------------------------------------------------------------
+# 7. CI asks for a layer it can actually have
+# ---------------------------------------------------------------------------
+
+_REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
+_WORKFLOW = _REPO_ROOT / ".github" / "workflows" / "ci.yml"
+_GITIGNORE = _REPO_ROOT / ".gitignore"
+
+# The surfaces install_audit compares. Named here as the INSTALLED basenames,
+# which is what a layer directory has to contain to be auditable at all.
+_AUDITED_SURFACES = ("commands", "agents", "schemas")
+
+_JOB_RE = re.compile(r"^  ([A-Za-z0-9_-]+):\s*$")
+_AUDIT_RE = re.compile(r"python\s+-m\s+platforms\.python\.install_audit(.*)$")
+_LAYERS_RE = re.compile(r"--layers[=\s]+(\S+)")
+_GLOBAL_INSTALL_RE = re.compile(r"install\.sh\b.*--global")
+
+
+def _workflow_events(text):
+    """Every install/audit call in a workflow, tagged with its job and line.
+
+    Plain-text parsing rather than a YAML load: what CI runs is the literal
+    command string, and this check exists precisely to compare that string
+    against reality. It also keeps the test suite free of a YAML dependency.
+    """
+    events = []
+    job = None
+    for i, line in enumerate(text.replace("\r\n", "\n").split("\n"), 1):
+        m = _JOB_RE.match(line)
+        if m:
+            job = m.group(1)
+            continue
+        if _GLOBAL_INSTALL_RE.search(line):
+            events.append({"kind": "install", "job": job, "line": i})
+        a = _AUDIT_RE.search(line)
+        if a:
+            lm = _LAYERS_RE.search(a.group(1))
+            # install_audit's own default when --layers is omitted.
+            events.append({"kind": "audit", "job": job, "line": i,
+                           "layers": lm.group(1) if lm else "all"})
+    return events
+
+
+def _project_layer_is_reachable(gitignore_text):
+    """Can a fresh `actions/checkout` contain .claude/commands|agents|schemas?
+
+    A bare `.claude/*` with a single negation for settings.json is exactly the
+    trap: the directory EXISTS on the runner, so install_audit's
+    "not found -- skipped" guard never fires, and every source file is then
+    reported missing.
+    """
+    lines = [l.strip() for l in gitignore_text.replace("\r\n", "\n").split("\n")]
+    if not any(l in (".claude/*", ".claude/", ".claude") for l in lines):
+        return True
+    negated = {l[1:].rstrip("/") for l in lines if l.startswith("!")}
+    return all(
+        any(n == ".claude/%s" % s or n.startswith(".claude/%s/" % s) for n in negated)
+        for s in _AUDITED_SURFACES
+    )
+
+
+def _ci_audit_problems(workflow_text, gitignore_text, valid_pairs):
+    """Every reason a workflow's install_audit call cannot mean anything."""
+    events = _workflow_events(workflow_text)
+    problems = []
+    for ev in [e for e in events if e["kind"] == "audit"]:
+        pair = ev["layers"]
+        where = "%s (job %s, line %d)" % (pair, ev["job"], ev["line"])
+
+        if pair not in valid_pairs:
+            problems.append(
+                "invalid: --layers %s is not one of %s, so the step exits 2 "
+                "before auditing anything" % (where, sorted(valid_pairs)))
+            continue
+
+        if pair in ("source,project", "all") and not _project_layer_is_reachable(
+                gitignore_text):
+            problems.append(
+                "gitignored: --layers %s asks for the project layer, but "
+                ".gitignore keeps .claude/%s out of a fresh checkout, so the "
+                "job can only ever fail"
+                % (where, "|".join(_AUDITED_SURFACES)))
+
+        if pair in ("source,global", "all"):
+            installed_before = [
+                e for e in events
+                if e["kind"] == "install" and e["job"] == ev["job"]
+                and e["line"] < ev["line"]
+            ]
+            if not installed_before:
+                problems.append(
+                    "vacuous: --layers %s audits the global layer, but nothing "
+                    "earlier in that job installs one. install_audit skips a "
+                    "missing layer with a note and returns 0, so this step "
+                    "would pass without comparing a single file" % where)
+    return problems
+
+
+class TestCIAuditsALayerItCanActuallyHave:
+    """7: the workflow must ask install_audit for a layer that can exist.
+
+    `--layers source,project` was in ci.yml from the start and failed on every
+    run: .claude/settings.json is tracked, so .claude/ exists on the runner,
+    the skip guard never fires, and all 27 source files read as missing. A
+    permanently-red job teaches people to ignore the red.
+    """
+
+    def test_the_parser_actually_parses(self):
+        """Without this, every assertion below passes for a broken regex.
+
+        A parser that finds no invocations reports no problems, and that is
+        indistinguishable from a workflow that is correct.
+        """
+        good = (
+            "jobs:\n"
+            "  path-convention-audit:\n"
+            "    steps:\n"
+            "      - run: |\n"
+            "          sh setup/claude-code/install.sh --global\n"
+            "      - run: |\n"
+            "          python -m platforms.python.install_audit "
+            "--layers source,global\n"
+        )
+        events = _workflow_events(good)
+        kinds = [e["kind"] for e in events]
+        assert kinds == ["install", "audit"], (
+            "parser did not see one install then one audit: %r" % events)
+        assert events[1]["layers"] == "source,global"
+        assert events[1]["job"] == "path-convention-audit", (
+            "the audit was not attributed to its job: %r" % events[1])
+        assert not _ci_audit_problems(good, ".gitignore\n", _VALID_LAYER_PAIRS), (
+            "a correct workflow was reported as a problem")
+
+        assert _workflow_events("jobs:\n  build:\n    steps: []\n") == [], (
+            "the parser invents invocations in a workflow that has none")
+
+        # Each rule must fire on the shape it exists to catch.
+        ignore = ".claude/*\n!.claude/settings.json\n"
+        cases = [
+            ("--layers source,project", ignore, "gitignored"),
+            ("--layers source", ignore, "invalid"),
+            ("--layers source,global", ignore, "vacuous"),
+        ]
+        for flag, gi, expected in cases:
+            wf = ("jobs:\n  audit:\n    steps:\n      - run: |\n"
+                  "          python -m platforms.python.install_audit %s\n" % flag)
+            found = _ci_audit_problems(wf, gi, _VALID_LAYER_PAIRS)
+            assert any(p.startswith(expected) for p in found), (
+                "%r should have been reported as %s, got: %r"
+                % (flag, expected, found))
+
+        assert _project_layer_is_reachable(".claude/*\n!.claude/commands\n"
+                                          "!.claude/agents\n!.claude/schemas\n"), (
+            "a gitignore that re-includes every audited surface should be "
+            "treated as reachable")
+
+    def test_ci_audits_a_layer_that_can_exist_and_is_actually_created(self):
+        assert _WORKFLOW.is_file(), "no workflow at %s" % _WORKFLOW
+        text = _WORKFLOW.read_text(encoding="utf-8")
+        events = _workflow_events(text)
+        audits = [e for e in events if e["kind"] == "audit"]
+        assert audits, (
+            "no install_audit invocation found in %s. Either CI stopped "
+            "auditing installs, or this parser stopped matching it -- and "
+            "both make this check meaningless." % _WORKFLOW.name)
+
+        problems = _ci_audit_problems(
+            text, _GITIGNORE.read_text(encoding="utf-8"), _VALID_LAYER_PAIRS)
+        assert not problems, (
+            "%d CI install-audit invocation(s) cannot mean what they claim:\n"
+            "  %s" % (len(problems), "\n  ".join(problems)))

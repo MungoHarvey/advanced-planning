@@ -38,12 +38,46 @@ Usage: /sync-install [--check] [--layers source,project|source,global|all]
 
 Stop.
 
+### 1b. Ensure the shared runtime is reachable
+
+`install_audit` compares `.claude/` surfaces only, so it is blind to
+`.advanced-plans/runtime.json` and `.advanced-plans/bin/ap.py`. Those are what
+every command uses to reach `platforms/python/`, and a `source_root` left
+pointing at a moved checkout is exactly the drift this command exists to
+repair. The launcher's own diagnostic names `/sync-install` as a repair, so it
+has to actually be one.
+
+This runs **before** the audit, not after it. Step 2 invokes
+`install_audit` *through* the launcher, so a stale or missing record
+makes the audit itself the thing that fails - and a repair placed after
+it could never be reached in either case it exists for.
+
+For each project layer included in `--layers`:
+
+```bash
+python ".advanced-plans/bin/ap.py" --check
+```
+
+- Exit 0: the record resolves. Print the line it produced and continue to
+  Step 2.
+- Exit 3: it does not. The diagnostic names the file and the key. Rewrite
+  `source_root` in `.advanced-plans/runtime.json` to the absolute path of the
+  source checkout `/sync-install` is running from, and re-copy
+  `platforms/python/ap_launcher.py` to `.advanced-plans/bin/ap.py`.
+- The launcher is missing entirely (`can't open file`): copy it, then write
+  `runtime.json` with `schema_version: 1` and that same `source_root`.
+
+Record the path as one the *interpreter* can open, not only the shell: under
+Git Bash on Windows that means `C:/Users/...`, not `/c/Users/...`. Re-running
+the installer does this correctly and is the better repair when it is
+available; this step exists for the case where it is not.
+
 ### 2. Run the install audit
 
 Run:
 
 ```bash
-python -m platforms.python.install_audit --layers [resolved_layers]
+python ".advanced-plans/bin/ap.py" install_audit --layers [resolved_layers]
 ```
 
 Capture the output and exit code.
@@ -54,6 +88,10 @@ Capture the output and exit code.
   ```
 - Exit 1 → drift detected. Continue to Step 3.
 - Exit 2 → argument/configuration error. Print the error and stop.
+- Exit 3 → the runtime became unreachable between Step 1b and here (a
+  concurrent move, or a repair that did not take). Print the launcher's
+  diagnostic and stop; re-running the installer is the repair. Do **not**
+  read exit 3 as an audit verdict - `install_audit` never returns it.
 
 If `--check` was passed, print the full audit output and stop regardless of
 exit code — do not proceed to the copy step.
@@ -110,7 +148,7 @@ visually distinct:
 After all copies are done, run the audit again:
 
 ```bash
-python -m platforms.python.install_audit --layers [resolved_layers]
+python ".advanced-plans/bin/ap.py" install_audit --layers [resolved_layers]
 ```
 
 - Exit 0 → success. Print:
@@ -148,7 +186,7 @@ After editing any file under `platforms/claude-code/commands/`,
 propagate the change to the project and global installed copies.
 
 For CI (which cannot see the developer's global dir), use:
-`python -m platforms.python.install_audit --layers source,project`
+`python ".advanced-plans/bin/ap.py" install_audit --layers source,project`
 
 ## Error Modes
 

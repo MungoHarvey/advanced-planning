@@ -363,7 +363,7 @@ On the first remediation cycle (`cycles == 1`):
    `.advanced-plans/phases/phase-[N]/criteria-frozen.md`. Record its SHA-256 hash as
    `CRITERIA_HASH`:
    ```bash
-   python3 -c "import hashlib, pathlib; f=pathlib.Path('.advanced-plans/phases/phase-[N]/criteria-frozen.md'); print(hashlib.sha256(f.read_bytes()).hexdigest())"
+   python -c "import hashlib, pathlib; f=pathlib.Path('.advanced-plans/phases/phase-[N]/criteria-frozen.md'); print(hashlib.sha256(f.read_bytes()).hexdigest())"
    ```
    Store as `CRITERIA_HASH`.
 
@@ -372,7 +372,7 @@ On the first remediation cycle (`cycles == 1`):
 Import and call `triage_findings` from `platforms/python/remediate.py`:
 
 ```python
-import sys; sys.path.insert(0, '.')
+import runpy; runpy.run_path(r'.advanced-plans/bin/ap.py')['bootstrap']()
 from platforms.python.remediate import triage_findings
 result = triage_findings(verdict)
 # result keys: structural, localized, unfixable, conflict
@@ -416,6 +416,7 @@ Write the failure context to the worker-only sidecar
 `inject_failure_context` from `platforms/python/versioning.py`:
 
 ```python
+import runpy; runpy.run_path(r'.advanced-plans/bin/ap.py')['bootstrap']()
 from platforms.python.versioning import inject_failure_context
 import pathlib
 inject_failure_context(
@@ -554,7 +555,7 @@ echo '{"event":"gate_remediation","phase":"phase-[N]","cycle":[cycles],"timestam
 Before spawning the re-gate, verify the frozen criteria have not changed:
 
 ```bash
-python3 -c "
+python -c "
 import hashlib, pathlib
 f = pathlib.Path('.advanced-plans/phases/phase-[N]/criteria-frozen.md')
 h = hashlib.sha256(f.read_bytes()).hexdigest()

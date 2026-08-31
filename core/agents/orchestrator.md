@@ -194,7 +194,7 @@ The orchestrator has access to the three planning skills used in the todo popula
 Platform adapters must specify:
 - The model to use for this role (Sonnet recommended)
 - The tool capabilities granted (read, write, edit files; glob; no execution tools needed)
-- The state directory path (e.g. `.advanced-plans/state/` for Claude Code)
+- The state directory path (e.g. `.advanced-plans/state/` in the target project)
 - The skills directory path (e.g. `core/skills/` for this release)
 - How invocation is triggered (slash command, API call, Python function)
 

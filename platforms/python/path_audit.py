@@ -26,13 +26,30 @@ The following are EXPLICITLY EXCLUDED from the scan:
     - platforms/python/tests/ (test fixtures may plant tokens deliberately)
     - README*, CHANGELOG*, *.schema.md (documentation files)
 
-Only these three signatures are treated as violations:
+Only these signatures are treated as violations:
+
+A. Path-convention violations (all scanned roots):
     1. Doubled prefix:      `.advanced-.advanced-`  (or `\\.advanced-\\.advanced-`)
     2. Wrong nesting:       `.claude/.advanced-plans`
     3. Deprecated token:    `.claude/plans/`
 
-A bare `.claude/commands/` or `.claude/skills/` reference is LEGITIMATE (installed
-runtime) and is NOT flagged.
+B. Host-neutrality violations (core/ roots ONLY — see docs/path-conventions.md §7.3):
+    Core files must contain no host-specific directories, tool names, or permission syntax.
+    The following are violations when found under core/agents/ or core/skills/:
+
+    B1. Host directories:
+        - `.claude/`, `.cursor/`, `.opencode/`, `.codex/`, `.agents/`, `.gemini/`
+    B2. Host-only tool and agent names:
+        - `Agent` tool, `Task` tool, `subagent_type` parameter
+        - Slash-command syntax: `/plan-and-phase`, `/next-loop`, `/run-gate`, etc.
+    B3. Host permission syntax:
+        - `settings.json` permission rules (e.g., `permissions.defaultMode`)
+        - `opencode.json` configuration
+        - `.cursor/rules` references
+
+A bare `.claude/commands/` or `.claude/skills/` reference is LEGITIMATE in
+platforms/claude-code/ (installed runtime docs) and is NOT flagged there.
+The same reference in core/ IS flagged.
 
 Source of truth for canonical paths: docs/path-conventions.md
 
@@ -56,22 +73,63 @@ from typing import List, NamedTuple
 # Violation signatures
 # ---------------------------------------------------------------------------
 
-#: Each entry is (pattern_name, compiled_regex).
+#: Each entry is (pattern_name, compiled_regex, core_only).
 #: A line matching ANY of these is a violation.
+#: core_only=True means the pattern is only checked under core/ roots.
 VIOLATION_PATTERNS: List[tuple] = [
     (
         "doubled-prefix (.advanced-.advanced-)",
         re.compile(r"\.advanced-\.advanced-"),
+        False,  # all roots
     ),
     (
         "wrong-nesting (.claude/.advanced-plans)",
         re.compile(r"\.claude/\.advanced-plans"),
+        False,  # all roots
     ),
     (
         "deprecated-token (.claude/plans/)",
         re.compile(r"\.claude/plans/"),
+        False,  # all roots
+    ),
+    # Host-neutrality violations (core/ only)
+    (
+        "host-directory (.claude/|.cursor/|.opencode/|.codex/|.gemini/)",
+        re.compile(r"\.(claude|cursor|opencode|codex|gemini)/"),
+        True,  # core/ and platforms/shared/ only
+    ),
+    (
+        "host-tool-name (Claude Code|Cowork|Agent tool|Task tool|TodoWrite|subagent_type)",
+        re.compile(r"(Claude Code|Cowork|Agent tool|Task tool|TodoWrite|subagent_type)"),
+        True,  # core/ only
+    ),
+    (
+        r"host-permission-syntax (settings.json|opencode.json|.cursor/rules)",
+        re.compile(r"(settings\.json|opencode\.json|\.cursor/rules)"),
+        True,  # core/ only
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# Exception mechanism for named deviations
+# ---------------------------------------------------------------------------
+
+#: Exceptions are keyed by (relative_file_path, pattern_name).
+#: Each entry is (reason: str, retirement_plan: str).
+#: Exceptions are printed at the end of every audit run - silent suppression is not allowed.
+#: An excepted file must still fail on a rule it was not excepted for.
+EXCEPTIONS: dict = {
+    # permission-config skill is about Claude Code permissions - cannot be reworded
+    # Retirement: move skill to platforms/claude-code/ when structural changes are in scope
+    (
+        "core/skills/permission-config/SKILL.md",
+        "host-permission-syntax (settings.json|opencode.json|.cursor/rules)",
+    ): (
+        "Skill subject is Claude Code permission configuration (settings.json, hooks.json)",
+        "Retire by moving skill to platforms/claude-code/skills/ when structural changes are in scope",
+    ),
+}
 
 
 # ---------------------------------------------------------------------------
@@ -83,6 +141,12 @@ DEFAULT_SCANNED_ROOTS: List[str] = [
     "platforms/claude-code/commands",
     "platforms/claude-code/agents",
     "platforms/cowork",
+    "platforms/shared",
+    "platforms/codex",
+    "platforms/opencode",
+    "setup/codex",
+    "setup/opencode",
+    "setup/claude-code",
     "core/agents",
     "core/skills",
     ".claude/commands",
@@ -167,13 +231,16 @@ def _is_excluded(file_path: pathlib.Path, excluded_segments: List[str]) -> bool:
     return False
 
 
-def check_file(path: pathlib.Path) -> List[PathViolation]:
+def check_file(path: pathlib.Path, core_only_scan: bool = False) -> List[PathViolation]:
     """Scan a single file for path-convention violations.
 
     Parameters
     ----------
     path : pathlib.Path
         Path to the file to inspect (any text file).
+    core_only_scan : bool, optional
+        If True, only check core-only patterns (host-neutrality rules).
+        Used when scanning core/ roots.
 
     Returns
     -------
@@ -187,7 +254,10 @@ def check_file(path: pathlib.Path) -> List[PathViolation]:
         return violations
 
     for lineno, line in enumerate(lines, start=1):
-        for pattern_name, regex in VIOLATION_PATTERNS:
+        for pattern_name, regex, is_core_only in VIOLATION_PATTERNS:
+            # Skip core-only patterns if not in a core-only scan
+            if is_core_only and not core_only_scan:
+                continue
             match = regex.search(line)
             if match:
                 violations.append(
@@ -204,11 +274,22 @@ def check_file(path: pathlib.Path) -> List[PathViolation]:
     return violations
 
 
+class SuppressedViolation(NamedTuple):
+    """A violation that was suppressed by an exception."""
+
+    file: pathlib.Path
+    line: int
+    pattern_name: str
+    matched_text: str
+    reason: str
+    retirement_plan: str
+
+
 def audit(
     repo_root: pathlib.Path,
     scanned_roots: List[str] = None,
     excluded_segments: List[str] = None,
-) -> List[PathViolation]:
+) -> tuple:
     """Run the full path-convention audit.
 
     Parameters
@@ -222,8 +303,9 @@ def audit(
 
     Returns
     -------
-    list of PathViolation
-        All violations found across all scanned roots.
+    tuple of (violations, suppressed)
+        violations: list of PathViolation - unsuppressed violations
+        suppressed: list of SuppressedViolation - exceptions applied (always printed)
     """
     if scanned_roots is None:
         scanned_roots = DEFAULT_SCANNED_ROOTS
@@ -231,6 +313,7 @@ def audit(
         excluded_segments = DEFAULT_EXCLUDED_SEGMENTS
 
     all_violations: List[PathViolation] = []
+    all_suppressed: List[SuppressedViolation] = []
 
     for root_rel in scanned_roots:
         root_abs = repo_root / root_rel
@@ -242,6 +325,9 @@ def audit(
         else:
             files = sorted(root_abs.rglob("*"))
 
+        # Determine if this is a core/ or platforms/shared/ root (host-neutrality rules apply)
+        is_neutral_root = root_rel.startswith("core/") or root_rel.startswith("platforms/shared")
+
         for f in files:
             if not f.is_file():
                 continue
@@ -250,10 +336,27 @@ def audit(
                 continue
             if _is_excluded(f, excluded_segments):
                 continue
-            violations = check_file(f)
-            all_violations.extend(violations)
+            violations = check_file(f, core_only_scan=is_neutral_root)
+            for v in violations:
+                # Check if this (file, pattern) is excepted
+                rel_path = v.file.relative_to(repo_root).as_posix()
+                exc_key = (rel_path, v.pattern_name)
+                if exc_key in EXCEPTIONS:
+                    reason, retirement = EXCEPTIONS[exc_key]
+                    all_suppressed.append(
+                        SuppressedViolation(
+                            file=v.file,
+                            line=v.line,
+                            pattern_name=v.pattern_name,
+                            matched_text=v.matched_text,
+                            reason=reason,
+                            retirement_plan=retirement,
+                        )
+                    )
+                else:
+                    all_violations.append(v)
 
-    return all_violations
+    return all_violations, all_suppressed
 
 
 # ---------------------------------------------------------------------------
@@ -310,10 +413,22 @@ def main(argv: List[str] = None) -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
 
-    violations = audit(repo_root)
+    violations, suppressed = audit(repo_root)
+
+    # Always print suppressed violations - silent suppression is not allowed
+    if suppressed:
+        print(f"SUPPRESSED -- {len(suppressed)} exception(s) applied:")
+        for s in suppressed:
+            print(f"  {s.file}:{s.line}: [{s.pattern_name}]")
+            print(f"    Reason: {s.reason}")
+            print(f"    Retirement: {s.retirement_plan}")
+        print()
 
     if not violations:
-        print(f"CLEAN -- path-convention audit passed (scanned roots: {DEFAULT_SCANNED_ROOTS})")
+        if suppressed:
+            print(f"PASSED WITH {len(suppressed)} SUPPRESSED -- path-convention audit passed with exceptions (scanned roots: {DEFAULT_SCANNED_ROOTS})")
+        else:
+            print(f"CLEAN -- path-convention audit passed (scanned roots: {DEFAULT_SCANNED_ROOTS})")
         return 0
 
     print(

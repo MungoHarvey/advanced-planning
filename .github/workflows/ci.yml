@@ -42,21 +42,54 @@ jobs:
 
       - name: Validate JSON schema files are well-formed
         run: |
-          python -c "
-          import json, pathlib, sys
+          python - <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          # Import the zero-dependency validator to check structural validity
+          from platforms.python.minischema import validate, UnsupportedKeyword
+
           schema_dir = pathlib.Path('core/state')
           errors = []
+          parse_errors = []
+
           for f in schema_dir.glob('*.json'):
+              # Step 1: Parse check (catches malformed JSON)
               try:
-                  json.loads(f.read_text())
-                  print(f'OK: {f}')
+                  schema = json.loads(f.read_text())
               except json.JSONDecodeError as e:
-                  errors.append(f'FAIL: {f}: {e}')
+                  parse_errors.append(f'PARSE FAIL: {f}: {e}')
+                  continue
+
+              # Step 2: Structural check (catches typos, unknown keywords, invalid type values)
+              try:
+                  validate({}, schema)  # Empty instance; we only care that the schema itself is valid
+                  print(f'OK: {f}')
+              except UnsupportedKeyword as e:
+                  errors.append(f'STRUCTURAL FAIL: {f}: {e}')
+
+          # Report results
+          if parse_errors:
+              for err in parse_errors:
+                  print(err)
           if errors:
-              print('\n'.join(errors))
+              for err in errors:
+                  print(err)
+
+          total = len(list(schema_dir.glob('*.json')))
+          ok_count = total - len(parse_errors) - len(errors)
+
+          if parse_errors or errors:
+              print(f'\n{ok_count}/{total} schemas valid.')
               sys.exit(1)
-          print(f'All {len(list(schema_dir.glob(\"*.json\")))} schema files valid.')
-          "
+
+          print(f'\nAll {total} schema files valid.')
+          PY
+        # Uses minischema validator to catch unknown keywords (e.g. 'requried' typo)
+        # and invalid type values. The *.json glob is deliberate: non-schema files
+        # dropped in core/state/ now fail loudly because their keys are not schema
+        # keywords. Tightening to *.schema.json would silently skip them instead.
 
   # ── Job 3: Python tests ─────────────────────────────────────────────────────
   python-tests:
@@ -74,11 +107,25 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Assert interpreters present (sh and pwsh)
+        run: |
+          set -e
+          command -v sh
+          command -v pwsh
+        # Fails the job if either interpreter is missing. This is the fast,
+        # legible failure path — the env-var backstop below is the structural
+        # guard if this step is ever edited away.
+
       - name: Install pytest
         run: pip install pytest
 
-      - name: Run tests
-        run: python -m pytest platforms/python/tests/ -v --tb=short
+      - name: Run tests (adapter interpreters required)
+        run: |
+          AP_REQUIRE_ADAPTER_INTERPRETERS=1 python -m pytest platforms/python/tests/ -v --tb=short
+        # AP_REQUIRE_ADAPTER_INTERPRETERS=1 escalates missing-interpreter from
+        # skip to fail. This is the backstop if the assertion step above is
+        # ever edited away. Both are needed: the assertion fails fast with a
+        # legible message; the env-var is a structural guard in the process.
 
       - name: Verify no external dependencies
         run: |
@@ -96,21 +143,41 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Audit for deprecated/corrupted path tokens
+      - name: Path convention audit (deprecated + host-neutrality)
         run: |
           python -m platforms.python.path_audit
-        # Scans platforms/claude-code/commands/, platforms/claude-code/agents/,
-        # core/agents/, core/skills/, .claude/commands/, .claude/agents/ for:
-        #   - doubled prefix:  .advanced-.advanced-
-        #   - wrong nesting:   .claude/.advanced-plans
-        #   - deprecated token: .claude/plans/
-        # Exits non-zero (fails the build) if any violation is found.
+        # Scans the roots in path_audit.DEFAULT_SCANNED_ROOTS for two families of
+        # violation: (a) deprecated/corrupted path tokens, everywhere it scans
+        # (docs/path-conventions.md, "Deprecated Path Tokens"); (b) host-neutrality
+        # under core/ only -- host directories, host-only tool names, host
+        # permission syntax (same doc, "Host-Neutrality Rule (§7.3)").
+        # Exits non-zero if any violation is found. Known exceptions are keyed by
+        # (file, rule), are printed in full with reason and retirement plan, and do
+        # not blind that file to other rules; a run with only exceptions prints
+        # "PASSED WITH N SUPPRESSED" and exits 0.
 
-      - name: Audit install-layer drift (source vs project)
+      - name: Install into the runner's global layer
         run: |
-          python -m platforms.python.install_audit --layers source,project
+          sh setup/claude-code/install.sh --global
+        # The audit below needs an installed layer to compare against, and a fresh
+        # checkout has none it can use: .gitignore excludes .claude/* (everything but
+        # settings.json), so the project layer can never hold commands, agents or
+        # schemas on a runner. The global layer can -- HOME on a runner is disposable,
+        # so installing into it costs nothing and gives the audit a real subject.
+
+      - name: Audit install-layer drift (source vs global)
+        run: |
+          python -m platforms.python.install_audit --layers source,global
         # Compares platforms/claude-code/commands+agents/ and core/schemas/ against
-        # .claude/commands/, .claude/agents/, .claude/schemas/ in this repo.
-        # CI cannot see a developer's global ~/.claude/ dir so only the source<->project
-        # pair is checked. Exits non-zero if any stale or missing files are found.
-        # Fix drift by running /sync-install (or cp from source to .claude/ manually).
+        # ~/.claude/commands|agents|schemas as produced by the step above, so a pass
+        # here means the installer reproduces every source file byte-for-byte, after
+        # EOL and launcher-path normalisation. Exits non-zero on any stale or missing
+        # file; fix drift by running /sync-install.
+        #
+        # This replaced `--layers source,project`, which could not pass on a runner:
+        # .claude/settings.json IS tracked, so .claude/ exists, install_audit's
+        # "not found -- skipped" guard never fires, and all 27 source files read as
+        # missing. Do not "fix" a failure here by dropping the install step above --
+        # a missing layer is skipped with a note and the job returns 0 having audited
+        # nothing. TestCIAuditsALayerItCanActuallyHave fails the build if either the
+        # gitignored layer or the uninstalled one comes back.

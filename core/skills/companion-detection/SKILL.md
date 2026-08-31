@@ -19,7 +19,7 @@ Do NOT check on every command invocation. Check once per session at the first re
 
 ### 1. Check for Superpowers
 
-Detection: does `.claude/skills/brainstorming/SKILL.md` exist?
+Detection: does `[skills_directory]/brainstorming/SKILL.md` exist?
 
 **If installed:** no action needed. Integration happens automatically via the brainstorming skill's conditional terminal state (brainstorming → phase-plan-creator).
 
@@ -39,7 +39,7 @@ Detection: does `.claude/skills/brainstorming/SKILL.md` exist?
 
 ### 2. Check for Plannotator
 
-Detection: does `.claude/commands/plannotator-annotate.md` exist, or is the plannotator plugin registered?
+Detection: does `[commands_directory]/plannotator-annotate.md` exist, or is the plannotator plugin registered?
 
 **If installed:** no action needed. Integration happens automatically via plan-and-phase Step 5b (visual plan review after phase creation).
 

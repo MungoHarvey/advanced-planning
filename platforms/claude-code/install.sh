@@ -116,6 +116,27 @@ install_project() {
         echo "  → settings.json installed"
     fi
 
+    # The shared Python runtime. Without this the commands copied just above
+    # invoke .advanced-plans/bin/ap.py in a project that has no such file, and
+    # die with the interpreter's own "can't open file" - which is the whole
+    # defect this mechanism exists to close, still fully intact in this branch
+    # of this installer until now. The setup/ installers have carried it since
+    # 54a0a73; this one only ever got it on the --global path.
+    #
+    # Written unconditionally, and after everything above: an upgrade in place
+    # is exactly when a stale source_root most needs refreshing, and nothing
+    # here may skip it.
+    echo "  → Recording the shared Python runtime..."
+    _ap_dir="$TARGET/.advanced-plans"
+    mkdir -p "$_ap_dir/bin"
+    cp "$SCRIPT_DIR/platforms/python/ap_launcher.py" "$_ap_dir/bin/ap.py"
+    _src="$SCRIPT_DIR"
+    if command -v cygpath >/dev/null 2>&1; then _src="$(cygpath -m "$SCRIPT_DIR")"; fi
+    _ver="unknown"
+    [ -f "$SCRIPT_DIR/VERSION" ] && _ver="$(tr -d '[:space:]' < "$SCRIPT_DIR/VERSION")"
+    printf '{"schema_version": 1, "source_root": "%s", "version": "%s", "written_by": "platforms/claude-code/install.sh --project"}\n' \
+        "$_src" "$_ver" > "$_ap_dir/runtime.json"
+
     echo ""
     echo "✓ Installation complete"
     echo ""
@@ -128,9 +149,55 @@ install_project() {
     echo ""
 }
 
+# USERPROFILE before HOME: Git Bash $HOME is routinely a mapped network drive
+# on Windows while the launcher and install_audit use the local profile.
+ap_home_fs() {
+    if [ -n "${USERPROFILE:-}" ] && command -v cygpath >/dev/null 2>&1; then
+        cygpath -u "$USERPROFILE"
+    elif [ -n "${USERPROFILE:-}" ]; then
+        printf '%s' "$USERPROFILE"
+    elif [ -n "${HOME:-}" ]; then
+        printf '%s' "$HOME"
+    else
+        # Neither is set. Returning the empty string here is not harmless: the
+        # callers append "/.claude" and "/.advanced-plans" and mkdir -p the
+        # result, so an empty home installs at the filesystem root -- the only
+        # path in this mechanism that writes outside the profile it was asked
+        # to install into. Under `set -e` this non-zero status propagates out
+        # of the command substitution and stops the installer, which is the
+        # intended outcome. Masked on Windows, where Git Bash repopulates HOME
+        # during startup; reachable on any POSIX shell, which is what CI runs.
+        echo "install.sh: neither USERPROFILE nor HOME is set; refusing to resolve the global home to the filesystem root." >&2
+        exit 1
+    fi
+}
+
+ap_home_native() {
+    if [ -n "${USERPROFILE:-}" ] && command -v cygpath >/dev/null 2>&1; then
+        cygpath -m "$USERPROFILE"
+    elif [ -n "${USERPROFILE:-}" ]; then
+        printf '%s' "$USERPROFILE" | tr '\\' '/'
+    elif [ -n "${HOME:-}" ]; then
+        printf '%s' "$HOME"
+    else
+        # Neither is set. Returning the empty string here is not harmless: the
+        # callers append "/.claude" and "/.advanced-plans" and mkdir -p the
+        # result, so an empty home installs at the filesystem root -- the only
+        # path in this mechanism that writes outside the profile it was asked
+        # to install into. Under `set -e` this non-zero status propagates out
+        # of the command substitution and stops the installer, which is the
+        # intended outcome. Masked on Windows, where Git Bash repopulates HOME
+        # during startup; reachable on any POSIX shell, which is what CI runs.
+        echo "install.sh: neither USERPROFILE nor HOME is set; refusing to resolve the global home to the filesystem root." >&2
+        exit 1
+    fi
+}
+
 install_global() {
-    GLOBAL_DIR="$HOME/.claude"
+    GLOBAL_DIR="$(ap_home_fs)/.claude"
     COMMANDS_DIR="$GLOBAL_DIR/commands"
+    AP_GLOBAL_DIR="$(ap_home_fs)/.advanced-plans"
+    AP_LAUNCHER="$(ap_home_native)/.advanced-plans/bin/ap.py"
 
     echo ""
     echo "Installing Advanced Planning System v8 commands globally to $COMMANDS_DIR"
@@ -141,6 +208,31 @@ install_global() {
     # Copy slash commands
     echo "  → Copying slash commands..."
     cp "$ADAPTER_DIR/commands/"*.md "$COMMANDS_DIR/"
+
+    # The shared Python runtime. Without this, every copied command shells out
+    # to .advanced-plans/bin/ap.py in projects this installer never touches,
+    # and dies with the interpreter's own "can't open file" - naming neither
+    # the product nor the repair. This installer shipped commands without their
+    # launcher for its whole life; found by a cross-vendor review panel.
+    echo "  → Recording the shared Python runtime globally..."
+    mkdir -p "$AP_GLOBAL_DIR/bin"
+    cp "$SCRIPT_DIR/platforms/python/ap_launcher.py" "$AP_GLOBAL_DIR/bin/ap.py"
+    _src="$SCRIPT_DIR"
+    if command -v cygpath >/dev/null 2>&1; then _src="$(cygpath -m "$SCRIPT_DIR")"; fi
+    _ver="unknown"
+    [ -f "$SCRIPT_DIR/VERSION" ] && _ver="$(tr -d '[:space:]' < "$SCRIPT_DIR/VERSION")"
+    printf '{"schema_version": 1, "source_root": "%s", "version": "%s", "written_by": "platforms/claude-code/install.sh --global"}\n' \
+        "$_src" "$_ver" > "$AP_GLOBAL_DIR/runtime.json"
+
+    for _f in "$COMMANDS_DIR"/*.md; do
+        [ -f "$_f" ] || continue
+        # Only the PATH changes; the quoting and the r'' prefix are already in
+        # the source form, which is what lets install_audit see no drift.
+        sed -i \
+            -e "s#python \"\.advanced-plans/bin/ap\.py\"#python \"$AP_LAUNCHER\"#g" \
+            -e "s#runpy\.run_path(r'\.advanced-plans/bin/ap\.py')#runpy.run_path(r'$AP_LAUNCHER')#g" \
+            "$_f"
+    done
 
     # Note: skills are NOT copied globally — they must be referenced by path
     echo ""

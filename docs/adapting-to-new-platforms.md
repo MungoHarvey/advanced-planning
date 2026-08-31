@@ -6,9 +6,9 @@ The Cowork adapter is used as a worked example throughout.
 
 ---
 
-## The Five Adapter Contracts
+## The Six Adapter Contracts
 
-Every compliant adapter must fulfil five contracts:
+Every compliant adapter must fulfil six contracts:
 
 ### Contract 1 — Entry Point
 
@@ -74,6 +74,96 @@ How is state preserved before and after each loop?
 
 ---
 
+### Contract 6 — Shared Python Runtime
+
+Where does the adapter's tooling find `platforms/python/`?
+
+Nowhere, unless the adapter arranges it. No installer ships that tree into a
+project, so `python -m platforms.python.<module>` resolves only when the working
+directory happens to be the source checkout. Until 2026-08-27 the Claude Code
+adapter did exactly that at thirteen call sites, and every one of them failed in
+every installed project.
+
+The framework's answer is to record where the checkout is and read the record:
+
+| | |
+|---|---|
+| Manifest | `.advanced-plans/runtime.json`, written by the adapter's installer |
+| Key | `source_root` — an absolute path the *interpreter that will read it* can open |
+| Launcher | `.advanced-plans/bin/ap.py`, copied from `platforms/python/ap_launcher.py` |
+| Module call | `python ".advanced-plans/bin/ap.py" <module> [args]` |
+| In-line call | `runpy.run_path(r'.advanced-plans/bin/ap.py')['bootstrap']()` before the import |
+| Global record | `<home>/.advanced-plans/{runtime.json,bin/ap.py}`, written by a `--global` install |
+| Escape hatch | `$ADVANCED_PLANNING_ROOT`, which overrides the manifest |
+
+The manifest sits in `.advanced-plans/`, not in any adapter's own directory,
+because every adapter resolves the runtime by this same route. An adapter that
+put it under `.claude/` or `.codex/` would make the next adapter write a second
+one. The same rule decides where a *global* install records the runtime: the
+home-directory copy is `<home>/.advanced-plans/`, **not** `<home>/.claude/`,
+for exactly the reason above.
+
+**Your adapter must define**: that its installer writes `runtime.json` and
+copies the launcher, and that it does both **outside** any "planning data
+already exists, skip the scaffold" guard. Upgrading a project in place is
+precisely when a stale `source_root` most needs refreshing, and it is the one
+failure the guard below cannot diagnose, because nothing looks wrong.
+
+**A `--global` install carries a second obligation.** Commands installed to a
+home directory run in projects the installer never touched, where no
+`.advanced-plans/` exists to walk up to. Such an installer must therefore do
+three things, not one:
+
+1. write `<home>/.advanced-plans/runtime.json` and copy the launcher to
+   `<home>/.advanced-plans/bin/ap.py`;
+2. rewrite the launcher path in each command it copies, to one absolute path
+   the interpreter can open;
+3. resolve `<home>` from `USERPROFILE` before `HOME`. On Windows a Git Bash
+   `$HOME` is routinely a mapped network drive while the launcher, running as
+   native Python, reads the local profile — the two disagree silently, and the
+   install lands where nothing will look for it. `install_audit.resolve_global_home`
+   is the reference implementation.
+
+**Leave the source call sites in the substitutable form.** The rewrite in (2)
+must change the *path* and nothing else, because `install_audit` normalises one
+canonical launcher path back out before hashing so that an installed copy is
+not perpetually "stale". That only converges if the quoting is identical either
+side of the swap — hence `python ".advanced-plans/…"` and
+`runpy.run_path(r'.advanced-plans/…')` in the source, quoted and raw-prefixed
+even though a relative path needs neither. An installer that has to *add* the
+quotes produces drift no `/sync-install` can settle. This is pinned by
+`test_every_source_call_site_is_in_the_substitutable_form`.
+
+****The call sites run from the project root.** `.advanced-plans/bin/ap.py` is
+a project-root-relative path, exactly like every other path an Advanced
+Planning command names. Invoked from a subdirectory the interpreter fails to
+open it and exits 2, before the launcher's guard can say anything useful — so
+an adapter must not `cd` between resolving the project and calling a command.
+The launcher's upward walk for `runtime.json` is what covers an adapter that
+names the launcher by an *absolute* path instead.
+
+Two traps, both found by running it:**
+
+*A path the shell can open is not always a path the interpreter can open.* Under
+Git Bash on Windows, `$REPO_ROOT` is `/c/Users/...`; native Python cannot open
+it. `install.sh` normalises with `cygpath -m`. Any adapter installer that runs
+under MSYS needs the same.
+
+*The recorded path is absolute, so it breaks when the checkout moves.* That is
+the accepted cost of this mechanism, and it is why the launcher's guard is not
+optional: every failure names the manifest, the key, and the repair, and exits
+`3` so a caller can tell an unreachable runtime from a module that ran and
+returned non-zero. An adapter that swallows exit 3 has removed the only thing
+that makes the mechanism supportable.
+
+The alternatives, and why not: copying `platforms/python/` into each project
+puts an N-th copy of executable code where it can drift, policed by an
+`install_audit` that compares by mtime; a console-script shim adds a packaging
+system and mutates PATH for what is a search-path problem. Both were costed at
+the phase-6 loop-001 gate.
+
+---
+
 ## Minimum Adapter Checklist
 
 A new adapter is ready when all of the following are true:
@@ -85,13 +175,17 @@ A new adapter is ready when all of the following are true:
 - [ ] Skills directory path in the worker prompt matches the actual installed skills location
 - [ ] Opening and closing checkpoint steps are in the worker prompt
 - [ ] No `.claude/` paths in a non-Claude Code adapter (or equivalent platform-internal paths)
+- [ ] Installer writes `.advanced-plans/runtime.json` and copies the launcher, both outside the scaffold guard
+- [ ] A `--global` install writes `<home>/.advanced-plans/`, rewrites the launcher path in the commands it copies, and resolves `<home>` from `USERPROFILE` before `HOME`
+- [ ] Source call sites are quoted and raw-prefixed, so the global rewrite swaps only the path
+- [ ] Every call site reaches the runtime through the launcher; none uses bare `-m` or `sys.path.insert(0, '.')`
 - [ ] An adapter README exists covering setup, quick-start, and the top 3 failure modes
 
 ---
 
 ## Worked Example: Cowork Adapter
 
-The Cowork adapter (`platforms/cowork/`) demonstrates all five contracts for an environment with no git and no CLI.
+The Cowork adapter (`platforms/cowork/`) demonstrates contracts 1-5 for an environment with no git and no CLI. It is also the one adapter that satisfies contract 6 by not needing it: `platforms/cowork/checkpoint.sh` is POSIX shell and invokes no Python at all.
 
 ### Contract 1 — Entry Point
 

@@ -93,7 +93,7 @@ outcome: "core/schemas/foo.schema.md exists with all required sections and a val
 outcome: "All tests pass; coverage ≥85%; linter reports 0 warnings"
 
 # Negative scan
-outcome: "No occurrences of 'Claude Code', 'Cowork', or 'slash command' appear in any SKILL.md in core/skills/"
+outcome: "No occurrences of host-specific platform names, tool identifiers, or host directories appear in any SKILL.md in core/skills/"
 
 # Numeric threshold
 outcome: "Silhouette score >0.6 on validation set; result logged to reports/metrics.md"
@@ -151,7 +151,7 @@ todos:
     content: "Verify all five skills contain zero platform-specific references"
     skill: "NA"
     agent: "NA"
-    outcome: "No occurrences of 'Claude Code', 'Cowork', 'slash command', 'Agent tool', or 'TodoWrite' appear in any core/skills/ SKILL.md file"
+    outcome: "No occurrences of host-specific platform names, tool identifiers, or host directories appear in any core/skills/ SKILL.md file"
     status: pending
     priority: high
 ```

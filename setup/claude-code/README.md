@@ -12,6 +12,13 @@ directory (or your global Claude Code config for commands you want everywhere).
 
 - [Claude Code](https://claude.ai/claude-code) installed
 - This repository cloned to your computer
+- **Python 3.10 or newer, on `PATH` as `python`** — several slash commands shell
+  out to it, so without it they fail before any of this system's own code runs,
+  and the error comes from the shell rather than from the planning system:
+  `python: command not found`, or on Windows `'python' is not recognized`, or
+  the Microsoft Store opening instead of an interpreter. Check with
+  `python --version`. The name matters: on Windows `python3` is usually the
+  Store alias and is not necessarily the same interpreter as `python`.
 
 ---
 
@@ -307,6 +314,89 @@ Use `--symlink` if you prefer to share a single skills directory across all proj
 sh setup/claude-code/install.sh --project /path/to/your/project --symlink
 sh setup/claude-code/install.sh --global --symlink
 ```
+
+---
+
+## Uninstalling
+
+```sh
+sh setup/claude-code/uninstall.sh --project /path/to/your/project    # preview
+sh setup/claude-code/uninstall.sh --project /path/to/your/project --yes
+```
+
+```powershell
+.\setup\claude-code\uninstall.ps1 -Project C:\path\to\your\project    # preview
+.\setup\claude-code\uninstall.ps1 -Project C:\path\to\your\project -Yes
+```
+
+Use `--global` / `-Global` instead of `--project` / `-Project` to remove a global
+install. Run it from the same checkout you installed from — the set of files it
+removes is derived from that checkout, exactly as the installer derives what to
+copy.
+
+**A preview is the default.** Without `--yes` (or `-Yes`) nothing is deleted; the
+script prints the paths it would remove and stops. That is deliberate: this
+deletes files inside your project and under your home directory, and the cost of
+getting it wrong is planning work.
+
+### What it removes, and what it will not
+
+It removes only names this checkout provides:
+
+| Removed | Kept |
+| --- | --- |
+| `.claude/commands/*.md` that this checkout supplies | anything else in `.claude/commands/` |
+| `.claude/agents/`, `.claude/skills/`, `.claude/schemas/` entries this checkout supplies | your own additions to those directories |
+| `.claude/settings.planning.json` | `.claude/settings.json` |
+| `.advanced-plans/bin/ap.py` and `.advanced-plans/runtime.json` | `.advanced-plans/phases/`, `specs/`, `state/`, `logs/`, `PLANNING.md`, `README.md`, `gate-verdicts/`, `evidence/` |
+
+The right-hand column is the reason this is not `rm -rf .advanced-plans`. The
+shared Python runtime lives in the same directory as your planning record — the
+installer creates that directory and migrates a legacy `plans/` folder into it —
+so removing the directory would remove your work along with the mechanism.
+Uninstalling is therefore a removal of a *known set of names*, and a file the
+checkout does not provide is treated as yours.
+
+`settings.json` is reported and never removed. The installer writes it only when
+none exists, and saves `settings.planning.json` alongside when one already does,
+so the file on disk may be entirely yours, may be ours, or may be yours with the
+planning hooks merged in by hand. Nothing records which. If you want the hooks
+gone, remove them by hand.
+
+A directory is removed only if the uninstall emptied it. One leftover file in
+`.claude/commands/` means the directory stays, and the script says so.
+
+### Order
+
+Commands are removed first and the shared runtime last. This matters if the
+uninstall is interrupted: every slash command invokes `.advanced-plans/bin/ap.py`,
+and if that file is gone the interpreter fails to open it and exits before any of
+this system's code runs — so nothing can name the cause, and you get a bare
+`can't open file` from Python. Commands without a launcher is broken and silent;
+a launcher without commands is inert and harmless. The order is chosen to fail in
+the harmless direction, and it is pinned by
+`platforms/python/tests/test_uninstall.py` along with the preview default and the
+list above.
+
+If you do end up in that state — commands present, launcher missing — re-running
+the installer restores the launcher, or finish the uninstall with `--yes`.
+
+### Symlink and junction installs
+
+Two installs put links rather than copies under `.claude/`:
+
+- `--symlink` / `-Symlink` makes `.claude/skills` a link into `core/skills`.
+- A **self-install** — where the project path resolves to this repository itself —
+  makes `.claude/commands`, `.claude/skills` and `.claude/schemas` links and links
+  each file in `.claude/agents/` individually, so edits to the source show up
+  immediately. On Windows these are junctions.
+
+The uninstaller unlinks, and never walks through. That distinction is the whole
+point: the link's target is your checkout, which was never part of the install,
+and the files inside it are not themselves links — so a per-path check would not
+catch it. The check is on the destination, before anything iterates it, and it is
+pinned by `test_a_linked_command_dir_is_unlinked_not_walked`, which builds a real
+link and asserts every source file survives.
 
 ---
 

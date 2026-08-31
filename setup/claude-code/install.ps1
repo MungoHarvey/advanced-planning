@@ -82,8 +82,48 @@ if (-not (Test-Path (Join-Path $RepoRoot "core"))) {
 # ---------------------------------------------------------------------------
 # Global install
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Global runtime record (mechanism B')
+# ---------------------------------------------------------------------------
+# USERPROFILE before HOME, matching install_audit.resolve_global_home and the
+# launcher's own global_home(). Forward slashes in the embedded form so the
+# path survives JSON and Python string literals with no backslash escaping.
+function Get-ApGlobalHome {
+    if ($env:USERPROFILE) { return $env:USERPROFILE }
+    # USERPROFILE first, then the HOME *environment variable*, and only then
+    # PowerShell's automatic $HOME. The order matters because the automatic
+    # variable is not $env:HOME -- PowerShell derives it from HOMEDRIVE and
+    # HOMEPATH -- so on a machine where Git Bash set HOME and USERPROFILE is
+    # absent it is empty, while install_audit and the launcher both resolve
+    # the HOME path. Join-Path then throws on the empty string and the install
+    # aborts exactly where the other two implementations succeed.
+    if ($env:HOME) { return $env:HOME }
+    if ($HOME) { return $HOME }
+    throw "Neither USERPROFILE nor HOME is set; refusing to resolve the global home to the filesystem root."
+}
+
+function ConvertTo-ApEmbeddedPath([string]$p) { return ($p -replace '\\', '/') }
+
+# Point a copied command file at an absolute launcher. Only the two executable
+# forms are rewritten; prose mentions describe the project install and stay true.
+function Set-ApCallSites([string]$File, [string]$Launcher) {
+    $text = [System.IO.File]::ReadAllText($File)
+    # Only the PATH changes. The quoting and the r'' prefix are already in the
+    # source form, so this is a pure substitution of one string for another --
+    # which is what lets install_audit normalise it back and report no drift.
+    $text = $text.Replace('python ".advanced-plans/bin/ap.py"', 'python "' + $Launcher + '"')
+    $text = $text.Replace("runpy.run_path(r'.advanced-plans/bin/ap.py')",
+                          "runpy.run_path(r'" + $Launcher + "')")
+    [System.IO.File]::WriteAllText($File, $text,
+        [System.Text.UTF8Encoding]::new($false))
+}
+
 if ($Global) {
-    $GlobalDir = Join-Path $HOME ".claude"
+    $ApGlobalHome = Get-ApGlobalHome
+    $GlobalDir = Join-Path $ApGlobalHome ".claude"
+    $ApGlobalDir = Join-Path $ApGlobalHome ".advanced-plans"
+    $ApLauncher = ConvertTo-ApEmbeddedPath (Join-Path $ApGlobalDir "bin\ap.py")
     $CommandsDir = Join-Path $GlobalDir "commands"
     $SkillsDest  = Join-Path $GlobalDir "skills"
     $AgentsDir   = Join-Path $GlobalDir "agents"
@@ -100,6 +140,12 @@ if ($Global) {
     $cmds = Get-ChildItem -Path (Join-Path $RepoRoot "platforms\claude-code\commands") -Filter "*.md" -File
     foreach ($cmd in $cmds) {
         Do-Copy $cmd.FullName $CommandsDir
+        # Globally-installed commands run in projects that were never
+        # project-installed, where .advanced-plans\bin\ap.py does not exist and
+        # the interpreter dies before the launcher's diagnostic can fire.
+        if (-not $DryRun) {
+            Set-ApCallSites (Join-Path $CommandsDir $cmd.Name) $ApLauncher
+        }
         Say "  + commands\$($cmd.Name)"
     }
 
@@ -140,6 +186,25 @@ if ($Global) {
         Do-Copy $schema.FullName $SchemasDir
         Say "  + schemas\$($schema.Name)"
     }
+
+    Say ""
+    Say "Recording the shared Python runtime globally..."
+    Do-MkDir (Join-Path $ApGlobalDir "bin")
+    Do-Copy (Join-Path $RepoRoot "platforms\python\ap_launcher.py") (Join-Path $ApGlobalDir "bin\ap.py")
+    if (-not $DryRun) {
+        $gVersionFile = Join-Path $RepoRoot "VERSION"
+        $gVersion = if (Test-Path $gVersionFile) { (Get-Content $gVersionFile -Raw).Trim() } else { "unknown" }
+        $gRuntime = [ordered]@{
+            schema_version = 1
+            source_root    = $RepoRoot
+            version        = $gVersion
+            written_by     = "setup/claude-code/install.ps1 -Global"
+        } | ConvertTo-Json -Depth 3
+        [System.IO.File]::WriteAllText((Join-Path $ApGlobalDir "runtime.json"),
+            $gRuntime, [System.Text.UTF8Encoding]::new($false))
+    }
+    Say "  + $ApGlobalDir\bin\ap.py"
+    Say "  + $ApGlobalDir\runtime.json"
 
     Say ""
     Say "Global install complete."
@@ -212,6 +277,43 @@ if (Test-Path $ApDir) {
     } else {
         Write-Host "  [dry-run] migrate plans\ and .claude\state|logs\ -> .advanced-plans\ if present"
     }
+}
+
+# ---------------------------------------------------------------------------
+# Shared Python runtime: launcher + recorded source path
+#
+# The commands shell out to platforms\python\<module>, which no install ships.
+# Rather than copy that tree into every project, record where the checkout is
+# and hand the project a launcher that reads the record. See
+# platforms/python/ap_launcher.py for why this shape and not the other three.
+#
+# Deliberately OUTSIDE the scaffold guard above: that guard skips everything
+# when .advanced-plans\ already exists, and an upgrade-in-place is exactly the
+# case where the recorded path most needs refreshing.
+# ---------------------------------------------------------------------------
+Say "Recording the shared Python runtime..."
+$ApBinDir = Join-Path $ApDir "bin"
+Do-MkDir $ApBinDir
+Do-Copy (Join-Path $RepoRoot "platforms\python\ap_launcher.py") (Join-Path $ApBinDir "ap.py")
+if (-not $DryRun) {
+    $apVersionFile = Join-Path $RepoRoot "VERSION"
+    $apVersion = if (Test-Path $apVersionFile) { (Get-Content $apVersionFile -Raw).Trim() } else { "unknown" }
+    $runtime = [ordered]@{
+        schema_version = 1
+        source_root    = $RepoRoot
+        version        = $apVersion
+        written_by     = "setup/claude-code/install.ps1"
+        written_at     = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    } | ConvertTo-Json -Depth 3
+    # UTF-8 without BOM: json.loads tolerates a BOM only via utf-8-sig, and the
+    # launcher deliberately reads plain utf-8 so a BOM here would be a stale
+    # manifest that reports itself as malformed JSON.
+    $utf8NoBomRt = [System.Text.UTF8Encoding]::new($false)
+    [System.IO.File]::WriteAllText((Join-Path $ApDir "runtime.json"), $runtime, $utf8NoBomRt)
+    Say "  + .advanced-plans\runtime.json -> $RepoRoot"
+    Say "  + .advanced-plans\bin\ap.py"
+} else {
+    Write-Host "  [dry-run] write $(Join-Path $ApDir 'runtime.json') recording $RepoRoot"
 }
 
 # ---------------------------------------------------------------------------

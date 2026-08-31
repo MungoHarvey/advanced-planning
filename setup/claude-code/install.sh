@@ -111,11 +111,101 @@ if [ ! -d "$REPO_ROOT/core" ]; then
     exit 1
 fi
 
+
+# ---------------------------------------------------------------------------
+# Global runtime record (mechanism B')
+# ---------------------------------------------------------------------------
+# USERPROFILE before HOME: under Git Bash on Windows $HOME is routinely a
+# mapped network drive while the launcher, install_audit and the Codex auth
+# preflight all use the local profile. Writing the record to one and reading
+# it from the other is the original defect wearing a different hat.
+#
+# Two forms are needed and they are not interchangeable:
+#   ap_home_fs      POSIX, for mkdir/cp in this script
+#   ap_home_native  C:/Users/..., for embedding in files Python will read
+# Forward slashes in the native form deliberately: they survive sed, JSON and
+# Python string literals without a single backslash escape, and Windows Python
+# accepts them everywhere.
+ap_home_fs() {
+    if [ -n "${USERPROFILE:-}" ] && command -v cygpath >/dev/null 2>&1; then
+        cygpath -u "$USERPROFILE"
+    elif [ -n "${USERPROFILE:-}" ]; then
+        printf '%s' "$USERPROFILE"
+    elif [ -n "${HOME:-}" ]; then
+        printf '%s' "$HOME"
+    else
+        # Neither is set. Returning the empty string here is not harmless: the
+        # callers append "/.claude" and "/.advanced-plans" and mkdir -p the
+        # result, so an empty home installs at the filesystem root -- the only
+        # path in this mechanism that writes outside the profile it was asked
+        # to install into. Under `set -e` this non-zero status propagates out
+        # of the command substitution and stops the installer, which is the
+        # intended outcome. Masked on Windows, where Git Bash repopulates HOME
+        # during startup; reachable on any POSIX shell, which is what CI runs.
+        echo "install.sh: neither USERPROFILE nor HOME is set; refusing to resolve the global home to the filesystem root." >&2
+        exit 1
+    fi
+}
+
+ap_home_native() {
+    if [ -n "${USERPROFILE:-}" ] && command -v cygpath >/dev/null 2>&1; then
+        cygpath -m "$USERPROFILE"
+    elif [ -n "${USERPROFILE:-}" ]; then
+        printf '%s' "$USERPROFILE" | tr '\\' '/'
+    elif [ -n "${HOME:-}" ]; then
+        printf '%s' "$HOME"
+    else
+        # Neither is set. Returning the empty string here is not harmless: the
+        # callers append "/.claude" and "/.advanced-plans" and mkdir -p the
+        # result, so an empty home installs at the filesystem root -- the only
+        # path in this mechanism that writes outside the profile it was asked
+        # to install into. Under `set -e` this non-zero status propagates out
+        # of the command substitution and stops the installer, which is the
+        # intended outcome. Masked on Windows, where Git Bash repopulates HOME
+        # during startup; reachable on any POSIX shell, which is what CI runs.
+        echo "install.sh: neither USERPROFILE nor HOME is set; refusing to resolve the global home to the filesystem root." >&2
+        exit 1
+    fi
+}
+
+# Point a copied command file at an absolute launcher. Only the two executable
+# forms are rewritten; prose mentions of .advanced-plans/bin/ap.py describe the
+# project install and stay true.
+ap_rewrite_call_sites() {
+    _f="$1"; _launcher="$2"
+    # Only the PATH changes. The quoting and the r'' prefix are already in the
+    # source form, so this is a pure substitution of one string for another --
+    # which is what lets install_audit normalise it back and report no drift.
+    sed -i \
+        -e "s#python \"\.advanced-plans/bin/ap\.py\"#python \"$_launcher\"#g" \
+        -e "s#runpy\.run_path(r'\.advanced-plans/bin/ap\.py')#runpy.run_path(r'$_launcher')#g" \
+        "$_f"
+}
+
+ap_write_global_runtime() {
+    _home_fs="$(ap_home_fs)"
+    _home_native="$(ap_home_native)"
+    _ap_dir="$_home_fs/.advanced-plans"
+    do_mkdir "$_ap_dir/bin"
+    do_cp "$REPO_ROOT/platforms/python/ap_launcher.py" "$_ap_dir/bin/ap.py"
+    if [ "$DRY_RUN" != true ]; then
+        _src="$REPO_ROOT"
+        if command -v cygpath >/dev/null 2>&1; then _src="$(cygpath -m "$REPO_ROOT")"; fi
+        _ver="unknown"
+        [ -f "$REPO_ROOT/VERSION" ] && _ver="$(tr -d '[:space:]' < "$REPO_ROOT/VERSION")"
+        printf '{"schema_version": 1, "source_root": "%s", "version": "%s", "written_by": "setup/claude-code/install.sh --global"}\n' \
+            "$_src" "$_ver" > "$_ap_dir/runtime.json"
+    fi
+    say "  + $_ap_dir/bin/ap.py"
+    say "  + $_ap_dir/runtime.json"
+}
+
 # ---------------------------------------------------------------------------
 # Global install
 # ---------------------------------------------------------------------------
 if [ "$GLOBAL" = true ]; then
-    GLOBAL_DIR="$HOME/.claude"
+    GLOBAL_DIR="$(ap_home_fs)/.claude"
+    AP_LAUNCHER="$(ap_home_native)/.advanced-plans/bin/ap.py"
     say "Installing globally to $GLOBAL_DIR"
     do_mkdir "$GLOBAL_DIR/commands"
     do_mkdir "$GLOBAL_DIR/agents"
@@ -125,6 +215,11 @@ if [ "$GLOBAL" = true ]; then
     for cmd in "$REPO_ROOT/platforms/claude-code/commands/"*.md; do
         [ -f "$cmd" ] || continue
         do_cp "$cmd" "$GLOBAL_DIR/commands/"
+        # Globally-installed commands run in projects that were never
+        # project-installed, where .advanced-plans/bin/ap.py does not exist and
+        # the interpreter dies before the launcher's diagnostic can fire.
+        [ "$DRY_RUN" = true ] || ap_rewrite_call_sites \
+            "$GLOBAL_DIR/commands/$(basename "$cmd")" "$AP_LAUNCHER"
         say "  + commands/$(basename "$cmd")"
     done
 
@@ -162,6 +257,10 @@ if [ "$GLOBAL" = true ]; then
         do_cp "$schema" "$GLOBAL_DIR/schemas/"
         say "  + schemas/$(basename "$schema")"
     done
+
+    say ""
+    say "Recording the shared Python runtime globally..."
+    ap_write_global_runtime
 
     say ""
     say "Global install complete."
@@ -275,6 +374,45 @@ Platform-agnostic planning data home.
 - `logs/` -- execution log
 READEOF
     fi
+fi
+
+# ---------------------------------------------------------------------------
+# Shared Python runtime: launcher + recorded source path
+#
+# The commands shell out to platforms/python/<module>, which no install ships.
+# Rather than copy that tree into every project, record where the checkout is
+# and hand the project a launcher that reads the record. See
+# platforms/python/ap_launcher.py for why this shape and not the other three.
+#
+# Deliberately OUTSIDE the scaffold guard above: that guard skips everything
+# when .advanced-plans/ already exists, and an upgrade-in-place is exactly the
+# case where the recorded path most needs refreshing.
+# ---------------------------------------------------------------------------
+say "Recording the shared Python runtime..."
+do_mkdir "$AP_DIR/bin"
+do_cp "$REPO_ROOT/platforms/python/ap_launcher.py" "$AP_DIR/bin/ap.py"
+if [ "$DRY_RUN" = false ]; then
+    # Under Git Bash / MSYS on Windows, $REPO_ROOT is a POSIX path
+    # (/c/Users/...) that the native Python interpreter cannot open. Record
+    # a path the interpreter that will read it can actually resolve.
+    # cygpath -m gives C:/Users/... - native, and forward slashes so it
+    # needs no JSON escaping. Absent off Windows, where $REPO_ROOT is right.
+    AP_SOURCE_ROOT="$(cygpath -m "$REPO_ROOT" 2>/dev/null || echo "$REPO_ROOT")"
+    AP_VERSION="$(cat "$REPO_ROOT/VERSION" 2>/dev/null || echo unknown)"
+    AP_STAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo unknown)"
+    cat > "$AP_DIR/runtime.json" <<RUNTIMEEOF
+{
+  "schema_version": 1,
+  "source_root": "$AP_SOURCE_ROOT",
+  "version": "$AP_VERSION",
+  "written_by": "setup/claude-code/install.sh",
+  "written_at": "$AP_STAMP"
+}
+RUNTIMEEOF
+    say "  + .advanced-plans/runtime.json -> $AP_SOURCE_ROOT"
+    say "  + .advanced-plans/bin/ap.py"
+else
+    echo "  [dry-run] write $AP_DIR/runtime.json recording $REPO_ROOT"
 fi
 
 # ---------------------------------------------------------------------------

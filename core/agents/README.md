@@ -62,7 +62,7 @@ Running a 12-loop programme with 5 todos per loop means the worker executes ~60 
 
 ## The Subagent Spawning Constraint
 
-In agent frameworks that do not support recursive subagent spawning (such as Claude Code), subagents cannot spawn further subagents. This means a subagent worker **cannot** itself spawn analysis workers or parallel agents.
+In agent frameworks that do not support recursive subagent spawning, subagents cannot spawn further subagents. This means a subagent worker **cannot** itself spawn analysis workers or parallel agents.
 
 **The v8 solution**: the main thread handles all spawning explicitly. It spawns the orchestrator, waits for it to return, then spawns the worker. The worker executes **all** todos inline using its own capabilities — it does not delegate further. The `agent:` field in todos is planning-time metadata used for categorisation; it does not trigger subagent spawning at execution time.
 
