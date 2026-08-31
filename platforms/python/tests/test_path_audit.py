@@ -67,7 +67,7 @@ class TestCleanTreePasses:
     def test_clean_tree_returns_no_violations(self, tmp_path):
         """A scoped tree with only canonical references produces zero violations."""
         root = _make_scoped_tree(tmp_path)
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=[
                 "platforms/claude-code/commands",
@@ -126,7 +126,7 @@ class TestDoubledPrefixFails:
             "Read files from .advanced-.advanced-plans/state/loop-ready.json\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["platforms/claude-code/commands"],
         )
@@ -148,7 +148,7 @@ class TestDoubledPrefixFails:
             "Write to .advanced-.advanced-plans/state/\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["core/agents"],
         )
@@ -166,7 +166,7 @@ class TestDoubledPrefixFails:
             "line four\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["platforms/claude-code/commands"],
         )
@@ -191,7 +191,7 @@ class TestDeprecatedTokenFails:
             "Read the plan from .claude/plans/phase-9/loops.md\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=[".claude/commands"],
         )
@@ -226,7 +226,7 @@ class TestWrongNestingFails:
             "Write output to .claude/.advanced-plans/state/\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["core/skills"],
         )
@@ -249,7 +249,7 @@ class TestFalsePositiveGuard:
             "Skills live at `.claude/skills/` and agents at `.claude/agents/`.\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["platforms/claude-code/commands"],
         )
@@ -269,7 +269,7 @@ class TestFalsePositiveGuard:
             "Load skill from `.claude/skills/plan-todos/SKILL.md`.\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["platforms/claude-code/commands"],
         )
@@ -296,7 +296,7 @@ class TestHostNeutralityInCore:
             "Load skill from `.claude/skills/plan-todos/SKILL.md`.\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["core/agents"],
         )
@@ -316,7 +316,7 @@ class TestHostNeutralityInCore:
             "Configure in `.cursor/settings.json`.\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["core/skills"],
         )
@@ -336,7 +336,7 @@ class TestHostNeutralityInCore:
             "Claude Code and Cowork are host-specific.\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["core/agents"],
         )
@@ -365,7 +365,7 @@ class TestHostNeutralityInCore:
             "task_name: \"Descriptive Task Name\"\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["core/agents"],
         )
@@ -382,7 +382,7 @@ class TestHostNeutralityInCore:
             "Requires permissions.defaultMode = ask in settings.json.\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["core/skills"],
         )
@@ -403,7 +403,7 @@ class TestHostNeutralityInCore:
             "Cowork is another host.\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["core/agents"],
         )
@@ -422,7 +422,7 @@ class TestHostNeutralityInCore:
             "Platform-agnostic core definitions.\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["core/agents"],
         )
@@ -439,7 +439,7 @@ class TestHostNeutralityInCore:
             "Write to `.advanced-plans/state/loop-ready.json`.\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["core/agents"],
         )
@@ -448,21 +448,31 @@ class TestHostNeutralityInCore:
         )
 
     def test_docs_dir_is_excluded(self, tmp_path):
-        """Files under docs/ must be excluded even if they contain the bad tokens."""
+        """Files under docs/ must be excluded when docs is a segment in the path relative to scan root.
+        
+        This test verifies segment-based exclusion: a file at root/foo/docs/file.md
+        should be excluded by 'docs' segment, but a file at root/docs/file.md scanned
+        with scan root 'docs' has relative path 'file.md' (no 'docs' segment), so is NOT excluded.
+        This is the correct behavior - exclusion by segment prevents false positives like
+        /home/ci/docs-build/ excluding due to 'docs' substring.
+        """
         root = tmp_path
-        docs_dir = root / "docs"
+        # Create a nested structure where 'docs' is a segment in the relative path
+        foo_dir = root / "foo"
+        foo_dir.mkdir()
+        docs_dir = foo_dir / "docs"
         docs_dir.mkdir()
         (docs_dir / "path-conventions.md").write_text(
             "Deprecated: `.claude/plans/` and `.advanced-.advanced-plans`.\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
-            scanned_roots=["docs"],  # Even if someone passes docs/ explicitly
+            scanned_roots=["foo"],  # Scan foo/ which contains docs/ subdirectory
             excluded_segments=["docs"],
         )
         assert violations == [], (
-            "docs/ dir was scanned despite being in excluded_segments"
+            "foo/docs/ dir was scanned despite 'docs' being in excluded_segments"
         )
 
 
@@ -490,7 +500,7 @@ class TestExceptionMechanism:
             "Install to `.claude/skills/` directory.\n",  # NOT excepted - should be violation
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["core/skills"],
         )
@@ -560,7 +570,7 @@ class TestNewRoots:
             "References `.claude/commands/` in a shared file.\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["platforms/shared"],
         )
@@ -579,7 +589,7 @@ class TestNewRoots:
             "Configure Codex to use `.claude/commands/` for the adapter.\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["platforms/codex"],
         )
@@ -595,7 +605,7 @@ class TestNewRoots:
             "Configure in `.claude/commands/`.\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["platforms/shared"],
         )
@@ -614,7 +624,7 @@ class TestNewRoots:
             "Path is `.advanced-.advanced-plans/state/`.\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["platforms/opencode"],
         )
@@ -633,7 +643,7 @@ class TestNewRoots:
             "Legacy path is `.claude/plans/phase-1/plan.md`.\n",
             encoding="utf-8",
         )
-        violations, suppressed = audit(
+        violations, suppressed, _ = audit(
             repo_root=root,
             scanned_roots=["setup/codex"],
         )

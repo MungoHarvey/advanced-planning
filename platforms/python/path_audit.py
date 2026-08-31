@@ -208,7 +208,7 @@ def find_repo_root(start: pathlib.Path = None) -> pathlib.Path:
     )
 
 
-def _is_excluded(file_path: pathlib.Path, excluded_segments: List[str]) -> bool:
+def _is_excluded(file_path: pathlib.Path, excluded_segments: List[str], scan_root: pathlib.Path = None) -> bool:
     """Return True if the file should be excluded from scanning.
 
     Parameters
@@ -217,16 +217,32 @@ def _is_excluded(file_path: pathlib.Path, excluded_segments: List[str]) -> bool:
         Absolute or relative path to the file.
     excluded_segments : list of str
         Path segments or prefixes that mark a file as excluded.
+    scan_root : pathlib.Path, optional
+        The scan root directory. If provided, exclusion is checked against
+        the path relative to this root (not the absolute path).
 
     Returns
     -------
     bool
     """
-    posix = file_path.as_posix()
+    # If scan_root is provided, match against path segments relative to the root
+    if scan_root is not None:
+        try:
+            rel_path = file_path.relative_to(scan_root)
+            posix = rel_path.as_posix()
+        except ValueError:
+            # File is not under scan_root; fall back to absolute path
+            posix = file_path.as_posix()
+    else:
+        posix = file_path.as_posix()
+    
     for segment in excluded_segments:
         # Normalise to forward slashes for comparison
         seg = segment.replace("\\", "/")
-        if seg in posix:
+        # Match against path segments, not substring of full path
+        # This prevents false positives like /home/ci/docs-build/ excluding due to "docs"
+        path_parts = posix.split("/")
+        if seg in path_parts:
             return True
     return False
 
@@ -289,6 +305,7 @@ def audit(
     repo_root: pathlib.Path,
     scanned_roots: List[str] = None,
     excluded_segments: List[str] = None,
+    verbose: bool = False,
 ) -> tuple:
     """Run the full path-convention audit.
 
@@ -300,12 +317,15 @@ def audit(
         Relative directory paths to scan. Defaults to DEFAULT_SCANNED_ROOTS.
     excluded_segments : list of str, optional
         Path segments that exclude a file. Defaults to DEFAULT_EXCLUDED_SEGMENTS.
+    verbose : bool, optional
+        If True, print each scanned file. Defaults to False.
 
     Returns
     -------
-    tuple of (violations, suppressed)
+    tuple of (violations, suppressed, files_per_root)
         violations: list of PathViolation - unsuppressed violations
         suppressed: list of SuppressedViolation - exceptions applied (always printed)
+        files_per_root: dict mapping root_rel -> count of files actually opened
     """
     if scanned_roots is None:
         scanned_roots = DEFAULT_SCANNED_ROOTS
@@ -314,6 +334,7 @@ def audit(
 
     all_violations: List[PathViolation] = []
     all_suppressed: List[SuppressedViolation] = []
+    files_per_root: dict = {}
 
     for root_rel in scanned_roots:
         root_abs = repo_root / root_rel
@@ -328,14 +349,18 @@ def audit(
         # Determine if this is a core/ or platforms/shared/ root (host-neutrality rules apply)
         is_neutral_root = root_rel.startswith("core/") or root_rel.startswith("platforms/shared")
 
+        root_file_count = 0
         for f in files:
             if not f.is_file():
                 continue
             # Skip binary-looking files (check suffix allowlist)
             if f.suffix.lower() not in {".md", ".txt", ".yaml", ".yml", ".json", ".sh", ".ps1", ""}:
                 continue
-            if _is_excluded(f, excluded_segments):
+            if _is_excluded(f, excluded_segments, scan_root=root_abs):
                 continue
+            root_file_count += 1
+            if verbose:
+                print(f"Scanning: {f}")
             violations = check_file(f, core_only_scan=is_neutral_root)
             for v in violations:
                 # Check if this (file, pattern) is excepted
@@ -355,8 +380,11 @@ def audit(
                     )
                 else:
                     all_violations.append(v)
+        
+        if root_file_count > 0:
+            files_per_root[root_rel] = root_file_count
 
-    return all_violations, all_suppressed
+    return all_violations, all_suppressed, files_per_root
 
 
 # ---------------------------------------------------------------------------
@@ -413,7 +441,13 @@ def main(argv: List[str] = None) -> int:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
 
-    violations, suppressed = audit(repo_root)
+    violations, suppressed, files_per_root = audit(repo_root, verbose=args.verbose)
+
+    # Return 2 if no files were actually scanned
+    total_files = sum(files_per_root.values())
+    if total_files == 0:
+        print(f"ERROR: No files opened. Scanned roots: {DEFAULT_SCANNED_ROOTS}", file=sys.stderr)
+        return 2
 
     # Always print suppressed violations - silent suppression is not allowed
     if suppressed:
@@ -426,13 +460,16 @@ def main(argv: List[str] = None) -> int:
 
     if not violations:
         if suppressed:
-            print(f"PASSED WITH {len(suppressed)} SUPPRESSED -- path-convention audit passed with exceptions (scanned roots: {DEFAULT_SCANNED_ROOTS})")
+            roots_info = ", ".join(f"{r} ({c} files)" for r, c in sorted(files_per_root.items()))
+            print(f"PASSED WITH {len(suppressed)} SUPPRESSED -- path-convention audit passed with exceptions (scanned roots: {roots_info})")
         else:
-            print(f"CLEAN -- path-convention audit passed (scanned roots: {DEFAULT_SCANNED_ROOTS})")
+            roots_info = ", ".join(f"{r} ({c} files)" for r, c in sorted(files_per_root.items()))
+            print(f"CLEAN -- path-convention audit passed (scanned roots: {roots_info})")
         return 0
 
+    roots_info = ", ".join(f"{r} ({c} files)" for r, c in sorted(files_per_root.items()))
     print(
-        f"VIOLATIONS -- {len(violations)} path-convention violation(s) found:"
+        f"VIOLATIONS -- {len(violations)} path-convention violation(s) found (scanned roots: {roots_info}):"
     )
     for v in violations:
         print(f"  {v.file}:{v.line}: [{v.pattern_name}]")

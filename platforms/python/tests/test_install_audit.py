@@ -272,7 +272,7 @@ class TestUserprofileResolution:
         result = resolve_global_home(env)
         assert result == home_dir
 
-    def test_main_uses_monkeypatched_env_for_global_layer(self, tmp_path, monkeypatch):
+    def test_main_uses_monkeypatched_env_for_global_layer(self, tmp_path, capsys):
         """--layers source,global uses the env-resolved home, not os.environ."""
         repo = _make_repo(
             tmp_path,
@@ -282,21 +282,22 @@ class TestUserprofileResolution:
         )
         fake_global_home = tmp_path / "fake_global"
         fake_global_home.mkdir()
-        # No .claude/ under fake_global_home -> "NOTE: global ... not found" + exit 0
+        # A REAL global layer, matching source, so the run has a subject.
+        # Pointing this test at an absent .claude/ made it assert on a run
+        # that compared nothing -- it passed whether or not env resolution
+        # worked, which is the one thing it exists to prove.
+        _make_surface(fake_global_home / ".claude", "commands",
+                      {"cmd.md": "# cmd\n"})
 
-        # Patch resolve_global_home via main(env=...) parameter
-        captured = []
+        rc = main(
+            argv=["--root", str(repo), "--layers", "source,global"],
+            env={"USERPROFILE": str(fake_global_home), "HOME": "/nope"},
+        )
+        out = capsys.readouterr().out
 
-        original_main = main
-
-        def run():
-            return original_main(
-                argv=["--root", str(repo), "--layers", "source,global"],
-                env={"USERPROFILE": str(fake_global_home), "HOME": "/nope"},
-            )
-
-        rc = run()
-        # Missing global dir is not a failure
+        # The env-resolved home is the one that got audited, and "/nope" did not.
+        assert str(fake_global_home) in out
+        assert "/nope" not in out
         assert rc == 0
 
 
@@ -341,14 +342,24 @@ class TestLayersSelection:
             agents_src={},
             schemas_src={},
         )
-        # No .claude under repo -- project layer is missing -> NOTE printed, exit 0
+        # A REAL project layer, matching source. Without one this test ran
+        # with no layers at all and its "global is absent" assertion held
+        # vacuously -- true of a run that audited nothing.
+        _make_surface(repo / ".claude", "commands", {"cmd.md": "# x\n"})
+        # A global layer that must NOT be consulted.
+        global_home = tmp_path / "global_home"
+        _make_surface(global_home / ".claude", "commands", {"cmd.md": "# x\n"})
+
         rc = main(
             argv=["--root", str(repo), "--layers", "source,project"],
-            env={"USERPROFILE": str(tmp_path), "HOME": str(tmp_path)},
+            env={"USERPROFILE": str(global_home), "HOME": str(global_home)},
         )
         captured = capsys.readouterr()
-        # Should NOT mention "global" in the output
+        # The project pair was audited...
+        assert "source -> project" in captured.out
+        # ...and the global one was not looked at at all.
         assert "global" not in captured.out
+        assert str(global_home) not in captured.out
         assert rc == 0
 
     def test_layers_source_global_skips_project(self, tmp_path, capsys):
@@ -361,12 +372,18 @@ class TestLayersSelection:
         )
         fake_home = tmp_path / "home"
         fake_home.mkdir()
-        # No .claude/ under fake_home -> NOTE + exit 0
+        # A REAL global layer, matching source, so the run has a subject --
+        # see the sibling test above for why an absent one made this vacuous.
+        _make_surface(fake_home / ".claude", "commands", {"cmd.md": "# x\n"})
+        # A project layer that must NOT be consulted.
+        _make_surface(repo / ".claude", "commands", {"cmd.md": "# x\n"})
+
         rc = main(
             argv=["--root", str(repo), "--layers", "source,global"],
             env={"USERPROFILE": str(fake_home), "HOME": str(fake_home)},
         )
         captured = capsys.readouterr()
+        assert "source -> global" in captured.out
         assert "project" not in captured.out
         assert rc == 0
 
