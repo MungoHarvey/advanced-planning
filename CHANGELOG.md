@@ -13,6 +13,138 @@ _Nothing yet._
 
 ---
 
+## [0.18.0] - 2026-08-31
+
+Eight fixes to checks that could not fail, and to two installers that could
+destroy a user's files. Everything here was found by auditing 0.17.0 rather
+than by using it: a full code review and a security review, fanned out across
+several models, then verified one finding at a time against the machine.
+
+One defect class accounts for nearly all of it. **A check fails silently
+wherever its subject is a string it interpolated or parsed, rather than a fact
+read off the machine.** Three audits exited 0 having opened no files. Three
+remediation guards compared against something no writer emitted. Two test files
+skipped their entire shell half on the only platform they run on. A guard was
+hardened and then bypassed by a pre-delete on the path that mattered. In each
+case the green was real and meant nothing.
+
+The corollary matters too, and shaped the fixes: **a check that cannot pass is
+also a defect**, because a permanently-red job teaches people to ignore red. So
+none of these exit non-zero merely to be safe — each names its subject, says
+what it could not find, and tells you what to do about it.
+
+### Fixed
+
+- **Three audits now assert a non-empty subject.** `ast_check` exits 2 when no
+  `.py` files are found or a named `PATH` does not exist, instead of warning and
+  skipping. `path_audit` counts the files it actually opened and exits 2 if the
+  total is zero; its success line prints the roots it really scanned with
+  per-root counts, rather than echoing the `DEFAULT_SCANNED_ROOTS` constant.
+  `install_audit` exits 2 when an explicitly named `--layers` pair produces no
+  verdicts. Two exclusion bugs went with them: `--exclude` matched against the
+  absolute path, so a checkout under a directory named `tests` excluded its own
+  contents, and `_is_excluded` matched a substring rather than a path segment,
+  so `/home/ci/docs-build/` was silently skipped.
+
+- **`install_audit` no longer announces its own failure and returns 0.**
+  `if not results:` printed "Run is inconclusive" to stderr and passed;
+  `install_audit --root /nonexistent --layers source,project` exited 0. A
+  missing source directory printed an ERROR and then `continue`d, under a
+  comment reading "Treat as drift: record all source files as missing" that
+  described work the code did not do. An absent source surface now produces a
+  real `source_missing` verdict that reaches `has_drift`, the report and the
+  summary.
+
+- **`validate_diff_allowlist` now consults the allowlist.** It checked only the
+  never-touch list, so a path outside the allowlist entirely — not forbidden,
+  simply not permitted — passed. It now returns `(path, reason)` pairs that
+  distinguish `never_touch` from `not_allowlisted`.
+
+- **Criteria coverage no longer passes on an empty criteria list.** Nothing to
+  cover had satisfied "all covered". An empty `frozen_criteria` now returns
+  `empty_criteria`, which the verdict reports distinctly from criteria that are
+  missing.
+
+- **The stale-state guard now keys on a field something writes.**
+  `archive_cross_phase_state` compared a `phase` field in `loop-ready.json` that
+  no writer emitted, so it archived nothing and had been inert since it was
+  added. `write_loop_ready` now emits `phase` (or raises rather than writing a
+  file the guard cannot use), `loop-ready.schema.json` requires it, and a file
+  written before this change is archived as stale rather than trusted.
+
+- **The claude-code installers no longer destroy files.** A pre-existing
+  `.claude/settings.json` is left byte-identical and the installer's own
+  configuration goes to `settings.planning.json` beside it. `--symlink` over a
+  real `.claude/skills` directory refuses and exits 1, naming the path, instead
+  of exiting 0 having created a nested `skills/skills` link inside it;
+  `install.sh` no longer contains any `rm -rf`. The PowerShell host had been
+  hardened and then bypassed — its self-install block recursively deleted
+  `commands`, `skills` and `schemas` *before* calling the guard that refuses a
+  real directory, and deleted the `agents` directory unconditionally where the
+  POSIX host refuses it. Both hosts now take the same decision, and so does the
+  dry run, which previously promised a link the real run would refuse.
+
+- **Uninstall fails closed when ownership cannot be established.** Codex and
+  OpenCode share one skill tree through `skill-ownership.json`. With that
+  registry missing or malformed, both uninstallers proceeded anyway and removed
+  shared files including `bin/ap.py`, the launcher the other adapter's skills
+  invoke. Both now exit 1, name the file, and leave the tree untouched;
+  `--force-no-registry` / `-ForceNoRegistry` is the deliberate escape hatch and
+  warns what it may remove. The malformed-registry message no longer advises
+  deleting the file, which produced the missing-registry case that is refused
+  for the same reason.
+
+### Changed
+
+- **Tests that could not fail were replaced, not deleted.** `exit_code in
+  (0, 2)` in a test named for exit 2; two tests asserting that a layer was
+  absent from a run in which no layer existed; a test asserting `rc == 0`
+  against a home directory containing no `.claude/`; a test with no assertions
+  at all; a test that passed *because* of the bug it was named for; and, in the
+  class whose stated job is catching silent skips, `assert available or True`
+  with a comment noting that it always passes. Each is now an assertion that
+  fails against the code it was written for — proven by restoring that code
+  byte-for-byte and re-running.
+
+- **The shell half of both installer test files runs on Windows.** Thirteen
+  tests skipped unconditionally there, for the stated reason that bash cannot
+  run these scripts from a Python subprocess. The symptom was real and the
+  diagnosis wrong: the `bash` on `PATH` is WSL, which resolves `/mnt/c/...` and
+  cannot open a Windows path, while Git Bash — present on the same machine —
+  runs them without trouble. Both files now resolve Git Bash by path, pass
+  forward-slash paths, and decode subprocess output as UTF-8, which installers
+  require and `cp1252` cannot do. Each file also fails outright if neither host
+  is available, so a run in which everything skipped can no longer be reported
+  as green.
+
+### Added
+
+- **A static check for Python embedded in shell heredocs.** The uninstallers'
+  ownership logic lives inside a `python` heredoc, where `bash -n` sees only an
+  opaque string: a mis-indented line there leaves the script syntactically valid
+  and fails at run time, on the exact path meant to protect the user's files.
+  This was not hypothetical — an edit made during this release landed at the
+  wrong indent and `bash -n` passed it. The test compiles every `python` heredoc
+  it finds, and fails if it finds none, since a pattern that matches nothing
+  would otherwise pass while testing nothing.
+
+### Notes
+
+Every fix in this release was verified by restoring the pre-fix code
+byte-for-byte, running the new tests against it, confirming they fail, and
+restoring the branch version with a byte-identical assertion — no `git reset`,
+no operations on the working tree. Collection was diffed against `main` on each
+branch to prove no test was silently dropped: **+64 added, 2 removed** across
+the four. Both removals are named above — `test_no_archive_when_phase_field_absent`
+and `test_empty_frozen_criteria_always_passes`, each asserting the defective
+behaviour as though it were intended, and each replaced by its inverse in the
+same commit. The full suite on merged `main` is **872 passed, 1 skipped**
+(873 collected, against 811 before this release): the one skip creates a
+symlink, which needs Windows Developer Mode, and it names `WinError 1314`
+rather than skipping silently.
+
+---
+
 ## [0.17.0] - 2026-08-31
 
 Adapter expansion, and the checks that caught what it broke. Driven from the
@@ -569,11 +701,17 @@ Gate PASSED attempt 1, both agents. Completed 2026-05-13.
 
 ---
 
-[0.12.0]: https://github.com/advanced-planning/advanced-planning/releases/tag/v0.12.0
-[0.11.0]: https://github.com/advanced-planning/advanced-planning/releases/tag/v0.11.0
-[0.10.0]: https://github.com/advanced-planning/advanced-planning/releases/tag/v0.10.0
-[0.9.0]: https://github.com/advanced-planning/advanced-planning/releases/tag/v0.9.0
-[0.8.0]: https://github.com/advanced-planning/advanced-planning/releases/tag/v0.8.0
-[0.7.0]: https://github.com/advanced-planning/advanced-planning/releases/tag/v0.7.0
-[0.6.0]: https://github.com/advanced-planning/advanced-planning/releases/tag/v0.6.0
-[Unreleased]: https://github.com/advanced-planning/advanced-planning/compare/v0.12.0...HEAD
+[0.18.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.18.0
+[0.17.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.17.0
+[0.16.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.16.0
+[0.15.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.15.0
+[0.14.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.14.0
+[0.13.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.13.0
+[0.12.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.12.0
+[0.11.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.11.0
+[0.10.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.10.0
+[0.9.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.9.0
+[0.8.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.8.0
+[0.7.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.7.0
+[0.6.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.6.0
+[Unreleased]: https://github.com/MungoHarvey/advanced-planning/compare/v0.18.0...HEAD
