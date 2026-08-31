@@ -4,6 +4,12 @@
 #   .\uninstall.ps1 -Project [path]   Remove from a project (default: .)
 #   .\uninstall.ps1 -Global           Remove from the global config
 #   .\uninstall.ps1 ... -Yes          Actually delete. Without it, dry run.
+#   .\uninstall.ps1 ... -ForceNoRegistry  Proceed without registry (DANGEROUS)
+#
+# -ForceNoRegistry: bypass the ownership registry check when the registry is
+# missing or malformed. This will remove all skills and shared files including
+# bin\ap.py and runtime.json, which may break other adapters. Only use when you
+# are certain no other adapter shares this install.
 #
 # The reasoning is the same as uninstall.sh, which this mirrors: the mechanism
 # shares .advanced-plans/ with the user's planning record, so uninstalling is a
@@ -22,7 +28,8 @@
 param(
     [string]$Project,
     [switch]$Global,
-    [switch]$Yes
+    [switch]$Yes,
+    [switch]$ForceNoRegistry
 )
 
 $ErrorActionPreference = "Stop"
@@ -113,10 +120,21 @@ function Remove-ApAgentsFence([string]$AgentsFile) {
 function Invoke-ApOwnershipRemoval([string]$SkillsDir, [string]$OwnershipFile) {
     $approvedSkills = @("advanced-planning", "phase-plan-creator", "ralph-loop-planner", "plan-todos", "plan-skill-identification", "plan-subagent-identification", "progress-report", "schema-design")
 
-    # Read ownership file
+    # Read ownership file - fail closed on missing or malformed registry
     $data = @{schema_version = 1; skills = @{}}
     $fileExists = Test-Path -LiteralPath $OwnershipFile
-    if ($fileExists) {
+    
+    if (-not $fileExists) {
+        if (-not $ForceNoRegistry) {
+            Write-Error "uninstall.ps1: registry not found: $OwnershipFile"
+            Write-Error "uninstall.ps1: cannot establish ownership without the registry."
+            Write-Error "uninstall.ps1: this may mean the registry was never created, or it was deleted."
+            Write-Error "uninstall.ps1: to proceed anyway (DANGEROUS: may delete shared files including bin\ap.py and runtime.json), re-run with -ForceNoRegistry."
+            exit 1
+        }
+        # ForceNoRegistry=True: proceed with empty registry
+        Write-Warning "uninstall.ps1: proceeding without registry. May remove files owned by other adapters."
+    } else {
         try {
             $existingContent = [System.IO.File]::ReadAllText($OwnershipFile)
             $data = $existingContent | ConvertFrom-Json
@@ -124,7 +142,16 @@ function Invoke-ApOwnershipRemoval([string]$SkillsDir, [string]$OwnershipFile) {
                 $data | Add-Member -NotePropertyName "skills" -NotePropertyValue @{}
             }
         } catch {
-            # Malformed - treat as empty
+            if (-not $ForceNoRegistry) {
+                Write-Error "uninstall.ps1: $OwnershipFile is malformed JSON ($_)"
+                Write-Error "uninstall.ps1: fix: repair the JSON so it parses, or re-run the adapter installer to regenerate the registry."
+                Write-Error "uninstall.ps1: deleting the file does not help: a missing registry is refused for the same reason."
+                Write-Error "uninstall.ps1: to proceed anyway (DANGEROUS: may delete shared files including bin\ap.py and runtime.json), re-run with -ForceNoRegistry."
+                exit 1
+            }
+            # ForceNoRegistry=True: proceed with empty registry after warning
+            Write-Warning "uninstall.ps1: registry is malformed ($_). Proceeding without ownership data."
+            $data = @{schema_version = 1; skills = @{}}
         }
     }
 

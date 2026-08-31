@@ -5,7 +5,13 @@
 #   ./uninstall.sh --project [path]   Remove from a project (default: .)
 #   ./uninstall.sh --global           Remove from the global config
 #   ./uninstall.sh ... --yes          Actually delete. Without it, dry run.
+#   ./uninstall.sh ... --force-no-registry  Proceed without registry (DANGEROUS)
 #   ./uninstall.sh --help
+#
+# --force-no-registry: bypass the ownership registry check when the registry is
+# missing or malformed. This will remove all skills and shared files including
+# bin/ap.py and runtime.json, which may break other adapters. Only use when you
+# are certain no other adapter shares this install.
 #
 # Why this exists, and why it is fussier than `rm -rf`:
 #
@@ -46,6 +52,7 @@ REPO_ROOT="$SCRIPT_DIR"
 MODE=""
 PROJECT_DIR="."
 CONFIRMED=false
+FORCE_NO_REGISTRY=false
 
 # USERPROFILE before HOME: Git Bash $HOME is routinely a mapped network drive
 # on Windows while the installer wrote to the local profile. Removing from a
@@ -165,15 +172,17 @@ remove_agents_fence() {
 # Process ownership: remove "opencode" from each skill, determine what to delete.
 # Uses Python for proper JSON handling. Outputs decisions to stdout.
 # Format: KEEP|REMOVE skill_name
+# Exit codes: 0=success, 1=registry error (missing/malformed without --force-no-registry)
 process_ownership() {
     _skills_dir="$1"
     _ownership_file="$2"
     _confirmed="$3"
+    _force_no_registry="$4"
 
     # List of skills this adapter installed
     _approved_skills="advanced-planning phase-plan-creator ralph-loop-planner plan-todos plan-skill-identification plan-subagent-identification progress-report schema-design"
 
-    python - "$_ownership_file" "$_skills_dir" "$_approved_skills" "$_confirmed" <<'PYEOF'
+    python - "$_ownership_file" "$_skills_dir" "$_approved_skills" "$_confirmed" "$_force_no_registry" <<'PYEOF'
 import json
 import sys
 import os
@@ -182,16 +191,35 @@ owner_file = sys.argv[1]
 skills_dir = sys.argv[2]
 approved_skills = sys.argv[3].split() if len(sys.argv) > 3 else []
 confirmed = sys.argv[4] == "true"
+force_no_registry = sys.argv[5] == "true"
 
-# Read ownership file
+# Read ownership file - fail closed on missing or malformed registry
+file_exists = os.path.exists(owner_file)
 data = {"schema_version": 1, "skills": {}}
-if os.path.exists(owner_file):
+
+if not file_exists:
+    if not force_no_registry:
+        sys.stderr.write(f"uninstall.sh: registry not found: {owner_file}\n")
+        sys.stderr.write("uninstall.sh: cannot establish ownership without the registry.\n")
+        sys.stderr.write("uninstall.sh: this may mean the registry was never created, or it was deleted.\n")
+        sys.stderr.write(f"uninstall.sh: to proceed anyway (DANGEROUS: may delete shared files including bin/ap.py and runtime.json), re-run with --force-no-registry.\n")
+        sys.exit(1)
+    # force_no_registry=True: proceed with empty registry
+    sys.stderr.write(f"uninstall.sh: WARNING: proceeding without registry. May remove files owned by other adapters.\n")
+else:
     try:
         with open(owner_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
-    except (json.JSONDecodeError, ValueError):
-        # Malformed - treat as empty, will be cleaned up
-        pass
+    except (json.JSONDecodeError, ValueError) as exc:
+        if not force_no_registry:
+            sys.stderr.write(f"uninstall.sh: {owner_file} is malformed JSON ({exc})\n")
+            sys.stderr.write("uninstall.sh: fix: repair the JSON so it parses, or re-run the adapter installer to regenerate the registry.\n")
+            sys.stderr.write("uninstall.sh: deleting the file does not help: a missing registry is refused for the same reason.\n")
+            sys.stderr.write(f"uninstall.sh: to proceed anyway (DANGEROUS: may delete shared files including bin/ap.py and runtime.json), re-run with --force-no-registry.\n")
+            sys.exit(1)
+        # force_no_registry=True: proceed with empty registry after warning
+        sys.stderr.write(f"uninstall.sh: WARNING: registry is malformed ({exc}). Proceeding without ownership data.\n")
+        data = {"schema_version": 1, "skills": {}}
 
 if "skills" not in data:
     data["skills"] = {}
@@ -262,10 +290,10 @@ uninstall_from() {
     echo "Skills (with ownership check):"
     # Process ownership and get decisions
     if [ "$CONFIRMED" = true ]; then
-        _decisions="$(process_ownership "$SKILLS_DIR" "$OWNERSHIP_FILE" "$CONFIRMED")"
+        _decisions="$(process_ownership "$SKILLS_DIR" "$OWNERSHIP_FILE" "$CONFIRMED" "$FORCE_NO_REGISTRY")" || exit 1
     else
-        # Dry run - simulate what would happen
-        _decisions="$(process_ownership "$SKILLS_DIR" "$OWNERSHIP_FILE" "false")"
+        # Dry run - simulate what would happen (same decision logic)
+        _decisions="$(process_ownership "$SKILLS_DIR" "$OWNERSHIP_FILE" "false" "$FORCE_NO_REGISTRY")" || exit 1
     fi
     
     # Parse decisions - use here-string to avoid subshell (while in pipe loses REMOVED/KEPT)
@@ -335,6 +363,7 @@ while [ $# -gt 0 ]; do
             if [ -n "${2:-}" ] && [ "${2#--}" = "$2" ]; then PROJECT_DIR="$2"; shift; fi
             shift ;;
         --yes) CONFIRMED=true; shift ;;
+        --force-no-registry) FORCE_NO_REGISTRY=true; shift ;;
         *) echo "Unknown option: $1" >&2; echo "Run ./uninstall.sh --help" >&2; exit 1 ;;
     esac
 done
