@@ -58,10 +58,48 @@ function Do-Copy([string]$src, [string]$dest) {
 function Do-Junction([string]$link, [string]$target) {
     # Creates a directory junction (Windows equivalent of a symlink for directories).
     # Requires no elevated permissions on modern Windows.
+    #
+    # Safety: only removes the destination if it is already a reparse point
+    # (junction or symlink). A real directory or file is never deleted — the
+    # install fails with a clear message instead.
     if ($DryRun) {
-        Write-Host "  [dry-run] New-Item Junction $link -> $target"
+        if (Test-Path $link) {
+            $item = Get-Item $link -Force -ErrorAction SilentlyContinue
+            if ($null -ne $item -and $null -ne $item.Attributes -and ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+                Write-Host "  [dry-run] Remove-Item (reparse point) $link"
+                Write-Host "  [dry-run] New-Item Junction $link -> $target"
+            } else {
+                Write-Host "  [dry-run] ERROR: $link exists and is not a reparse point — would fail"
+            }
+        } else {
+            Write-Host "  [dry-run] New-Item Junction $link -> $target (path does not exist)"
+        }
     } else {
-        if (Test-Path $link) { Remove-Item $link -Recurse -Force }
+        if (Test-Path $link) {
+            $item = Get-Item $link -Force -ErrorAction SilentlyContinue
+            if ($null -ne $item -and $null -ne $item.Attributes -and ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+                # It's a junction or symlink — safe to remove the link itself (not following)
+                Remove-Item $link -Force | Out-Null
+            } elseif ($null -ne $item) {
+                # Exists but is not a reparse point — fail with a clear message
+                Write-Error "Do-Junction: $link exists and is not a reparse point (it is a $($item.GetType().Name)). Remove or rename it before installing, or install to a different location."
+                exit 1
+            }
+            # If Test-Path returned true but item is null, the target of a broken junction is gone.
+            # In that case, the junction entry itself may still exist as a reparse point.
+            # Check the reparse attribute directly on disk.
+            if ($null -eq $item) {
+                # Try to get the item without following the link
+                try {
+                    $linkItem = Get-Item $link -Force -ErrorAction Stop
+                    if ($null -ne $linkItem.Attributes -and ($linkItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+                        Remove-Item $link -Force | Out-Null
+                    }
+                } catch {
+                    # Path truly does not exist or cannot be accessed — proceed to create
+                }
+            }
+        }
         New-Item -ItemType Junction -Path $link -Target $target | Out-Null
     }
 }
@@ -331,11 +369,10 @@ if ($SelfInstall) {
         Write-Host "  [dry-run] New-Item Junction $($ClaudeDir)\schemas -> $schemasSrc"
         Write-Host "  [dry-run] symlink agents from core\agents and platforms\claude-code\agents"
     } else {
-        # Remove existing dirs/junctions before creating new ones
-        foreach ($dirName in @("commands", "skills", "schemas")) {
-            $target = Join-Path $ClaudeDir $dirName
-            if (Test-Path $target) { Remove-Item $target -Recurse -Force }
-        }
+        # No pre-delete here. Do-Junction removes the destination only when
+        # it is already a reparse point, and fails loudly otherwise. Deleting
+        # first would make that guard dead code and would recursively delete a
+        # real directory -- which the POSIX host refuses to do.
         Do-Junction (Join-Path $ClaudeDir "commands") $commandsSrc
         Say "  + commands -> platforms\claude-code\commands"
         Do-Junction (Join-Path $ClaudeDir "skills") $skillsSrc
@@ -344,8 +381,21 @@ if ($SelfInstall) {
         Say "  + schemas -> core\schemas"
 
         # Agents: individual symlinks from both core\agents and platforms\claude-code\agents
+        # Mirrors install.sh: replace a link, refuse a real directory. The
+        # agents directory is rebuilt from individual links, but a user may
+        # have put their own agents here, and recursive deletion would take
+        # them with it.
         $agentsDir = Join-Path $ClaudeDir "agents"
-        if (Test-Path $agentsDir) { Remove-Item $agentsDir -Recurse -Force }
+        if (Test-Path $agentsDir) {
+            $agentsItem = Get-Item $agentsDir -Force -ErrorAction SilentlyContinue
+            if ($null -ne $agentsItem -and $null -ne $agentsItem.Attributes -and
+                ($agentsItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+                Remove-Item $agentsDir -Force | Out-Null
+            } else {
+                Write-Error "$agentsDir exists as a real directory/file. Remove or rename it before self-install."
+                exit 1
+            }
+        }
         New-Item -ItemType Directory -Path $agentsDir -Force | Out-Null
         $coreAgents = Get-ChildItem -Path (Join-Path $RepoRoot "core\agents") -Filter "*.md" -File
         foreach ($agent in $coreAgents) {
@@ -431,6 +481,7 @@ if ($SelfInstall) {
 # settings.json
 # ---------------------------------------------------------------------------
 $settingsPath = Join-Path $ClaudeDir "settings.json"
+$settingsPlanningPath = Join-Path $ClaudeDir "settings.planning.json"
 Say "Writing settings.json..."
 if (-not $DryRun) {
     $settings = @{
@@ -451,9 +502,25 @@ if (-not $DryRun) {
     } | ConvertTo-Json -Depth 4
     # Use UTF-8 without BOM — Set-Content -Encoding UTF8 adds a BOM in Windows PowerShell 5.x
     $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
-    [System.IO.File]::WriteAllText($settingsPath, $settings, $utf8NoBom)
+
+    if (Test-Path $settingsPath -PathType Leaf) {
+        # settings.json already exists — preserve it byte-identical
+        # Write the planning settings to settings.planning.json instead
+        [System.IO.File]::WriteAllText($settingsPlanningPath, $settings, $utf8NoBom)
+        Say "  ! $settingsPath already exists — preserved as-is"
+        Say "  + $settingsPlanningPath (merge permissions and planning keys by hand if needed)"
+    } else {
+        # No existing settings.json — write it as normal
+        [System.IO.File]::WriteAllText($settingsPath, $settings, $utf8NoBom)
+        Say "  + $settingsPath"
+    }
 } else {
-    Write-Host "  [dry-run] write $settingsPath"
+    # Dry run: report which branch would be taken
+    if (Test-Path $settingsPath -PathType Leaf) {
+        Write-Host "  [dry-run] $settingsPath exists — would write $settingsPlanningPath instead"
+    } else {
+        Write-Host "  [dry-run] write $settingsPath"
+    }
 }
 
 # ---------------------------------------------------------------------------
