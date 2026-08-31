@@ -21,10 +21,12 @@ Read `$ARGUMENTS`. Accept either a bare integer (`6`) or the prefixed form (`pha
 the `phase-` prefix if present and set `N` to the resulting integer.
 
 If `$ARGUMENTS` is empty or does not resolve to a positive integer:
+
 ```
 Error: /phase-compact requires a phase-id argument.
 Usage: /phase-compact <phase-id>   (e.g. /phase-compact 6  or  /phase-compact phase-6)
 ```
+
 Stop.
 
 Print: `-> Compacting phase [N]`
@@ -38,10 +40,12 @@ ls .advanced-plans/phases/phase-[N]/plan.md 2>/dev/null
 ```
 
 If no file is found:
+
 ```
 Error: Phase plan not found. Expected .advanced-plans/phases/phase-[N]/plan.md.
 Cannot compact a phase with no plan on disk.
 ```
+
 Stop.
 
 Set `PHASE_PLAN` to the resolved path. Read the file's YAML frontmatter.
@@ -67,12 +71,14 @@ git log --before="<timestamp>" -1 --format=%h
 Set `ANCHOR_SHA` to the result.
 
 If neither path resolves a SHA:
+
 ```
 Error: Cannot determine anchor SHA for phase [N].
   Checked: .advanced-plans/phases/phase-[N]/plan.md frontmatter (anchor_sha field absent)
   Checked: .advanced-plans/state/history.jsonl (no events for phase [N] found)
 Cannot write a conforming artefact without a verifiable anchor SHA.
 ```
+
 Stop.
 
 Verify the SHA resolves:
@@ -115,6 +121,7 @@ ls .advanced-plans/gate-verdicts/phase-[N]-attempt-*-phase-goals-agent.json 2>/d
 ```
 
 If a file is found, set `VERDICT_PATH` to that path. Read the file and extract:
+
 - `verdict` field (`pass` or `fail`)
 - `criteria_outcomes` array (if present) — used in Step 8
 - `phase_title` field (if present) — used as title fallback
@@ -160,6 +167,7 @@ Print: `  commit_count: [COMMIT_COUNT]  ([ANCHOR_SHA]..[END_SHA])`
 Derive the three body sections (`Goals met`, `Deferred`, `Opened`) using this priority order:
 
 **If the verdict file is present and contains `criteria_outcomes`:**
+
 - `Goals met`: one bullet per entry where `status: pass`. Each bullet must end with a
   concrete evidence pointer (commit SHA, file path, or verdict path from `evidence` field).
 - `Deferred`: one bullet per entry where `status: deferred`. Include `deferred_to` if set.
@@ -173,6 +181,7 @@ handoff explicitly states the criterion was met, mark it as met with a pointer t
 commit range.
 
 **Hard rules (from schema):**
+
 - Each bullet is exactly one line — no wrapping, no sub-bullets.
 - No prose paragraphs in any section.
 - If nothing was deferred, write `- (none)`.

@@ -20,6 +20,7 @@ Takes you from zero to a completed first ralph loop using slash commands. Approx
 Clone the repository and run the installer.
 
 **Windows (PowerShell):**
+
 ```powershell
 git clone https://github.com/MungoHarvey/advanced-planning
 cd advanced-planning
@@ -27,6 +28,7 @@ cd advanced-planning
 ```
 
 **macOS / Linux:**
+
 ```bash
 git clone https://github.com/MungoHarvey/advanced-planning
 cd advanced-planning
@@ -59,6 +61,7 @@ success criteria. Edit it directly if anything looks wrong; the system reads pla
 source of truth.
 
 **Expected output:**
+
 ```
 plans/
 └── phase-1.md
@@ -75,6 +78,7 @@ frontmatter stubs for each loop: `name`, `task_name`, `max_iterations`, `on_max_
 empty `todos[]`, and a blank `handoff_summary`. Todos are populated when each loop starts.
 
 **Expected output:**
+
 ```
 .advanced-plans/phases/phase-1/
 ├── plan.md
@@ -95,6 +99,7 @@ Full two-agent cycle:
 4. Updates planning state and commits all outputs
 
 **Expected output:**
+
 ```
 .advanced-plans/state/
 ├── loop-ready.json
@@ -130,6 +135,7 @@ If you prefer to explore the codebase before committing to a plan, use this work
 ```
 
 The difference from the standard flow:
+
 - `/plan-and-phase` activates planning mode (read-only enforcement) during exploration
 - Findings are saved to `.advanced-plans/specs/exploration-notes.md` for review before planning starts
 - `--auto` on `/next-loop` chains loops without manual re-invocation between each one

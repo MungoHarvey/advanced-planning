@@ -3,6 +3,7 @@
 ## What is a Ralph Loop?
 
 A ralph loop iteration is a self-contained, verifiable unit of work with:
+
 - A bounded scope deliverable in one focused session
 - Explicit todos with `outcome` fields defining what "done" means per task
 - A concise `handoff_summary` written at completion (done / failed / needed)
@@ -158,6 +159,7 @@ handoff_summary:
 ```
 
 **Field rules:**
+
 - `done` — completed work that persists: files written, tests passing, decisions made
 - `failed` — what didn't complete and why; reference exact file/location if relevant; empty string if nothing failed
 - `needed` — the precise action the next loop should start with; not a restatement of the phase goal
@@ -165,6 +167,7 @@ handoff_summary:
 The next loop injects this block at the top of its execution prompt before the objective. This preserves continuity without dragging forward full prior session context.
 
 **Anti-patterns:**
+
 ```yaml
 # ❌ Too vague — next loop has no actionable starting point
 needed: "Continue with phase goals"
@@ -211,6 +214,7 @@ Defined by `on_max_iterations` in frontmatter:
 The `outcome` field answers: *"What must be true in the world for this todo to be done?"*
 
 ### ❌ Invalid Outcomes
+
 ```yaml
 outcome: "Task complete"
 outcome: "Code written"
@@ -219,6 +223,7 @@ outcome: "Done"
 ```
 
 ### ✅ Valid Outcomes
+
 ```yaml
 # File existence
 outcome: "core/schemas/foo.schema.md exists with all required sections and a validation checklist"
@@ -241,12 +246,14 @@ outcome: "JSON Schema validates against draft-07; required fields present; patte
 ## Success Criteria Quality Standards
 
 ### ❌ Vague
+
 - "Tests pass"
 - "Code is clean"
 - "Results look right"
 - "Schema is complete"
 
 ### ✅ Specific and Verifiable
+
 - "All tests in [suite] pass; linter reports 0 warnings"
 - "File exists at [path], non-empty, contains [specific sections]"
 - "Metric matches reference within [tolerance]%; documented in [file]"

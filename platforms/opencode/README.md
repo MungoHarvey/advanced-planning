@@ -13,6 +13,7 @@ This adapter brings the Advanced Planning framework to OpenCode. It provides a h
 ```
 
 This installs:
+
 - The shared routing skill to `.agents/skills/advanced-planning/SKILL.md`
 - Approved core planning skills to `.agents/skills/<name>/SKILL.md`
 - The Python runtime launcher to `.advanced-plans/bin/ap.py`
@@ -93,6 +94,7 @@ For linked git worktrees, OpenCode's native git access means no external control
 **Cause**: The skill is not installed or not in a discovered location.
 
 **Fix**:
+
 ```powershell
 # Reinstall the skill
 & setup/opencode/install.ps1 -Project <path-to-your-project>
@@ -109,6 +111,7 @@ OpenCode discovers skills under `.agents/skills/` from the current directory to 
 **Cause**: The shared Python runtime checkout has been moved, renamed, or deleted.
 
 **Fix**:
+
 ```powershell
 # Re-run the installer from the checkout's new location
 & setup/opencode/install.ps1 -Project <path-to-your-project>
@@ -123,6 +126,7 @@ The installer writes `.advanced-plans/runtime.json` with the absolute path to th
 **Cause**: Awaiting human review response.
 
 **Fix**: Reply with one of the three valid responses:
+
 ```
 APPROVE phase-N
 REVISE phase-N: <instructions>
@@ -138,6 +142,7 @@ The gate blocks until an explicit response is received. This is the designed beh
 **Cause**: OpenCode gates directory access outside its worktree. This is not a trust dialog but an access boundary.
 
 **Fix**:
+
 - Deliver envelope files inline in the `agent prompt` text
 - Or write them inside the worktree rather than referencing external paths
 - Pre-authorize the directory if using herdr: `herdr-trust.py <worktree> --apply`

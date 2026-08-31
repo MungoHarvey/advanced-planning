@@ -18,6 +18,7 @@ Creates structured phase plans with clear objectives, deliverables, success crit
 ## Your Input
 
 Provide:
+
 - **Project or task description** — what you are trying to accomplish
 - **Phase context** — which phase number or phase name
 - **Success definition** — what "done" looks like (optional; the skill can prompt for this)
@@ -94,6 +95,7 @@ Provide:
 ## Output Locations
 
 Save the completed phase plan to:
+
 ```
 .advanced-plans/phases/phase-{N}/plan.md              ← Phase plan document
 .advanced-plans/PLANS-INDEX.md            ← Update with new phase entry

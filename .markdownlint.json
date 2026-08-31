@@ -1,0 +1,25 @@
+{
+  "default": true,
+
+  // Line length: this repo writes prose at ~80 but tables, links and command
+  // lines legitimately run over. 5,062 findings, none of them defects.
+  "MD013": false,
+
+  // Table column style: cosmetic, 1,496 findings.
+  "MD060": false,
+
+  // A CHANGELOG repeats "### Fixed" under every version, and that is correct.
+  "MD024": { "siblings_only": true },
+
+  // DISABLED BECAUSE ITS AUTOFIX IS DESTRUCTIVE HERE, not because the rule is
+  // wrong. Much of this repository's markdown is agent instructions, where the
+  // whitespace inside an inline code span is the content: `  anchor_sha: [SHA]`
+  // tells an agent to print an indented line. --fix strips that padding and
+  // silently changes what the instruction says. Measured: 18 such edits, one of
+  // them turning "separated by `, `" into "separated by `,`".
+  "MD038": false,
+
+  // Same reason. Its autofix renumbered a procedure's steps 4. and 5. to 1. and
+  // 2., which reads as a new list rather than a continuation.
+  "MD029": false
+}

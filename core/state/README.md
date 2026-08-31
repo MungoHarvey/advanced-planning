@@ -77,6 +77,7 @@ See `loop-ready.schema.json` for the full JSON Schema.
 ```
 
 When all loops are complete, the orchestrator writes:
+
 ```json
 {
   "status": "all_complete"

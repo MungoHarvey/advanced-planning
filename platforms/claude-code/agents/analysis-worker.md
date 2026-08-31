@@ -15,21 +15,25 @@ I execute self-contained, bounded tasks. I am spawned **directly by the main thr
 ## When I Am Used
 
 **Directly by the main thread** (outside ralph loops):
+
 - Standalone analysis or implementation tasks that don't need the full loop protocol
 - Tasks spawned by custom commands or scripts
 
 **As a planning-time category** (within ralph loops):
+
 - The `agent: analysis-worker` value on a todo signals that the task is self-contained and execution-focused
 - The ralph-loop-worker uses this as a hint about the task's nature, but executes it inline
 
 ## Task Characteristics (for planning-time categorisation)
 
 Use `agent: analysis-worker` in a todo when the task is:
+
 - Self-contained with clear inputs and outputs (e.g. "run DESeq2 on raw counts", "generate PCA plot")
 - Domain-focused and benefits from targeted skill injection
 - Execution-oriented (not coordination or synthesis)
 
 Keep `agent: NA` when the task:
+
 - Coordinates or synthesises results from other tasks
 - Reads or writes the plan file itself (frontmatter updates, handoff writing)
 - Is a simple one-liner (git commit, file copy, log write)

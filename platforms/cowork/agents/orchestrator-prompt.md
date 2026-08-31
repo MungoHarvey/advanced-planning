@@ -52,10 +52,12 @@ These three values become the `handoff_injected` block in `loop-ready.json`.
 Read the `todos[]` array from the loop's YAML frontmatter.
 
 **Skip population** if:
+
 - The `todos[]` array has at least one entry, AND
 - At least some todos have non-`NA` values for `skill` and `agent`
 
 **Run population** if:
+
 - `todos[]` is empty, OR
 - All todos have `skill: NA` and `agent: NA`
 

@@ -79,7 +79,7 @@ what it could not find, and tells you what to do about it.
   of exiting 0 having created a nested `skills/skills` link inside it;
   `install.sh` no longer contains any `rm -rf`. The PowerShell host had been
   hardened and then bypassed — its self-install block recursively deleted
-  `commands`, `skills` and `schemas` *before* calling the guard that refuses a
+  `commands`, `skills` and `schemas` _before_ calling the guard that refuses a
   real directory, and deleted the `agents` directory unconditionally where the
   POSIX host refuses it. Both hosts now take the same decision, and so does the
   dry run, which previously promised a link the real run would refuse.
@@ -100,7 +100,7 @@ what it could not find, and tells you what to do about it.
   (0, 2)` in a test named for exit 2; two tests asserting that a layer was
   absent from a run in which no layer existed; a test asserting `rc == 0`
   against a home directory containing no `.claude/`; a test with no assertions
-  at all; a test that passed *because* of the bug it was named for; and, in the
+  at all; a test that passed _because_ of the bug it was named for; and, in the
   class whose stated job is catching silent skips, `assert available or True`
   with a comment noting that it always passes. Each is now an assertion that
   fails against the code it was written for — proven by restoring that code
@@ -218,7 +218,7 @@ found in five separate places.
   `.advanced-plans/` without a manifest, or any `.git` without one, no longer
   borrows an enclosing checkout's runtime -- it falls through to the global
   record, and names both places it looked when there is none. A linked worktree
-  or submodule (`.git` as a *file*, not a directory) is recognised.
+  or submodule (`.git` as a _file_, not a directory) is recognised.
 - **The in-line `runpy` call sites print the guard, not a traceback.**
   `bootstrap()` catches `Unreachable`, reports, and exits 3 (`EXIT_UNREACHABLE`).
 - `install_audit` no longer reports every globally installed command as
@@ -270,7 +270,7 @@ fail when the defect is put back:
 project's own package, not an external dependency, so the stdlib-only policy is
 unchanged. The cost is recorded beside the entry rather than left implicit: an
 installer copies `ap_launcher.py` into a directory where the package does not
-exist, so a `platforms` import *there* breaks the installed launcher and
+exist, so a `platforms` import _there_ breaks the installed launcher and
 `ast_check` no longer catches it.
 
 `TestShippedModulesImportStdlibOnly` restores that protection for exactly the
@@ -422,8 +422,8 @@ installed — into this repo's own `.claude/` runtime, then proves both via auto
 - `.claude/commands/run-gate.md`, `.claude/commands/next-phase.md` — refreshed byte-identical
   from `platforms/claude-code/commands/` source, installing the codex gate (92 codex refs) and
   the self-correcting gate / remediation flow (46 remediation refs) into the live runtime.
-- `platforms/python/codex_gate.py` — `extract_verdict_json` now treats multiple *structurally
-  identical* fenced JSON blocks as non-ambiguous (returns the last block), since `codex exec`
+- `platforms/python/codex_gate.py` — `extract_verdict_json` now treats multiple _structurally
+  identical_ fenced JSON blocks as non-ambiguous (returns the last block), since `codex exec`
   echoes its verdict block twice. Genuinely-differing blocks still degrade. Minimal scoped fix
   for a blocking bug surfaced during the live exercise (Loop 056 finding); the runtime codex
   live-run criterion is now achievable.

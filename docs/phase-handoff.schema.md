@@ -65,6 +65,7 @@ Seven required sections follow the frontmatter, in this order.
 ### `## What was done & why`
 
 One bullet per material outcome of the phase. Each bullet must:
+
 - Be exactly one line (no wrapping, no sub-bullets)
 - Include both the outcome **and** the rationale — the "why"
 
@@ -73,6 +74,7 @@ One bullet per material outcome of the phase. Each bullet must:
 ### `## Outcomes`
 
 One bullet per observable end-state corresponding to a phase success criterion. Each bullet must:
+
 - Be exactly one line
 - Cite a concrete evidence pointer: a file path, a commit SHA, or a named artefact
 
@@ -81,6 +83,7 @@ One bullet per observable end-state corresponding to a phase success criterion. 
 ### `## Errors & issues encountered`
 
 What went wrong, how it was resolved, or what remains open. Mandatory section.
+
 - If the phase was genuinely clean, write: `- (none)`
 - Otherwise: one bullet per issue; one line; state resolution or open status
 
@@ -89,6 +92,7 @@ What went wrong, how it was resolved, or what remains open. Mandatory section.
 ### `## Files touched (pointers, not contents)`
 
 Files that were created, read, or edited. Each bullet must:
+
 - Be exactly one line
 - Follow the format: `TYPE: \`path\` -- brief reason or change`
 - TYPE is one of: `read`, `edited`, `created`, `deleted`
@@ -105,6 +109,7 @@ Format: prose sentence ending with `-> full verdict: <path>`.
 ### `## Skills & methods used`
 
 One bullet per skill or method applied across the phase. Each bullet:
+
 - Format: `` `skill/method-name` -- what it was used for ``
 - One line per entry
 
@@ -114,6 +119,7 @@ One bullet per skill or method applied across the phase. Each bullet:
 
 A single bullet (or two at most) with the key references for resuming work. Must include
 plan_ref, loops_ref, and the next action.
+
 - Format: `Plans: <plan_ref> / <loops_ref> - Spec: <spec path> - Next: <next action>`
 
 **Hard rule: maximum two lines. Sufficient to get a model back on-task from cold start.**
@@ -125,6 +131,7 @@ plan_ref, loops_ref, and the next action.
 The generator estimates token count as `ceil(len(rendered_digest_text) / 4)`.
 
 If this estimate exceeds `token_ceiling`:
+
 - Generation exits with a non-zero error code
 - The error message MUST list each section name and its estimated token count
 - No partial or truncated digest is written

@@ -13,6 +13,7 @@ This adapter brings the Advanced Planning framework to OpenAI Codex. It provides
 ```
 
 This installs:
+
 - The shared routing skill to `.agents/skills/advanced-planning/SKILL.md`
 - Approved core planning skills to `.agents/skills/<name>/SKILL.md`
 - The Python runtime launcher to `.advanced-plans/bin/ap.py`
@@ -93,6 +94,7 @@ For linked git worktrees (the standard pattern), this is the only permitted flow
 **Cause**: The skill is not installed or not in a discovered location.
 
 **Fix**:
+
 ```powershell
 # Reinstall the skill
 & setup/codex/install.ps1 -Project <path-to-your-project>
@@ -109,6 +111,7 @@ Codex discovers skills under `.agents/skills/` from the current directory to the
 **Cause**: The shared Python runtime checkout has been moved, renamed, or deleted.
 
 **Fix**:
+
 ```powershell
 # Re-run the installer from the checkout's new location
 & setup/codex/install.ps1 -Project <path-to-your-project>
@@ -123,6 +126,7 @@ The installer writes `.advanced-plans/runtime.json` with the absolute path to th
 **Cause**: Codex subagents are disabled or the external Herdr/AAW integration is not available.
 
 **Fix**:
+
 - Ensure Codex subagents are enabled in your Codex configuration
 - For Herdr/AAW fallback, ensure the herdr daemon is running and the integration is configured
 - If neither is available, the action is unsupported
@@ -134,6 +138,7 @@ The installer writes `.advanced-plans/runtime.json` with the absolute path to th
 **Cause**: Awaiting human review response.
 
 **Fix**: Reply with one of the three valid responses:
+
 ```
 APPROVE phase-N
 REVISE phase-N: <instructions>
@@ -149,6 +154,7 @@ The gate blocks until an explicit response is received. This is the designed beh
 **Cause**: External controller cannot access the worktree's git metadata.
 
 **Fix**:
+
 - Ensure the worktree is properly linked (`git worktree list` shows it)
 - Ensure the external controller (Herdr/AAW) has access to the parent repository
 - For shared checkouts, ensure the controller has write access

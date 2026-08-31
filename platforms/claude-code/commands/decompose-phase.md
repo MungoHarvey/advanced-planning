@@ -11,6 +11,7 @@ Decompose a phase plan into ralph loop iterations using the ralph-loop-planner s
 ## Skill & Agent Path Resolution
 
 Resolve all `.claude/skills/` and `.claude/agents/` references in this order:
+
 1. **Project-local** — `.claude/skills/<name>/` (preferred)
 2. **Global fallback** — `~/.claude/skills/<name>/` (used when local copy absent)
 
@@ -39,12 +40,14 @@ Read .claude/skills/ralph-loop-planner/references/todo-schema.md
 ### 4. Confirm preferences
 
 Ask the user:
+
 - How many loops (approximate)? Default: 3–5
 - Any specific skills to map against? (optional)
 
 ### 5. Follow the ralph-loop-planner process
 
 Generate loops following the skill instructions. Each loop stub has:
+
 - Complete YAML frontmatter with empty `todos[]` and empty `handoff_summary`
 - Full markdown body (Overview, Success Criteria, Skills, Dependencies, Complexity)
 
@@ -68,14 +71,17 @@ Run /next-loop to begin execution (todos will be auto-populated on first run).
 ```
 /decompose-phase 2
 ```
+
 Decompose phase 2 plan into loops.
 
 ```
 /decompose-phase .advanced-plans/phases/phase-refactoring/plan.md
 ```
+
 Decompose a named plan file.
 
 ```
 /decompose-phase
 ```
+
 Uses the most recently modified phase plan.

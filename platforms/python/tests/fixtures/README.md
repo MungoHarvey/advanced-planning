@@ -5,6 +5,7 @@
 **Type**: Real codex CLI stdout (NOT synthesized)
 
 **Produced by**:
+
 ```
 cd <repo-root>
 codex exec review --ephemeral -m gpt-5.5 \
@@ -28,6 +29,7 @@ to `extract_and_validate` produces `ok=False` — which triggers the
 a friction finding in `docs/tool-friction-log.md` (2026-06-09 entry).
 
 **Tests that use this fixture**:
+
 - `test_codex_gate_live.py::TestCodexRealStdout::test_real_fixture_double_block_triggers_degrade`
   — asserts the double-block behavior returns ok=False (degrade, not happy path)
 
@@ -42,4 +44,5 @@ run-gate expects when the codex-reviewer follows its output contract. It is used
 for happy-path testing of `extract_and_validate`.
 
 **Tests that use this fixture**:
+
 - `test_codex_gate_live.py::TestHappyPath::test_single_block_extract_and_validate`

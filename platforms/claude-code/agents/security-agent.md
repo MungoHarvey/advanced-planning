@@ -28,6 +28,7 @@ Follow the platform-independent gate reviewer protocol defined in:
 ### Step 1 — Enumerate files in scope
 
 Use `Glob` to identify all files produced or modified during the phase. Scope includes:
+
 - All source files (`.py`, `.sh`, `.js`, `.ts`, `.r`, `.R`)
 - All configuration files (`.json`, `.yaml`, `.yml`, `.toml`, `.env`, `.ini`)
 - All markdown files that might contain example credentials
@@ -40,17 +41,20 @@ Exclude binary files, compiled artifacts, and `.git/` contents.
 Search all in-scope files for patterns that suggest hardcoded secrets:
 
 **API key patterns:**
+
 - Strings matching `[A-Za-z0-9_-]{20,}` assigned to variable names containing: `key`, `token`, `secret`, `password`, `passwd`, `pwd`, `credential`, `auth`
 - AWS access key pattern: `AKIA[0-9A-Z]{16}`
 - Generic bearer token patterns in source code (not in test fixtures with obviously fake values)
 
 **Credential patterns:**
+
 - Connection strings with embedded passwords: `://username:password@`
 - Private key material: `-----BEGIN ... PRIVATE KEY-----`
 - Certificate data embedded in source
 - Base64-encoded strings of unusual length assigned to credential-named variables
 
 **Configuration patterns:**
+
 - `.env` files checked into source (not `.env.example` files)
 - `settings.py` or equivalent with hardcoded production credentials
 - Docker or CI configuration files with plaintext secrets

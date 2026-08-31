@@ -181,6 +181,7 @@ allowed.
 
 **Exception mechanism:** The path audit supports named exceptions for cases that cannot be
 reworded (e.g., a skill whose subject is host-specific configuration). Exceptions are:
+
 - Keyed by `(file_path, rule_name)` tuple — never by file alone. An excepted file still
   fails on rules it was not excepted for.
 - Printed in full on every audit run — silent suppression is not allowed.

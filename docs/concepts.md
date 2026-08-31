@@ -35,6 +35,7 @@ The **handoff summary** is the only context carried between consecutive ralph lo
 **Why only three fields?** Forcing a summary into one sentence per field prevents context bloat. An agent that must summarise its work in one sentence is forced to prioritise the essential.
 
 **Example**:
+
 ```yaml
 handoff_summary:
   done: "3 schema files created in core/schemas/ — phase-plan, ralph-loop, and handoff schemas."
@@ -128,6 +129,7 @@ This prevents accidental changes to source code during the exploration phase, wh
 goal is to read and understand — not to modify.
 
 **Lifecycle**:
+
 1. `/plan-and-phase` creates the sentinel: `echo "$(date -Iseconds)" > .advanced-plans/state/planning-mode`
 2. Exploration proceeds read-only (exploration notes saved to `.advanced-plans/specs/`)
 3. Human review gate — user confirms, edits, or stops
@@ -150,6 +152,7 @@ No new logging infrastructure is needed. The report is entirely derived from dat
 the planning system already produces during normal execution.
 
 **Data sources** (in order of priority):
+
 1. Phase plan files (`phase-N.md`) — objectives and success criteria
 2. Loop files (`phase-N-ralph-loops.md`) — todo statuses and handoff summaries
 3. `CLAUDE.md` Planning State — current position in the plan

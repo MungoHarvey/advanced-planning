@@ -148,6 +148,7 @@ for todo in todos where todo.status == "pending":
 ### Single todo failure
 
 If a todo cannot be completed:
+
 1. Log the specific error and what was attempted
 2. If `iteration_count < max_iterations`: retry this todo once from Step 3
 3. If at `max_iterations`: mark `status: cancelled`, record reason, proceed to next todo
@@ -184,6 +185,7 @@ handoff_summary:
 ```
 
 Rules:
+
 - `done` must reference artefacts, not effort ("4 schema documents created in core/schemas/" not "worked on schemas")
 - `failed` must give root cause, not just symptom ("validation failed due to missing required field X" not "validation failed")
 - `needed` must be a specific first action ("Run plan-todos on loop-003 to populate todos" not "continue Phase 1")
@@ -221,6 +223,7 @@ The `status` enum: `completed` (all todos done), `partial` (some cancelled), `fa
 The formal JSON Schema is at `core/state/loop-complete.schema.json`.
 
 **Validation requirement**: Before returning, validate the file you just wrote (HAS CLI):
+
 ```bash
 python ".advanced-plans/bin/ap.py" state_validate loop-complete .advanced-plans/state/loop-complete.json
 ```
@@ -228,6 +231,7 @@ python ".advanced-plans/bin/ap.py" state_validate loop-complete .advanced-plans/
 ### Step 4 — Return
 
 Log the completion event (HAS CLI):
+
 ```bash
 python ".advanced-plans/bin/ap.py" history_log .advanced-plans/state/history.jsonl '{"event": "loop_completed", "loop": "ralph-loop-NNN"}'
 ```

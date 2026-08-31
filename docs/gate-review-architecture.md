@@ -154,6 +154,7 @@ Each gate agent writes a verdict file. Verdicts are immutable — one file per a
 When a gate fails and triggers a retry, the system creates new plan files for the affected loops rather than editing existing ones:
 
 **First attempt:**
+
 ```
 plans/
   phase-2.md
@@ -163,6 +164,7 @@ plans/
 ```
 
 **After gate failure, retry:**
+
 ```
 plans/
   phase-2.md                          ← unchanged
@@ -223,24 +225,28 @@ This is only possible with the documentary record intact.
 Anthropic's official `code-review` plugin for Claude Code provides a directly relevant reference implementation. Key architectural parallels and differences:
 
 **Anthropic's code-review plugin:**
+
 - Launches 5 parallel Sonnet agents for independent auditing perspectives: CLAUDE.md compliance, bug detection, historical context, PR history, and code comments
 - Uses confidence-based scoring (threshold ≥80) to filter false positives
 - Produces structured output with issue severity, file locations, and line references
 - Operates at the PR/commit level via `gh` CLI integration
 
 **Our gate review sub-phase:**
+
 - Launches configurable gate agents (code-review, phase-goals, security, test) at phase boundaries
 - Uses structured verdicts with findings, severity, and actionable failure notes
 - Operates at the phase/loop level within the planning system's state bus
 - Produces versioned retry files with injected failure context
 
 **Leverage opportunities:**
+
 - The confidence scoring pattern from Anthropic's plugin can be adopted for our gate agents, filtering low-confidence findings before triggering rollbacks
 - The parallel agent spawning pattern validates our approach of multiple independent reviewers
 - The CLAUDE.md compliance checking pattern maps directly to our phase-goals-agent checking phase success criteria
 - Agent prompt structures from the official plugin (severity classification, evidence linking) can inform our agent definitions
 
 **Anthropic's feature-dev plugin** also provides relevant patterns:
+
 - 7-phase guided workflow (Discovery → Questions → Architecture → Implementation → Review → Refinement → Summary)
 - Three specialised agents: code-explorer, code-architect, code-reviewer
 - The phased workflow with review gates mirrors our phase → gate → advance pattern
@@ -267,6 +273,7 @@ The implementation is structured as ralph loops within a new phase, following th
 ### Task 1: State Schemas
 
 **Sub-tasks:**
+
 - 1.1: Create `core/state/gate-verdict.schema.json` — verdict, findings array, loops_to_revert, failure_notes
 - 1.2: Create `core/state/gate-failure-context.schema.json` — what gets injected into retry loop files
 - 1.3: Update `core/schemas/ralph-loop.schema.md` — add optional `gate_failure_context` block to frontmatter specification
@@ -278,6 +285,7 @@ The implementation is structured as ralph loops within a new phase, following th
 ### Task 2: Gate Agent Definitions
 
 **Sub-tasks:**
+
 - 2.1: Create `core/agents/gate-reviewer.md` — abstract gate role (single-pass, no ralph loop)
 - 2.2: Create `platforms/claude-code/agents/code-review-agent.md` — reviews code quality, patterns, CLAUDE.md compliance; incorporates confidence scoring pattern from Anthropic's official plugin
 - 2.3: Create `platforms/claude-code/agents/phase-goals-agent.md` — verifies outputs against phase success criteria
@@ -291,6 +299,7 @@ The implementation is structured as ralph loops within a new phase, following th
 ### Task 3: Gate Commands
 
 **Sub-tasks:**
+
 - 3.1: Create `platforms/claude-code/commands/run-gate.md` — spawns configured gate agents, reads verdicts, triggers revert or advance
 - 3.2: Create `platforms/claude-code/commands/run-closeout.md` — final programme synthesis
 - 3.3: Update `platforms/claude-code/commands/next-phase.md` — integrate `/run-gate` call; on fail, create versioned loop files with failure context and update PLANS-INDEX.md
@@ -301,6 +310,7 @@ The implementation is structured as ralph loops within a new phase, following th
 ### Task 4: Python Versioning Utilities
 
 **Sub-tasks:**
+
 - 4.1: Create `platforms/python/versioning.py` with functions:
   - `create_retry_version(loop_file, attempt_number)` → creates new versioned file
   - `inject_failure_context(new_file, verdict)` → writes failure context block
@@ -314,6 +324,7 @@ The implementation is structured as ralph loops within a new phase, following th
 ### Task 5: Integration Verification
 
 **Sub-tasks:**
+
 - 5.1: Trace a complete gate-pass scenario: loops complete → `/run-gate` → all pass → `/next-phase` advances
 - 5.2: Trace a complete gate-fail scenario: loops complete → `/run-gate` → fail → versioned retry files created → worker reads failure context → retry succeeds → gate passes
 - 5.3: Verify `history.jsonl` contains correct event sequence for both scenarios
@@ -433,6 +444,7 @@ Anthropic's `plugin-dev` toolkit provides an 8-phase guided workflow for buildin
 ### 4.5 Distribution Strategy
 
 **Phase A — Local testing:**
+
 ```bash
 claude --plugin-dir ./advanced-planning-plugin
 ```

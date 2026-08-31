@@ -25,6 +25,7 @@ not trigger separate agent spawning during loop execution. The worker executes a
 using targeted skill injection for quality.
 
 The `agent:` field remains valuable for:
+
 - **Planning clarity**: distinguishing execution tasks from coordination tasks
 - **Future platforms**: adapters that support recursive spawning can act on this field
 - **Cost signals**: combined with `complexity:`, helps determine appropriate model tier

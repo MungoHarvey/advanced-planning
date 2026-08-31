@@ -38,12 +38,14 @@ Two installer scripts are provided — use whichever matches your OS.
 Installs commands, skills, agents, and schemas into a single project's `.claude/` directory.
 
 **Windows:**
+
 ```powershell
 cd C:\path\to\advanced-planning
 .\setup\claude-code\install.ps1 -Project C:\path\to\your\project
 ```
 
 **macOS / Linux:**
+
 ```bash
 cd /path/to/advanced-planning
 sh setup/claude-code/install.sh --project /path/to/your/project
@@ -77,6 +79,7 @@ This creates `.claude/` in your project:
 ```
 
 Plans and gate verdicts are stored in the project root:
+
 ```
 plans/
 ├── phase-N.md, phase-N-ralph-loops.md    ← plan files
@@ -94,11 +97,13 @@ Installs commands, skills, agents, and schemas globally into `~/.claude/` so the
 available in every Claude Code session.
 
 **Windows:**
+
 ```powershell
 .\setup\claude-code\install.ps1 -Global
 ```
 
 **macOS / Linux:**
+
 ```bash
 sh setup/claude-code/install.sh --global
 ```
@@ -124,6 +129,7 @@ This installs into `~/.claude/`:
 >
 > **Path resolution order** — When a command or agent references `.claude/skills/<name>/`,
 > Claude resolves it in this order:
+>
 > 1. **Project-local** — `.claude/skills/<name>/` (preferred)
 > 2. **Global fallback** — `~/.claude/skills/<name>/` (used when no local copy is present)
 >
@@ -138,11 +144,13 @@ This installs into `~/.claude/`:
 Prints what would be installed without writing any files.
 
 **Windows:**
+
 ```powershell
 .\setup\claude-code\install.ps1 -Project C:\path\to\your\project -DryRun
 ```
 
 **macOS / Linux:**
+
 ```bash
 sh setup/claude-code/install.sh --dry-run --project /path/to/your/project
 ```
@@ -155,12 +163,14 @@ Links to `core/skills/` instead of copying, so skill updates are reflected immed
 `--symlink` also works with `--global` to symlink skills into `~/.claude/skills/`.
 
 **Windows** (creates a directory junction — no elevated permissions required):
+
 ```powershell
 .\setup\claude-code\install.ps1 -Project C:\path\to\your\project -Symlink
 .\setup\claude-code\install.ps1 -Global -Symlink
 ```
 
 **macOS / Linux:**
+
 ```bash
 sh setup/claude-code/install.sh --project /path/to/your/project --symlink
 sh setup/claude-code/install.sh --global --symlink
@@ -173,6 +183,7 @@ sh setup/claude-code/install.sh --global --symlink
 After installation, these commands are available in Claude Code:
 
 ### Planning commands
+
 | Command | What it does |
 |---------|-------------|
 | `/plan-and-phase [desc]` | Read-only codebase exploration → human review → full planning pipeline |
@@ -180,12 +191,14 @@ After installation, these commands are available in Claude Code:
 | `/new-loop [phase]` | Decomposes a phase into ralph loops using the `ralph-loop-planner` skill |
 
 ### Execution commands
+
 | Command | What it does |
 |---------|-------------|
 | `/next-loop` | Runs the next pending loop: spawns orchestrator → worker → reports back |
 | `/next-loop --auto` | Chains loops automatically until phase complete or failure |
 
 ### Gate review commands
+
 | Command | What it does |
 |---------|-------------|
 | `/run-gate` | Spawns gate agents (code-review, phase-goals) to evaluate phase outputs |
@@ -193,6 +206,7 @@ After installation, these commands are available in Claude Code:
 | `/run-closeout` | Spawns programme-reporter for final narrative synthesis |
 
 ### Diagnostic commands
+
 | Command | What it does |
 |---------|-------------|
 | `/progress-report` | Structured report from plan files, handoffs, and git history |

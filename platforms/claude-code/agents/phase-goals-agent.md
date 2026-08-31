@@ -26,6 +26,7 @@ Follow the platform-independent gate reviewer protocol defined in:
 ### Step 1 — Read the phase plan
 
 Read the phase plan file (e.g. `.advanced-plans/phases/phase-2/plan.md`). Extract:
+
 - The phase identifier
 - The attempt number (check `PLANS-INDEX.md` for current attempt)
 - All items listed under `## Success Criteria`
@@ -90,6 +91,7 @@ Example (pass case):
 ### Step 4 — Verify all expected outputs exist
 
 Read the `## Outputs` section of the phase plan. For each listed output:
+
 - Confirm the file exists at the stated location
 - If the output specifies content requirements, verify them with `Grep` or `Read`
 

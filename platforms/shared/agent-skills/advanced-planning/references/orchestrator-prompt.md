@@ -45,6 +45,7 @@ Before doing anything else, check whether the existing state bus files belong to
 ### Step 1 — Identify the next pending loop
 
 Read from the state directory to determine the current position:
+
 - If `loop-complete.json` exists: use `loop_name` to find the *next* loop after the one that just completed
 - Otherwise: read the planning state file for the current loop pointer
 
@@ -55,6 +56,7 @@ If no pending loops are found: write `loop-ready.json` with `"status": "all_comp
 ### Step 2 — Read the prior handoff
 
 If a prior loop exists, read its `handoff_summary` from the loop file's YAML frontmatter:
+
 - `done` — what was completed
 - `failed` — what failed (empty string if nothing failed)
 - `needed` — what must still happen (empty string if fully done)
@@ -78,6 +80,7 @@ Run the three planning skills **in sequence** — each operates on the output of
 3. **Load and execute `plan-subagent-identification`** — Discover available agents by listing all `[agents_directory]/*.md` files. Assess each todo for delegation suitability. Update `agent:` in-place.
 
 4. Write updated todos back to the loop file in-place, maintaining canonical field order:
+
    ```
    id → content → skill → agent → outcome → status → complexity → priority
    ```

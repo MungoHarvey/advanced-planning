@@ -83,9 +83,11 @@ python ".advanced-plans/bin/ap.py" install_audit --layers [resolved_layers]
 Capture the output and exit code.
 
 - Exit 0 → all layers are current. Print the audit output and stop:
+
   ```
   /sync-install: all layers current — nothing to do
   ```
+
 - Exit 1 → drift detected. Continue to Step 3.
 - Exit 2 → argument/configuration error. Print the error and stop.
 - Exit 3 → the runtime became unreachable between Step 1b and here (a
@@ -110,6 +112,7 @@ global_path  = <global_home>/.claude/<surface>/<filename>
 ```
 
 where:
+
 - `source_dir` is the surface's source directory:
   - `commands` → `platforms/claude-code/commands`
   - `agents`   → `platforms/claude-code/agents`
@@ -152,13 +155,17 @@ python ".advanced-plans/bin/ap.py" install_audit --layers [resolved_layers]
 ```
 
 - Exit 0 → success. Print:
+
   ```
   /sync-install: refresh complete — all layers now current
   ```
+
 - Exit 1 → some files are still stale/missing. Print:
+
   ```
   WARNING: drift remains after refresh. Re-run /sync-install or inspect manually.
   ```
+
   Print the full residual audit output.
 
 ### 6. Print summary

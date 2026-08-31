@@ -30,11 +30,13 @@ Detection: does `[skills_directory]/brainstorming/SKILL.md` exist?
 > "Tip: for structured brainstorming before phase planning, consider installing Superpowers. It provides Socratic design refinement that feeds directly into phase-plan-creator."
 >
 > Install from the official marketplace:
+>
 > ```
 > /plugin install superpowers@claude-plugins-official
 > ```
 >
 > Or from the forked version with Advanced Planning integration:
+>
 > ```
 > git clone https://github.com/obra/superpowers.git
 > ```

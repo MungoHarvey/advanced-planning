@@ -19,6 +19,7 @@ canonical schema order.
 ## Your Input
 
 Provide:
+
 - **Loop file path** (e.g. `.advanced-plans/phases/phase-{N}/loops.md`)
 - **Skills directory path** — the location of available SKILL.md files for this project
 
@@ -45,6 +46,7 @@ Provide:
    - **Array contents must be unique** (no duplicates) and **ordered by precedence**: lowest-precedence skill first, highest-precedence last. On conflicting instructions, later entries override earlier ones (mirrors CSS cascade)
 
 4. **Update `skill:` field in-place** for each todo, maintaining canonical order:
+
    ```
    id → content → skill → agent → outcome → status → complexity → priority
    ```

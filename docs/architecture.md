@@ -201,6 +201,7 @@ Each agent writes a structured verdict to `.advanced-plans/gate-verdicts/`:
 ### Versioned Retry
 
 Failed gates produce new loop files rather than editing originals:
+
 - Original: `phase-2-ralph-loops.md` (frozen, all todos set to `status: frozen`)
 - Retry: `phase-2-ralph-loops-v2.md` (failure context injected, affected todos reset to pending)
 - `PLANS-INDEX.md` tracks the active version and attempt number

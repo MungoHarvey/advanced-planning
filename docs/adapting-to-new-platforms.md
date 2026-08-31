@@ -217,6 +217,7 @@ The agent prompts (`orchestrator-prompt.md` and `worker-prompt.md`) are self-con
 ### Contract 3 — State Directory
 
 All state paths are workspace-relative:
+
 - `state/loop-ready.json`
 - `state/loop-complete.json`
 - `state/snapshots/`
@@ -226,6 +227,7 @@ The workspace path is passed as context to each agent at spawn time.
 ### Contract 4 — Skills Directory
 
 The worker prompt specifies:
+
 ```
 skills/[skill-name]/SKILL.md
 ```

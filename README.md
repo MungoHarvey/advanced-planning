@@ -73,6 +73,7 @@ Clone the repository and install into your project. The current release is
 [Releases](#releases) below for tagged builds).
 
 **macOS / Linux:**
+
 ```bash
 git clone https://github.com/MungoHarvey/advanced-planning
 cd advanced-planning
@@ -80,6 +81,7 @@ sh setup/claude-code/install.sh --project /path/to/your/project
 ```
 
 **Windows (PowerShell):**
+
 ```powershell
 git clone https://github.com/MungoHarvey/advanced-planning
 cd advanced-planning
@@ -108,15 +110,19 @@ cd /path/to/your/project && claude
 ```
 
 **Option A — Explore first, then plan** (recommended for unfamiliar codebases):
+
 ```
 /plan-and-phase [description of what you want to accomplish]
 ```
+
 This activates read-only planning mode, explores the codebase, presents findings for review, then runs the full planning pipeline.
 
 **Option B — Plan directly** (when you already know the codebase):
+
 ```
 /new-phase [description of what you want to accomplish]
 ```
+
 This runs the full pipeline immediately: phase plan → loop decomposition → todo population → skill assignment → agent assignment.
 
 Both produce execution-ready loop files in `plans/` with fully specified todos.
@@ -131,6 +137,7 @@ Run loops one at a time or chain them automatically:
 ```
 
 Each loop cycle:
+
 1. Spawns an **orchestrator** (Sonnet) to prepare the loop and write `loop-ready.json`
 2. Spawns a **worker** (Sonnet) that executes todos with targeted skill injection and writes `loop-complete.json`
 3. Updates planning state and creates a git checkpoint
@@ -186,6 +193,7 @@ After all phases complete:
 ## Command Reference
 
 ### Planning
+
 | Command | Purpose | When to use |
 |---------|---------|-------------|
 | `/plan-and-phase [desc]` | Explore codebase, then plan | Starting a new project or unfamiliar codebase |
@@ -193,12 +201,14 @@ After all phases complete:
 | `/new-loop [N]` | Decompose phase into loops | Regenerating loops for an existing phase plan |
 
 ### Execution
+
 | Command | Purpose | When to use |
 |---------|---------|-------------|
 | `/next-loop` | Execute one loop | Step-by-step execution with manual review between loops |
 | `/next-loop --auto` | Chain all loops in phase | Autonomous execution within a single phase |
 
 ### Quality Gates
+
 | Command | Purpose | When to use |
 |---------|---------|-------------|
 | `/run-gate` | Evaluate phase outputs | Standalone review before deciding to advance |
@@ -207,6 +217,7 @@ After all phases complete:
 | `/run-closeout` | Programme narrative | All phases complete, want a final summary |
 
 ### Diagnostics
+
 | Command | Purpose | When to use |
 |---------|---------|-------------|
 | `/progress-report` | Structured status report | Reviewing what was accomplished, resuming after a break |

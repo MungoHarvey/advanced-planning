@@ -181,6 +181,7 @@ sh setup/claude-code/install.sh --project /path/to/project
 5. Open a PR with a clear title and description of what changed and why
 
 **PR title format:**
+
 - `fix: [description]` — bug fix
 - `feat: [description]` — new feature or adapter
 - `docs: [description]` — documentation only
@@ -211,6 +212,7 @@ An adapter wraps the platform-agnostic core in the conventions of a specific exe
 4. One entry-point file (slash command, routing skill, Python module, etc.)
 
 **Before submitting:**
+
 - Zero references to other platforms' internal paths (e.g. no `.claude/` in a Cowork adapter)
 - Skills directory path in the worker prompt matches the actual skills location
 - Run the adapter through at least one loop end-to-end
@@ -252,18 +254,21 @@ Skills are model-agnostic — they are loaded as instructions into whatever agen
 ## Code Style
 
 **Python** (`platforms/python/`):
+
 - Type hints on all public function signatures
 - Docstrings on all public functions (NumPy style)
 - Standard library only — no external dependencies in core API modules
 - Tests in `platforms/python/tests/` using pytest; one class per function group
 
 **Markdown** (everything else):
+
 - ATX-style headers (`##`, not underline style)
 - Fenced code blocks with language tag
 - Tables for structured comparisons; prose for explanations
 - No trailing whitespace
 
 **Shell scripts** (`checkpoint.sh`, `install.sh`):
+
 - POSIX sh (`#!/bin/sh`, not `#!/bin/bash`)
 - `set -e` at the top
 - Quoted variables throughout (`"$VAR"`)

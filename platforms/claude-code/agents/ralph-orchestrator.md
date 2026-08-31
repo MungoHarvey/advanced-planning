@@ -46,6 +46,7 @@ Follow the platform-independent orchestrator protocol defined in:
 `[skills_path]/core/agents/orchestrator.md`
 
 The Claude Code-specific path conventions are:
+
 - Plans directory: `.advanced-plans/`
 - State directory: `.advanced-plans/state/`
 - Skills directory: `.claude/skills/`
@@ -117,6 +118,7 @@ If none found: write `.advanced-plans/state/loop-ready.json` with `"status": "al
 ### 2. Read prior handoff
 
 Read the prior loop's `handoff_summary` from its YAML frontmatter:
+
 - `done`, `failed`, `needed`
 
 If this is the first loop: set all three to `""`.
@@ -145,6 +147,7 @@ Assess each todo for delegation suitability.
 Update `agent:` field in-place (or leave `NA` for coordination tasks).
 
 Write updated todos back in-place maintaining canonical field order:
+
 ```
 id → content → skill → agent → outcome → status → complexity → priority
 ```

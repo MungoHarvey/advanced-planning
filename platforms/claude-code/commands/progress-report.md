@@ -18,6 +18,7 @@ pending or in-progress, use `/loop-status`.
 ### 1. Resolve skill path
 
 Check for the progress-report skill in order:
+
 1. `.claude/skills/progress-report/SKILL.md`
 2. `~/.claude/skills/progress-report/SKILL.md`
 
@@ -42,6 +43,7 @@ Otherwise report on the full programme.
 ### 4. Compile and print report
 
 Produce a structured report with:
+
 - Programme overview (current phase, overall status)
 - Per-phase summary: phase title, loop count, key accomplishments from handoff summaries
 - Recent git commit trail (last 10 relevant commits)

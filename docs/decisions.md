@@ -9,6 +9,7 @@ A curated log of the key decisions made during the v8 Advanced Planning System d
 **Context**: The worker agent must apply specialist knowledge to diverse tasks within a single loop. Decisions about how to make skills available at execution time shape both output quality and context efficiency.
 
 **Alternatives considered**:
+
 1. Load all assigned skills at worker startup
 2. Load no skills; rely on model baseline capability
 3. Load the assigned skill per-todo, immediately before execution, then discard
@@ -26,6 +27,7 @@ A curated log of the key decisions made during the v8 Advanced Planning System d
 **Context**: Designing how agents are structured for loop execution. One agent could do everything — plan, populate todos, execute, and complete. Or responsibilities could be split.
 
 **Alternatives considered**:
+
 1. Single agent handles planning and execution in sequence
 2. Orchestrator handles planning; worker handles execution; both spawned by main thread
 
@@ -42,6 +44,7 @@ A curated log of the key decisions made during the v8 Advanced Planning System d
 **Context**: The orchestrator and worker must exchange structured data. Several coordination mechanisms were considered.
 
 **Alternatives considered**:
+
 1. In-memory state passed as arguments
 2. Database (SQLite, Redis)
 3. Message queue (RabbitMQ, Kafka)
@@ -60,6 +63,7 @@ A curated log of the key decisions made during the v8 Advanced Planning System d
 **Context**: After each loop completes, the next loop's orchestrator needs context about what was done. How much context to carry, and in what format, was a design question.
 
 **Alternatives considered**:
+
 1. Pass the full loop-complete.json as context
 2. Pass a structured summary with many fields (files created, commands run, errors encountered, etc.)
 3. Pass three fields — done (one sentence), failed (one sentence), needed (one sentence)
@@ -77,6 +81,7 @@ A curated log of the key decisions made during the v8 Advanced Planning System d
 **Context**: Assigning AI models to roles in the planning system. Several assignment strategies were considered.
 
 **Alternatives considered**:
+
 1. Use the most capable model (Opus) for everything
 2. Assign by task difficulty (strategic = Opus, complex execution = Sonnet, simple execution = Haiku)
 3. Assign by invocation frequency (phase = Opus, loop = Sonnet, todo = Haiku)
@@ -94,6 +99,7 @@ A curated log of the key decisions made during the v8 Advanced Planning System d
 **Context**: The Claude Code adapter uses git commits as checkpoints. Cowork and other sandboxed environments may not have git available.
 
 **Alternatives considered**:
+
 1. Require git in all environments
 2. Use a database or cache layer for state preservation
 3. File-based snapshots (copy `plans/` and `state/` to a timestamped archive)
@@ -111,6 +117,7 @@ A curated log of the key decisions made during the v8 Advanced Planning System d
 **Context**: The Claude Code adapter uses slash commands as entry points. Cowork has no equivalent — it uses natural language via an LLM session.
 
 **Alternatives considered**:
+
 1. Port slash commands to Cowork (not possible — feature not available)
 2. Require users to type structured commands
 3. A routing `SKILL.md` with a dispatch table mapping natural language to planning actions
@@ -128,6 +135,7 @@ A curated log of the key decisions made during the v8 Advanced Planning System d
 **Context**: Choosing a licence for the open-source release.
 
 **Alternatives considered**:
+
 1. MIT — permissive, minimal friction, universally understood
 2. Apache 2.0 — permissive with explicit patent clause
 3. AGPL — copyleft, requires open-sourcing modifications
@@ -146,6 +154,7 @@ A curated log of the key decisions made during the v8 Advanced Planning System d
 **Context**: After all loops in a phase complete, how to verify the outputs actually meet the phase plan's stated success criteria before advancing.
 
 **Alternatives considered**:
+
 1. No verification — trust that completed todos mean the phase succeeded
 2. Inline verification during each loop (worker checks phase-level criteria per todo)
 3. Dedicated gate review sub-phase with specialist agents at phase boundaries
@@ -163,6 +172,7 @@ A curated log of the key decisions made during the v8 Advanced Planning System d
 **Context**: Originally, each SKILL.md had a `model:` field in its YAML frontmatter (e.g. `model: opus`). This was intended to indicate which model tier should execute that skill.
 
 **Alternatives considered**:
+
 1. Keep `model:` in skill frontmatter — skills declare their required model tier
 2. Remove `model:` — skills are instruction sets loaded by whatever agent is running
 

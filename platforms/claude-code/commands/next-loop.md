@@ -22,12 +22,14 @@ If no loop files found: print `No phase loops found. Run /decompose-phase first.
 ### 2. Parse --auto and --full flags
 
 If `$ARGUMENTS` contains `--auto`:
+
 - Set `AUTO_MODE = true`
 - Print: `Autonomous mode: will chain loops until phase complete or failure.`
 
 Otherwise: `AUTO_MODE = false` (default single-loop behaviour).
 
 If `$ARGUMENTS` contains `--full`:
+
 - Set `FULL_MODE = true`
 - Print: `Full-population mode: will populate stub loops (todos → skills → agents) before execution.`
 
@@ -106,6 +108,7 @@ DIRTY=$(git status --porcelain | wc -l | tr -d ' ')
   - Load and invoke the `resume-review` skill if available (`.claude/skills/resume-review/SKILL.md`
     or `~/.claude/skills/resume-review/SKILL.md`).
   - Print the following and **PAUSE for operator acknowledgment** before continuing:
+
     ```
     WARN: mid-loop death detected.
       loop-ready.json is newer than loop-complete.json AND the working tree is dirty.
@@ -118,6 +121,7 @@ DIRTY=$(git status --porcelain | wc -l | tr -d ' ')
 
     Type 1, 2, or 3 and press Enter:
     ```
+
   - Only proceed to Step 4 if operator selects option 1.
   - If option 2 or 3: stop.
 - Otherwise (loop-complete.json is newer than or equal to loop-ready.json, OR working tree is clean):
@@ -250,6 +254,7 @@ cat .advanced-plans/state/loop-ready.json
 If the file contains `"status": "all_complete"`: print `All loops complete.` and stop.
 
 **Validate structure** before proceeding:
+
 - `loop_name` must be non-empty
 - `loop_file` must exist as a file
 - `todos_count` must be > 0
@@ -259,6 +264,7 @@ If the file contains `"status": "all_complete"`: print `All loops complete.` and
 If any validation fails: print the specific error (e.g. `Validation failed: loop_file does not exist at [path]`) and stop.
 
 Print:
+
 ```
 -> Preparing: [loop_name] — [task_name]
   Todos:         [todos_count]
@@ -309,6 +315,7 @@ Spawn the `ralph-loop-worker` subagent (Sonnet model) with the worker prompt add
 from Step 5c included in the spawn prompt.
 
 The worker will:
+
 - Read `.advanced-plans/state/loop-ready.json` for its assignment
 - Read each skill file at the paths provided before executing the corresponding todo
 - Execute all todos inline using the targeted skill injection protocol
@@ -325,10 +332,12 @@ cat .advanced-plans/state/loop-complete.json
 ### 8. Update PLANNING.md
 
 Read `.advanced-plans/PLANNING.md` and update:
+
 - `current_loop:` — advance to next pending loop
 - `last_updated:` — today's date
 
 If all loops are now complete:
+
 - Set `status: complete` on the current phase in PLANNING.md
 
 ### 9. Git commit and history event
@@ -360,6 +369,7 @@ Run /next-loop to continue with the next loop.
 ```
 
 If `todos_failed > 0`:
+
 ```
 [N] todos did not complete. Review .advanced-plans/phases/[phase]/loops.md before continuing.
 ```
@@ -371,6 +381,7 @@ If `AUTO_MODE` is false: stop. Print `Run /next-loop to continue.`
 If `AUTO_MODE` is true:
 
 - **status is "failed"** → stop. Print:
+
   ```
   Auto-chain stopped: [loop_name] failed.
     Review .advanced-plans/phases/[phase]/loops.md and .advanced-plans/state/loop-complete.json.
@@ -378,6 +389,7 @@ If `AUTO_MODE` is true:
   ```
 
 - **All loops complete** → stop. Print:
+
   ```
   Phase complete. All loops finished.
     Run /progress-report to see a summary of what was accomplished.

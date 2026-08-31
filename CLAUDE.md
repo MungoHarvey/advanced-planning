@@ -79,6 +79,7 @@ Two locked schema documents govern the compaction artefacts produced by `/phase-
 Changes to either schema require an explicit decision logged in this file.
 
 **Decision log:**
+
 - `/phase-compact` reframed (2026-05-19) from terse-artefact writer to conversation-context
   compaction. Adds per-phase `handoff.md` resume digest (Approach A), a transparency report
   via `context_meter.py`, a persistent `## Compaction Instructions` block steering all
@@ -261,6 +262,7 @@ Override agent tiers via the `model:` field in agent frontmatter. Skills are mod
 ## CI
 
 Three jobs in `.github/workflows/ci.yml`, all must pass on `main` and PRs:
+
 1. **Markdown lint** — `markdownlint-cli2` (currently non-blocking via `|| true`)
 2. **JSON schema validation** — validates all `core/state/*.json` files parse correctly
 3. **Python tests** — runs `pytest` across Python 3.10, 3.11, 3.12; then verifies zero external imports via AST checker

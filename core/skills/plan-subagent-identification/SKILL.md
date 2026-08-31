@@ -22,6 +22,7 @@ for planning clarity, future platform adapters, and cost/complexity signalling.
 ## Your Input
 
 Provide:
+
 - **Loop file path** (e.g. `.advanced-plans/phases/phase-{N}/loops.md`)
 - **Agents directory path** — the location of agent definition files for this project
 
@@ -60,6 +61,7 @@ for any todo the loop worker executes directly.
    agent does not exist yet.
 
 5. **Update `agent:` field in-place**, maintaining canonical order:
+
    ```
    id → content → skill → agent → outcome → status → complexity → priority
    ```
@@ -119,6 +121,7 @@ agent: "MISSING: data-analysis-worker — agent for long-running Python analysis
 This surfaces agent gaps for the project owner rather than silently falling back to orchestrator inline execution.
 
 If no agents are configured yet, `plan-subagent-identification` will:
+
 - Flag all delegation candidates as `MISSING: [agent-type]`
 - Suggest which agent types would benefit this project
 - Leave all `agent:` fields as `NA` so execution can proceed without subagents

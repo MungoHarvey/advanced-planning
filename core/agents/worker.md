@@ -32,6 +32,7 @@ When spawned, the worker performs these steps before executing any work:
 4. Read `handoff_injected` from `loop-ready.json` for prior context
 5. Register todos with the session tracking mechanism (platform adapter handles the format)
 6. Run the opening git checkpoint:
+
    ```bash
    git add -A && git commit -m "checkpoint: before [loop_name]"
    ```
@@ -162,6 +163,7 @@ Targeted injection solves both: each task gets exactly one skill's instructions,
 ### Single todo failure
 
 If a todo cannot be completed:
+
 1. Log the specific error and what was attempted
 2. If `iteration_count < max_iterations`: retry this todo once from Step 3
 3. If at `max_iterations`: mark `status: cancelled`, record reason, proceed to next todo
@@ -198,6 +200,7 @@ handoff_summary:
 ```
 
 Rules:
+
 - `done` must reference artefacts, not effort ("4 schema documents created in core/schemas/" not "worked on schemas")
 - `failed` must give root cause, not just symptom ("validation failed due to missing required field X" not "validation failed")
 - `needed` must be a specific first action ("Run plan-todos on loop-003 to populate todos" not "continue Phase 1")
@@ -301,6 +304,7 @@ Updated `handoff_summary` written to the loop file's YAML frontmatter.
 ## Platform Adapter Notes
 
 Platform adapters must specify:
+
 - The model to use for this role (Sonnet recommended as default; Haiku for low-complexity todos)
 - The tool capabilities granted (read, write, edit files; bash for git; glob; session task tracking)
 - The state directory path
@@ -312,12 +316,14 @@ Platform adapters must specify:
 The worker's default model tier is **Sonnet**. This provides reliable compositional reasoning for multi-file edits, domain-specific skill application, and verification tasks.
 
 **Haiku** is appropriate when a todo's `complexity` field is `low`:
+
 - Single-file edits with clear specifications
 - Running a command and checking its exit code
 - Copying or moving files
 - Simple text substitutions or template fills
 
 **Sonnet** (default) is appropriate for `medium` and `high` complexity:
+
 - Multi-file coordinated changes
 - Domain-specific reasoning (statistical analysis, schema design)
 - Tasks requiring skill injection where the skill's instructions must be interpreted

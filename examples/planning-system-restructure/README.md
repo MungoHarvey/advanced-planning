@@ -11,6 +11,7 @@ A focused, 4-phase technical project with clear deliverables and bounded scope. 
 **The programme**: Restructure an existing planning system prototype into a clean, open-source release with a platform-agnostic core, three platform adapters (Claude Code, Cowork, Python), and a full documentation suite.
 
 **What makes this a good example to study**:
+
 - Real deliverables (not toy examples)
 - Multiple phases with genuine dependencies between them
 - Mix of implementation loops (write code) and writing loops (write documentation)
@@ -40,6 +41,7 @@ plans/
 **Start with `PLANS-INDEX.md`** — it shows the full loop sequence, phase statuses, and progress at a glance.
 
 **Then read a ralph loop file**, such as `phase-1-ralph-loops.md`. Each loop is a YAML frontmatter block with:
+
 - `name`, `task_name`, `max_iterations`, `on_max_iterations`
 - `handoff_summary` — the three-sentence summary written after completion
 - `todos[]` — the tasks executed within the loop, each with `id`, `content`, `skill`, `agent`, `outcome`, and `status`
@@ -53,6 +55,7 @@ plans/
 Read the `handoff_summary.done` fields in sequence across all loops. Together they form a readable narrative of the programme's progress — what was built, in what order, and what was passed forward.
 
 Example from loop 009:
+
 ```yaml
 handoff_summary:
   done: "Phase 3 complete: checkpoint.sh, README.md, and full verification passed."
