@@ -1,17 +1,19 @@
 ---
 name: companion-detection
-description: "Detect whether companion tools (Superpowers, Plannotator) are installed and recommend them when relevant. Checks once per session at natural trigger points. Does not nag — recommends at most once per companion per session."
+description: "Detect whether companion tools (Superpowers) are installed and recommend them when relevant. Checks once per session at natural trigger points. Does not nag — recommends at most once per companion per session."
 ---
 
 # Companion Detection
 
-Advanced Planning works standalone. Two companion tools enhance the workflow when installed. This skill checks for them and recommends when relevant.
+Advanced Planning works standalone. Superpowers enhances the workflow when installed. This skill checks for it and recommends when relevant.
+
+Plannotator was a second companion until it was deprecated on 2026-08-26. It is no longer detected or recommended; the review gate it provided is now `/run-gate`, which runs a reviewer on a different model from the implementer and writes a verdict to `.advanced-plans/gate-verdicts/`.
 
 ## When to Use
 
 - At the start of phase planning (before phase-plan-creator runs)
 - During gate review setup (before /run-gate spawns agents)
-- When a user asks about brainstorming, visual review, or code review workflows
+- When a user asks about brainstorming or code review workflows
 
 Do NOT check on every command invocation. Check once per session at the first relevant trigger.
 
@@ -37,22 +39,7 @@ Detection: does `[skills_directory]/brainstorming/SKILL.md` exist?
 > git clone https://github.com/obra/superpowers.git
 > ```
 
-### 2. Check for Plannotator
-
-Detection: does `[commands_directory]/plannotator-annotate.md` exist, or is the plannotator plugin registered?
-
-**If installed:** no action needed. Integration happens automatically via plan-and-phase Step 5b (visual plan review after phase creation).
-
-**If not installed and user is creating or reviewing a plan:** recommend once:
-
-> "Tip: for visual plan review with annotations and gate customisation, consider installing Plannotator."
->
-> ```
-> git clone https://github.com/MungoHarvey/plannotator.git
-> claude --plugin-dir plannotator/apps/hook
-> ```
-
-### 3. Record recommendation state
+### 2. Record recommendation state
 
 After recommending a companion, note it internally so you do not recommend again in the same session. If the user dismisses or ignores the recommendation, do not repeat it.
 
@@ -64,5 +51,5 @@ This skill produces no files. It outputs recommendations to the conversation whe
 
 - **Additive, not required** — Advanced Planning works fully without companions
 - **Once per session** — do not nag or repeat recommendations
-- **Relevant triggers only** — brainstorming recommendation at creative work, Plannotator recommendation at plan review
+- **Relevant triggers only** — recommend brainstorming at creative work, not on every invocation
 - **Real URLs** — always include actual install commands, not placeholders

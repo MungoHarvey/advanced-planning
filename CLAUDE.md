@@ -35,7 +35,7 @@ powershell setup/claude-code/install.ps1 -Project /path/to/your/project  # Windo
 **Core** (`core/`) is platform-agnostic. **Adapters** (`platforms/`) wrap it for specific environments. Adapters reference the core but never duplicate it.
 
 - `core/schemas/` — Markdown schema definitions for phase-plan, ralph-loop, todo, handoff
-- `core/skills/` — Seven planning skills loaded per-todo by targeted injection (load → execute → unload). Includes `companion-detection`, which scans todos for Plannotator review opportunities.
+- `core/skills/` — Seven planning skills loaded per-todo by targeted injection (load → execute → unload). Includes `companion-detection`, which checks whether Superpowers is installed and recommends it once per session.
 - `core/agents/` — Abstract orchestrator, worker, and gate-reviewer role definitions
 - `core/state/` — JSON schemas for the filesystem state bus
 
@@ -252,7 +252,7 @@ Override agent tiers via the `model:` field in agent frontmatter. Skills are mod
 ## Key Constraints
 
 - Python 3.10+ required
-- The Python API must remain zero-dependency (standard library only) — CI enforces this with `python -m platforms.python.ast_check`. The canonical allow-set is defined in `core/constraints.json` (see that file for the authoritative list; currently: `ast`, `hashlib`, `json`, `pathlib`, `re`, `datetime`, `typing`, `os`, `sys`, `tempfile`, `textwrap`, `argparse`, `asyncio`; `__future__` is explicitly excluded)
+- The Python API must remain zero-dependency (standard library only) — CI enforces this with `python -m platforms.python.ast_check`. The canonical allow-set is defined in `core/constraints.json` (see that file for the authoritative list; currently: `ast`, `hashlib`, `json`, `pathlib`, `re`, `datetime`, `typing`, `os`, `sys`, `tempfile`, `textwrap`, `argparse`, `asyncio`, `runpy`, `platforms`; `__future__` is explicitly excluded. `platforms` is the project's own package, not a dependency — see the note in that file for what the check stops catching as a result)
 - Core files must never reference platform-specific paths (no `.claude/` in core)
 - New skills require frontmatter (`name`, `description`) and sections: `## When to Use`, `## Process`, `## Output Format`. Skills are model-agnostic — the executing agent's model determines capability, not the skill.
 - Plan files use YAML frontmatter in markdown; ralph loops contain `todos[]` arrays with canonical field order (`id`/`content`/`skill`/`agent`/`outcome`/`status`/`priority`)

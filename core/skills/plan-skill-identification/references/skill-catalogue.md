@@ -166,7 +166,7 @@ to produce a structured markdown progress report. Read-only synthesis — never 
 
 ### `companion-detection`
 
-**Purpose**: Detects whether companion tools (Superpowers, Plannotator) are installed and recommends them when relevant. Produces no files — outputs conversational recommendations only.
+**Purpose**: Detects whether Superpowers is installed and recommends it when relevant. Produces no files — outputs conversational recommendations only.
 
 **When to assign:**
 

@@ -80,7 +80,7 @@ This ensures consistent behavior across hosts and prevents silent overwrites.
 
 1. **Opening checkpoint**: The loop receives the current HEAD as context (no empty commit required)
 2. **Closing checkpoint**: OpenCode commits approved changes directly within the worktree
-3. **Worker**: Can stage, commit, and manage git state as needed
+3. **Worker**: Stages the paths it changed — never a blanket `git add -A` — and commits them carrying `Agent: worker/opencode` and `Loop: <loop_name>` trailers, so every change is traceable to the agent that made it
 
 For linked git worktrees, OpenCode's native git access means no external controller is required for commit sequencing.
 

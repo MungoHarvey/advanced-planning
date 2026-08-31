@@ -107,6 +107,9 @@ function Set-ApCallSites([string]$File, [string]$Launcher) {
         [System.Text.UTF8Encoding]::new($false))
 }
 
+# Note: owner token ("codex") and fence markers ("advanced-planning:codex:")
+# are handled in the Merge-ApAgentsMd and Write-ApOwnership functions below.
+
 # ---------------------------------------------------------------------------
 # Collision check for shared skills
 # ---------------------------------------------------------------------------
@@ -526,4 +529,4 @@ Say "  1. cd into your project folder"
 Say "  2. Start a new Codex session (skills are discovered on session start)"
 Say '  3. Use: $advanced-planning phase <goal>'
 Say ""
-Say "See setup/codex/README.md for full documentation."
+Say "See platforms/codex/README.md for full documentation."

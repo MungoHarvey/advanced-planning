@@ -160,12 +160,71 @@ ap_home_native() {
     fi
 }
 
+# Replace every LITERAL occurrence of $2 with $3 in $1; answer in AP_SUBST_RESULT.
+# A function rather than a command substitution, because $( ) forks once per call
+# and this runs per line -- on Windows that is seconds of wall clock. Both
+# operands are quoted inside the expansions, so a glob metacharacter in either is
+# taken literally.
+ap_subst() {
+    _sub_s="$1"; _sub_n="$2"; _sub_r="$3"; _sub_out=""
+    while :; do
+        case "$_sub_s" in
+            *"$_sub_n"*)
+                _sub_out="$_sub_out${_sub_s%%"$_sub_n"*}$_sub_r"
+                _sub_s="${_sub_s#*"$_sub_n"}"
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+    AP_SUBST_RESULT="$_sub_out$_sub_s"
+}
+
 ap_rewrite_call_sites() {
     _f="$1"; _launcher="$2"
-    sed -i \
-        -e "s#python \"\.advanced-plans/bin/ap\.py\"#python \"$_launcher\"#g" \
-        -e "s#runpy\.run_path(r'\.advanced-plans/bin/ap\.py')#runpy.run_path(r'$_launcher')#g" \
-        "$_f"
+    # Only the PATH changes. The quoting and the r'' prefix are already in the
+    # source form, so this is a pure substitution of one string for another --
+    # which is what lets install_audit normalise it back and report no drift.
+    #
+    # Done in shell rather than with `sed -i`, which CANNOT be used here: under
+    # MSYS (Git Bash) sed opens files in text mode and rewrites every CRLF as
+    # LF, measured even for a substitution that matches nothing. That made a
+    # shell global install produce byte-different skill files from a PowerShell
+    # one, whose Set-ApCallSites preserves endings. The same GNU sed 4.9 on
+    # Linux preserves CR, so it is the platform rather than the tool and no sed
+    # invocation is safe. Default awk strips too; perl and gawk preserve but
+    # would each be a new install-time dependency. This uses neither.
+    if [ ! -f "$_f" ]; then
+        printf 'ERROR: cannot rewrite call sites, no such file: %s\n' "$_f" >&2
+        return 1
+    fi
+
+    _pat_py='python ".advanced-plans/bin/ap.py"'
+    _pat_rp="runpy.run_path(r'.advanced-plans/bin/ap.py')"
+
+    # A file with no call site is never opened for writing, so it stays
+    # byte-identical rather than merely ending up with equal text.
+    if ! grep -qF -e "$_pat_py" -e "$_pat_rp" "$_f"; then
+        return 0
+    fi
+
+    # Command substitution strips trailing newlines, so an empty answer here
+    # means the last byte was one. That is how a file with no final newline
+    # survives the rewrite without gaining one.
+    if [ -n "$(tail -c 1 "$_f")" ]; then _ends_nl=0; else _ends_nl=1; fi
+
+    _tmp="$_f.ap-rewrite"
+    _first=1
+    while IFS= read -r _line || [ -n "$_line" ]; do
+        if [ "$_first" = 0 ]; then printf '\n'; fi
+        _first=0
+        ap_subst "$_line" "$_pat_py" "python \"$_launcher\""
+        ap_subst "$AP_SUBST_RESULT" "$_pat_rp" "runpy.run_path(r'$_launcher')"
+        printf '%s' "$AP_SUBST_RESULT"
+    done < "$_f" > "$_tmp"
+    if [ "$_ends_nl" = 1 ] && [ "$_first" = 0 ]; then printf '\n' >> "$_tmp"; fi
+    mv "$_tmp" "$_f"
 }
 
 ap_write_global_runtime() {
@@ -634,4 +693,4 @@ say "  1. cd $PROJECT_DIR"
 say "  2. Start a new Codex session (skills are discovered on session start)"
 say "  3. Use: \$advanced-planning phase <goal>"
 say ""
-say "See setup/codex/README.md for full documentation."
+say "See platforms/codex/README.md for full documentation."

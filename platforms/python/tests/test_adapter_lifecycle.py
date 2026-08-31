@@ -21,6 +21,7 @@ assertion messages. It fails loudly when the behaviour is wrong.
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -105,6 +106,40 @@ def _has_skill_entry(project_dir, skill_name):
         return False
     data = json.loads(ownership_file.read_text(encoding="utf-8"))
     return skill_name in data.get("skills", {})
+
+
+def _parse_removed_count(output, label):
+    """Parse the removed count out of an uninstaller's "Done." line.
+
+    The count is the token immediately before "path(s)".  Anchoring there
+    reads every shipped wording -- codex and opencode print
+    "Done. N path(s) removed, M kept.", claude-code prints
+    "Done. N path(s) removed." -- without grabbing an unrelated digit that
+    happens to appear earlier on the line.
+
+    Raises rather than returning None.  The nested helper this replaces
+    anchored on the literal token "removed," and returned None when it was
+    absent, so a wording change made both sides None and the differential
+    assertion compared nothing.
+    """
+    saw_done = False
+    for line in output.split("\n"):
+        if "Done." not in line:
+            continue
+        saw_done = True
+        tokens = line.split()
+        for i, token in enumerate(tokens):
+            if token == "path(s)" and i > 0 and tokens[i - 1].isdigit():
+                return int(tokens[i - 1])
+    if saw_done:
+        raise AssertionError(
+            "%s: a 'Done.' line was printed but carried no 'N path(s)' "
+            "count, so this differential test would otherwise compare "
+            "nothing. Output was:\n%s" % (label, output))
+    raise AssertionError(
+        "%s: no 'Done. N path(s)' line in uninstaller output; the wording "
+        "changed and this differential test would otherwise compare "
+        "nothing. Output was:\n%s" % (label, output))
 
 
 def _fresh_project(tmp_path, project_name="proj"):
@@ -671,17 +706,8 @@ class TestLanguagesAgree:
         assert ret_ps1 == 0, "ps1 uninstall failed: %s" % err_ps1
         
         # Extract counts from output - look for "Done. N path(s) removed, M kept."
-        def extract_count(output):
-            for line in output.split("\n"):
-                if "Done." in line and "path(s)" in line:
-                    parts = line.split()
-                    for i, p in enumerate(parts):
-                        if p == "removed,":
-                            return parts[i-2] if i > 1 else None
-            return None
-        
-        count_sh = extract_count(out_sh)
-        count_ps1 = extract_count(out_ps1)
+        count_sh = _parse_removed_count(out_sh, "sh")
+        count_ps1 = _parse_removed_count(out_ps1, "ps1")
         
         assert count_sh == count_ps1, (
             "removal counts disagree: sh=%s, ps1=%s" % (count_sh, count_ps1))
@@ -691,9 +717,16 @@ class TestLanguagesAgree:
         proj_sh, proj_ps1, adapter = differential_fixture
         name, _, _, uninstall_sh, uninstall_ps1 = adapter
         
-        # Run both uninstallers
-        _run_script(uninstall_sh, ["--project", str(proj_sh), "--yes"])
-        _run_script(uninstall_ps1, ["-Project", str(proj_ps1), "-Yes"])
+        # Run both uninstallers and assert they succeeded
+        ret_sh, out_sh, err_sh = _run_script(
+            uninstall_sh, ["--project", str(proj_sh), "--yes"],
+        )
+        assert ret_sh == 0, "sh uninstall failed: %s" % err_sh
+        
+        ret_ps1, out_ps1, err_ps1 = _run_script(
+            uninstall_ps1, ["-Project", str(proj_ps1), "-Yes"],
+        )
+        assert ret_ps1 == 0, "ps1 uninstall failed: %s" % err_ps1
         
         # Compare registries
         try:
@@ -706,8 +739,38 @@ class TestLanguagesAgree:
         except FileNotFoundError:
             owners_ps1 = None
         
+        # Both-absent is now a meaningful agreement because both uninstallers
+        # are known to have succeeded (ret == 0 asserted above).
         assert owners_sh == owners_ps1, (
             "registry contents disagree: sh=%s, ps1=%s" % (owners_sh, owners_ps1))
+    
+    def test_removed_count_parser_rejects_missing_wording(self):
+        """E.19: the count parser must raise, not return None, when the wording is absent."""
+        # Both shipped wordings parse.  claude-code omits the ", M kept."
+        # clause and is absent from _ADAPTERS, so this pins the parser
+        # against an adapter the suite does not otherwise exercise.
+        assert _parse_removed_count("Done. 7 path(s) removed, 2 kept.", "x") == 7
+        assert _parse_removed_count("Done. 7 path(s) removed.", "x") == 7
+        assert _parse_removed_count("Done. 0 path(s) removed, 8 kept.", "x") == 0
+        
+        # The count is the token before "path(s)", not merely the first
+        # digit on the line.  A looser parser returns 9 here, and nothing
+        # in the suite would see it.
+        assert _parse_removed_count(
+            "Done. Pruned 9 entries; 7 path(s) removed, 2 kept.", "x") == 7
+        
+        # Absent wording raises rather than returning None.
+        for absent in ("", "Removed 7 things.\n",
+                       "Uninstall finished.\n"):
+            with pytest.raises(AssertionError) as exc_info:
+                _parse_removed_count(absent, "x")
+            assert "compare nothing" in str(exc_info.value)
+        
+        # A Done. line carrying no count raises too -- the branch a parser
+        # that guessed at the first digit would never reach.
+        with pytest.raises(AssertionError) as exc_info:
+            _parse_removed_count("Done. all path(s) removed.\n", "x")
+        assert "compare nothing" in str(exc_info.value)
 
 
 # =============================================================================
@@ -1162,3 +1225,836 @@ class TestThirdPartySurvivesSoleOwnerUninstall:
         assert data["skills"][_FOREIGN_SKILL] == [_FOREIGN], (
             "expected the entry normalised to a list, got %r"
             % (data["skills"][_FOREIGN_SKILL],))
+
+
+# =============================================================================
+# F.1: documentation pointers printed by installers
+# =============================================================================
+
+
+class TestDocumentationPointersResolve:
+    """Every "See <dir>/<file>.md" an installer prints must exist."""
+
+    def test_every_see_pointer_resolves(self):
+        """F.1: no installer may advertise documentation that is not there.
+
+        Four installers pointed at setup/<adapter>/README.md, which has
+        never existed for codex or opencode -- their documentation lives
+        under platforms/.  Three other pointers in the identical shape are
+        correct, so this asserts that each target RESOLVES rather than that
+        it is spelled a particular way: rewriting a pointer to a different
+        wrong place cannot satisfy it.
+        """
+        # Requires a directory component, so the bare "See README.md" that
+        # an installer writes into a generated file is not matched here --
+        # that one is relative to the directory it is written into.
+        pattern = re.compile(r"See ([\w.-]+/[\w./-]+\.md)\b")
+        setup_dir = _REPO_ROOT / "setup"
+        checked, broken = [], []
+        for script in sorted(setup_dir.rglob("*")):
+            if script.suffix not in (".sh", ".ps1"):
+                continue
+            text = script.read_text(encoding="utf-8", errors="replace")
+            for match in pattern.finditer(text):
+                target = match.group(1)
+                checked.append(target)
+                if not (_REPO_ROOT / target).is_file():
+                    broken.append("%s points at %s"
+                                  % (script.relative_to(_REPO_ROOT), target))
+
+        # Without this floor the test passes having checked nothing the
+        # moment the wording drifts -- the failure mode E.17 and E.18 had.
+        assert len(checked) >= 7, (
+            "expected at least 7 documentation pointers under setup/, found "
+            "%d: %s. The pattern stopped matching and this test would "
+            "otherwise pass having checked nothing." % (len(checked), checked))
+        assert not broken, (
+            "installer(s) advertise documentation that does not exist:\n  "
+            + "\n  ".join(broken))
+
+
+# =============================================================================
+# F.2 / F.3: the POSIX rewrite must not convert line endings
+# =============================================================================
+
+
+def _sh_function_body(path, name):
+    """Return the text of a POSIX shell function, brace to closing brace.
+
+    Reads the shipped installer rather than a copy of it, so a test built on
+    this cannot drift away from what actually runs.
+    """
+    text = path.read_text(encoding="utf-8")
+    opener = "%s() {\n" % name
+    start = text.find(opener)
+    if start < 0:
+        return None
+    end = text.find("\n}\n", start)
+    assert end > start, "%s: %s has no closing brace at column 0" % (path, name)
+    return text[start:end + len("\n}\n")]
+
+
+def _code_lines(text):
+    """The lines of a shell script with comments dropped.
+
+    A comment that NAMES a forbidden construct in order to explain why it is
+    forbidden must not read as a use of it.
+    """
+    return [ln for ln in text.split("\n") if not ln.lstrip().startswith("#")]
+
+
+def _posix_installers_defining_rewrite():
+    """Every setup/*/install.sh that defines ap_rewrite_call_sites.
+
+    Discovered from the filesystem, not from a list written here, so an adapter
+    added later is covered without anyone remembering to edit this file.
+    """
+    found = {}
+    for script in sorted((_REPO_ROOT / "setup").glob("*/install.sh")):
+        body = _sh_function_body(script, "ap_rewrite_call_sites")
+        if body is not None:
+            found[str(script.relative_to(_REPO_ROOT)).replace("\\", "/")] = body
+    return found
+
+
+class TestRewriteUsesNoInPlaceStripper:
+    """F.2: static, and meaningful on every platform including Linux CI."""
+
+    def test_no_posix_installer_rewrites_a_file_in_place(self):
+        """`sed -i` (and friends) cannot be used on files whose endings matter.
+
+        Under MSYS, sed opens files in text mode and rewrites every CRLF as LF
+        -- measured even for a substitution matching nothing.  The same GNU sed
+        4.9 on Linux preserves CR, so the fault is the platform rather than the
+        tool and there is no safe sed invocation for this job.  The PowerShell
+        twin Set-ApCallSites always preserved endings, so the two hosts
+        produced byte-different installs from the same source.
+
+        This is the guard that still bites on Linux CI, where F.3 must skip.
+        """
+        installers = _posix_installers_defining_rewrite()
+
+        # Without a floor this passes having checked nothing the moment the
+        # function is renamed -- the failure mode E.17, E.18 and F.1 all had.
+        assert len(installers) >= 3, (
+            "expected at least 3 POSIX installers defining "
+            "ap_rewrite_call_sites, found %d: %s. Either the function was "
+            "renamed or the layout moved, and this test would otherwise pass "
+            "having checked nothing." % (len(installers), sorted(installers)))
+
+        banned = ("sed -i", "sed --in-place", "-i.bak", "gawk -i inplace")
+        offenders = []
+        for rel, body in sorted(installers.items()):
+            for line in _code_lines(body):
+                for token in banned:
+                    if token in line:
+                        offenders.append("%s: %s" % (rel, line.strip()))
+        assert not offenders, (
+            "the rewrite must not edit a file in place -- under MSYS that "
+            "strips CR from every line, including on a no-op substitution:\n  "
+            + "\n  ".join(offenders))
+
+    def test_every_adapter_carries_the_same_rewrite(self):
+        """F.2/F8: the copies must not drift apart again.
+
+        claude-code's copy already carried a comment the other two lacked;
+        three hand-maintained duplicates is exactly how one gets fixed and the
+        others do not.
+        """
+        installers = _posix_installers_defining_rewrite()
+        assert len(installers) >= 3, "see the floor above: found %d" % len(installers)
+
+        bodies = {}
+        for rel, body in installers.items():
+            bodies.setdefault(body, []).append(rel)
+        assert len(bodies) == 1, (
+            "the POSIX installers carry %d different versions of "
+            "ap_rewrite_call_sites; they must be identical:\n%s"
+            % (len(bodies), "\n".join(
+                "  group %d: %s" % (i, sorted(v))
+                for i, v in enumerate(bodies.values(), 1))))
+
+
+class TestRewritePreservesLineEndings:
+    """F.3: behavioural, and honest about the platforms where it cannot bite."""
+
+    _PY_CALL = 'python ".advanced-plans/bin/ap.py"'
+    _RP_CALL = "runpy.run_path(r'.advanced-plans/bin/ap.py')"
+
+    def _sed_strips_cr(self, tmp_path):
+        """Does THIS platform's sed -i strip CR from a CRLF file?
+
+        The probe is a substitution that matches nothing, because that is the
+        measured Windows behaviour: the stripping is text-mode I/O, not the
+        edit.  A platform where this returns False cannot exhibit F10 at all.
+        """
+        probe = tmp_path / "sed-probe.txt"
+        probe.write_bytes(b"alpha\r\nbeta\r\n")
+        try:
+            proc = subprocess.Popen(
+                ["sed", "-i", "-e", "s#no-such-string-anywhere#x#g", str(probe)],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                universal_newlines=True)
+            proc.communicate(timeout=30)
+        except (OSError, subprocess.SubprocessError):
+            return None  # no usable sed; cannot tell either way
+        if proc.returncode != 0:
+            return None
+        return probe.read_bytes().count(b"\r") == 0
+
+    def _run_rewrite(self, tmp_path, installer, target, launcher):
+        """Run the REAL shipped function, lifted out of the real installer."""
+        parts = []
+        for name in ("ap_subst", "ap_rewrite_call_sites"):
+            body = _sh_function_body(installer, name)
+            assert body is not None, (
+                "%s does not define %s" % (installer, name))
+            parts.append(body)
+        harness = tmp_path / "harness.sh"
+        harness.write_bytes(
+            ("set -e\n" + "\n".join(parts)
+             + '\nap_rewrite_call_sites "$1" "$2"\n').encode("utf-8"))
+        ret, out, err = _run_script(
+            harness, [str(target), launcher], cwd=tmp_path)
+        assert ret == 0, "rewrite harness failed: %s%s" % (out, err)
+
+    def test_rewrite_preserves_crlf(self, tmp_path):
+        """F.3: a CRLF file keeps its CRLF, and still gets rewritten."""
+        strips = self._sed_strips_cr(tmp_path)
+        if strips is None:
+            pytest.skip(
+                "no usable `sed` on this platform, so the probe cannot "
+                "establish whether F10 could occur here. This guard is INERT, "
+                "not passing; TestRewriteUsesNoInPlaceStripper is what covers "
+                "the regression in this environment.")
+        if not strips:
+            pytest.skip(
+                "this platform's `sed -i` PRESERVES CR (measured just now on a "
+                "planted CRLF file), so the F10 defect cannot occur here and "
+                "this end-to-end assertion would hold whether or not the fix "
+                "were present. This guard is INERT, not passing -- reverting "
+                "the fix to `sed -i` would not fail it here. "
+                "TestRewriteUsesNoInPlaceStripper is what covers the "
+                "regression in this environment.")
+
+        launcher = "/opt/global/.advanced-plans/bin/ap.py"
+        installers = _posix_installers_defining_rewrite()
+        assert installers, "no installer defines the rewrite"
+
+        for rel in sorted(installers):
+            installer = _REPO_ROOT / rel
+
+            # 1. CRLF, with a call site: endings survive AND the edit happens.
+            hit = tmp_path / "hit.md"
+            hit.write_bytes(
+                ("prose\r\nrun %s now\r\nmore\r\n" % self._PY_CALL).encode())
+            before = hit.read_bytes().count(b"\r")
+            self._run_rewrite(tmp_path, installer, hit, launcher)
+            after = hit.read_bytes()
+            assert after.count(b"\r") == before, (
+                "%s: rewriting a CRLF file dropped %d of %d CR bytes -- a "
+                "shell install now produces byte-different files from a "
+                "PowerShell one" % (rel, before - after.count(b"\r"), before))
+            assert launcher.encode() in after, (
+                "%s: line endings survived but the substitution did not "
+                "happen, so the rewrite is preserving by doing nothing" % rel)
+            assert self._PY_CALL.encode() not in after, (
+                "%s: the original call site survives the rewrite" % rel)
+
+            # 2. CRLF, no call site: byte-identical, not merely equal text.
+            miss = tmp_path / "miss.md"
+            original = b"nothing\r\nto\r\nsee\r\n"
+            miss.write_bytes(original)
+            self._run_rewrite(tmp_path, installer, miss, launcher)
+            assert miss.read_bytes() == original, (
+                "%s: a file with no call site was modified" % rel)
+
+            # 3. LF stays LF -- the fix must not convert in the other
+            #    direction either, which is what a naive CRLF-restore would do.
+            lf = tmp_path / "lf.md"
+            lf.write_bytes(("prose\nrun %s now\n" % self._RP_CALL).encode())
+            self._run_rewrite(tmp_path, installer, lf, launcher)
+            got = lf.read_bytes()
+            assert b"\r" not in got, (
+                "%s: CR was introduced into an LF file" % rel)
+            assert launcher.encode() in got, (
+                "%s: the runpy call site was not rewritten" % rel)
+
+
+# =============================================================================
+# G.1: the worker commit contract must not contradict itself across copies
+# =============================================================================
+
+
+def _hard_contract_clause_a(path):
+    """Clause (a) of a Hard Contract, or None if the file carries no contract.
+
+    Read with universal newlines so the comparison is about what the clause
+    SAYS; line endings are F.2 and F.3's subject, not this one's.
+    """
+    text = path.read_text(encoding="utf-8")
+    if "## Hard Contract" not in text:
+        return None
+    start = text.find("**(a) ")
+    if start < 0:
+        return None
+    end = text.find("**(b) ", start)
+    assert end > start, "%s: clause (a) is not followed by a clause (b)" % path
+    return text[start:end].strip()
+
+
+def _role_contracts(role):
+    """Every Hard Contract for a role, discovered from the filesystem.
+
+    A file is a contract for the role if its NAME carries the role word and it
+    actually contains a Hard Contract. That second condition is what excludes
+    platforms/cowork/agents/worker-prompt.md, deliberately: Cowork is git-free
+    and checkpoints by snapshot, so it states no commit policy and must not be
+    held to one. platforms/claude-code/agents/analysis-worker.md is excluded the
+    same way -- it is a different agent with no contract.
+    """
+    found = {}
+    for root in (_REPO_ROOT / "core" / "agents", _REPO_ROOT / "platforms"):
+        if not root.is_dir():
+            continue
+        for md in sorted(root.rglob("*.md")):
+            if role not in md.name.lower():
+                continue
+            clause = _hard_contract_clause_a(md)
+            if clause is not None:
+                rel = str(md.relative_to(_REPO_ROOT)).replace("\\", "/")
+                found[rel] = clause
+    return found
+
+
+class TestWorkerCommitContract:
+    """G.1: one policy on committing, stated identically wherever it is shipped."""
+
+    def test_every_worker_contract_states_the_same_policy(self):
+        """The three copies are hand-maintained; that is how they drift.
+
+        This is the F5 defect in its general form: two shipped documents said
+        opposite things about whether a worker may commit, and nothing noticed.
+        """
+        contracts = _role_contracts("worker")
+        assert len(contracts) >= 3, (
+            "expected at least 3 worker Hard Contracts, found %d: %s. Either "
+            "they were renamed or the layout moved, and this test would "
+            "otherwise pass having compared nothing."
+            % (len(contracts), sorted(contracts)))
+
+        groups = {}
+        for rel, clause in contracts.items():
+            groups.setdefault(clause, []).append(rel)
+        assert len(groups) == 1, (
+            "the worker contracts state %d different commit policies; they "
+            "must agree:\n%s" % (len(groups), "\n".join(
+                "  group %d: %s" % (i, sorted(v))
+                for i, v in enumerate(groups.values(), 1))))
+
+    def test_worker_contract_requires_attribution_and_forbids_blanket_staging(self):
+        """A worker may commit, but the commit must say who made it.
+
+        Permitting commits without attribution would reintroduce exactly what
+        the old rule was adopted after: ralph-loop-worker.md records that the
+        Loops 056/061 self-commits damaged this repo's history precisely
+        because they were unattributed and staged the whole tree.
+        """
+        contracts = _role_contracts("worker")
+        assert len(contracts) >= 3, "see the floor above: found %d" % len(contracts)
+
+        missing = []
+        for rel, clause in sorted(contracts.items()):
+            for token, why in (
+                    ("Agent:", "no `Agent:` trailer, so a commit cannot be "
+                               "traced to the agent that made it"),
+                    ("Loop:", "no `Loop:` trailer, so a commit cannot be tied "
+                              "to the loop it came from"),
+                    ("git add -A", "does not forbid the blanket stage that "
+                                   "made the Loops 056/061 self-commits "
+                                   "damaging"),
+            ):
+                if token not in clause:
+                    missing.append("%s: %s" % (rel, why))
+        assert not missing, (
+            "worker contracts permit committing without the safeguards that "
+            "make it safe:\n  " + "\n  ".join(missing))
+
+    def test_orchestrator_contract_still_forbids_commits(self):
+        """The change was scoped to workers, and must stay scoped.
+
+        The orchestrator really does not commit -- it writes loop-ready.json and
+        nothing else -- so relaxing its contract too would be over-applying the
+        decision rather than implementing it.
+        """
+        contracts = _role_contracts("orchestrator")
+        assert len(contracts) >= 3, (
+            "expected at least 3 orchestrator Hard Contracts, found %d: %s"
+            % (len(contracts), sorted(contracts)))
+
+        relaxed = [rel for rel, clause in sorted(contracts.items())
+                   if "NEVER commit" not in clause]
+        assert not relaxed, (
+            "the orchestrator does not commit; its contract must still say so, "
+            "but these no longer do: %s" % relaxed)
+
+    def test_no_adapter_readme_contradicts_the_worker_contract(self):
+        """G.1/F5 proper: the README is where the contradiction actually was.
+
+        An adapter README that documents checkpoint ownership must not assert
+        the superseded policy, and must name the attribution the contract now
+        requires -- otherwise a reader following the README alone would produce
+        untraceable commits.
+        """
+        readmes = {}
+        for readme in sorted((_REPO_ROOT / "platforms").glob("*/README.md")):
+            text = readme.read_text(encoding="utf-8")
+            if "## Checkpoint Ownership" in text:
+                rel = str(readme.relative_to(_REPO_ROOT)).replace("\\", "/")
+                readmes[rel] = text
+        assert len(readmes) >= 2, (
+            "expected at least 2 adapter READMEs documenting checkpoint "
+            "ownership, found %d: %s. The heading changed and this test would "
+            "otherwise pass having checked nothing."
+            % (len(readmes), sorted(readmes)))
+
+        problems = []
+        for rel, text in sorted(readmes.items()):
+            section = text.split("## Checkpoint Ownership", 1)[1]
+            section = section.split("\n## ", 1)[0]
+            if "never commits" in section.lower():
+                problems.append(
+                    "%s: asserts as POLICY that a worker never commits, which "
+                    "the worker contract no longer says. A runtime that is "
+                    "merely unable to commit should say it cannot, not that it "
+                    "never does." % rel)
+            if "Agent:" not in section:
+                problems.append(
+                    "%s: documents checkpoint ownership without naming the "
+                    "`Agent:` trailer, so a reader following this README alone "
+                    "would produce commits that cannot be attributed." % rel)
+        assert not problems, (
+            "adapter README(s) disagree with the worker commit contract:\n  "
+            + "\n  ".join(problems))
+
+
+# =============================================================================
+# H: the two adapters are near-duplicates and nothing compared them
+# =============================================================================
+
+_ADAPTER_FILES = ("install.sh", "install.ps1", "uninstall.sh", "uninstall.ps1")
+
+# Display name as it appears in prose, per adapter directory name.
+_ADAPTER_DISPLAY = {"codex": "Codex", "opencode": "OpenCode"}
+
+
+def _normalise_adapter_identity(text):
+    """Replace every adapter's own name and token with a shared placeholder.
+
+    BOTH adapters are normalised to the SAME placeholder, not to self/peer
+    markers. That is deliberate: the uninstaller headers say "may be registered
+    by both Codex and OpenCode", naming the two in a fixed order, so a
+    self/peer scheme would report correct prose as drift. The hole this opens
+    -- one adapter writing the other's token -- is what the second test covers.
+    """
+    for name in sorted(_ADAPTER_DISPLAY, key=len, reverse=True):
+        text = text.replace(_ADAPTER_DISPLAY[name], "@ADAPTERNAME@")
+        text = text.replace(name, "@ADAPTER@")
+    return text
+
+
+def _adapter_pairs():
+    """Every (filename, {adapter: text}) the two adapters both ship."""
+    root = _REPO_ROOT / "setup"
+    pairs = []
+    for filename in _ADAPTER_FILES:
+        texts = {}
+        for adapter in sorted(_ADAPTER_DISPLAY):
+            path = root / adapter / filename
+            if path.is_file():
+                texts[adapter] = path.read_text(encoding="utf-8")
+        if len(texts) == len(_ADAPTER_DISPLAY):
+            pairs.append((filename, texts))
+    return pairs
+
+
+class TestAdaptersHaveNotDrifted:
+    """H: codex and opencode are the same script with a different name in it."""
+
+    def test_every_shared_script_is_identical_once_the_name_is_normalised(self):
+        """The duplication is ~1880 lines per adapter with no guard on it.
+
+        TestLanguagesAgree compares sh against ps1 within ONE adapter. Nothing
+        compared one adapter against the other, and by the time this was
+        written they had already diverged.
+        """
+        pairs = _adapter_pairs()
+        assert len(pairs) == len(_ADAPTER_FILES), (
+            "expected %d shared scripts present in BOTH adapters, found %d: %s. "
+            "A file was renamed or an adapter moved, and this test would "
+            "otherwise pass having compared nothing."
+            % (len(_ADAPTER_FILES), len(pairs), [f for f, _ in pairs]))
+
+        drifted = []
+        for filename, texts in pairs:
+            normalised = {a: _normalise_adapter_identity(t)
+                          for a, t in texts.items()}
+            distinct = set(normalised.values())
+            if len(distinct) > 1:
+                lines = {a: t.count("\n") for a, t in texts.items()}
+                drifted.append(
+                    "%s: %s differ once the adapter name is normalised away "
+                    "(%s)" % (filename, sorted(texts),
+                              ", ".join("%s=%d lines" % (a, n)
+                                        for a, n in sorted(lines.items()))))
+        assert not drifted, (
+            "the adapters are maintained as copies of one another, so a change "
+            "made to one and not the other is a defect:\n  "
+            + "\n  ".join(drifted))
+
+    def test_no_adapter_names_its_peer_in_code(self):
+        """Closes the hole the shared placeholder opens.
+
+        Because both adapters normalise to the same token, the first test
+        cannot tell codex's installer writing an `opencode` fence from it
+        writing its own. This can: on a code line, an adapter must only ever
+        name itself. Comments are exempt -- the uninstaller headers correctly
+        explain that a shared skill may be owned by both.
+        """
+        pairs = _adapter_pairs()
+        assert len(pairs) == len(_ADAPTER_FILES), (
+            "see the floor above: found %d" % len(pairs))
+
+        leaks = []
+        for filename, texts in pairs:
+            for adapter, text in sorted(texts.items()):
+                peers = [p for p in _ADAPTER_DISPLAY if p != adapter]
+                for number, line in enumerate(text.split("\n"), 1):
+                    stripped = line.lstrip()
+                    if stripped.startswith("#"):
+                        continue
+                    for peer in peers:
+                        if peer in line or _ADAPTER_DISPLAY[peer] in line:
+                            leaks.append(
+                                "setup/%s/%s:%d names %s on a code line: %s"
+                                % (adapter, filename, number, peer,
+                                   line.strip()[:80]))
+        assert not leaks, (
+            "an adapter must only ever write its own token; naming the peer in "
+            "code means the wrong owner or the wrong fence:\n  "
+            + "\n  ".join(leaks))
+
+
+# =============================================================================
+# J: claude-code is a different adapter, not a third instance of the same one
+# =============================================================================
+
+_CC_DIR = _REPO_ROOT / "setup" / "claude-code"
+
+# Every file the adapter is expected to ship. Kept explicit because the point of
+# the check is that one of them has NOT quietly disappeared; globbing for
+# "whatever is there" would pass for an empty directory.
+_CC_SURFACE = ("README.md", "install.sh", "install.ps1",
+               "uninstall.sh", "uninstall.ps1")
+
+# Tokens belonging to the shared-agent layout that codex and opencode
+# implement. claude-code must not drift into it -- it installs into .claude/,
+# does not maintain skill-ownership.json, and writes no AGENTS.md fences.
+_SHARED_LAYOUT_TOKENS = ("AGENTS.md", "skill-ownership", ".agents/skills")
+
+# $REPO_ROOT/<path> in sh; Join-Path $RepoRoot "<path>" in PowerShell, where the
+# path is a separate argument and so needs its own pattern.
+_CC_SRC_SH = re.compile(r"\$REPO_ROOT/([A-Za-z0-9_./*-]+)")
+_CC_SRC_PS = re.compile(r'Join-Path \$RepoRoot "([^"]+)"')
+_CC_DEST_SH = re.compile(r"\$CLAUDE_DIR/([A-Za-z0-9_.-]+)")
+_CC_FLAG_SH = re.compile(r"^\s+(--[a-z-]+)\)", re.MULTILINE)
+_CC_FLAG_PS = re.compile(r"^\s*\[(?:switch|string)\]\$([A-Za-z]+)", re.MULTILINE)
+
+
+def _cc_read(name):
+    return (_CC_DIR / name).read_text(encoding="utf-8")
+
+
+def _cc_repo_paths(text, pattern):
+    """Repo-relative paths a script reads from, with glob tails removed."""
+    found = set()
+    for match in pattern.finditer(text):
+        parts = [p for p in match.group(1).replace("\\", "/").split("/") if p]
+        while parts and ("*" in parts[-1] or parts[-1].startswith("$")):
+            parts.pop()
+        if parts:
+            found.add("/".join(parts))
+    return found
+
+
+def _cc_canonical_flag(flag):
+    """--dry-run and -DryRun are the same flag in two spellings."""
+    return flag.lstrip("-").replace("-", "").lower()
+
+
+class TestClaudeCodeAdapter:
+    """J: cover what claude-code does, rather than what it does not do.
+
+    It installs core/skills/* into .claude/skills/ and supports --symlink,
+    where codex and opencode install platforms/shared/agent-skills into
+    .agents/skills/ and maintain a shared ownership registry. Parametrising it
+    alongside them would mostly assert that it never touches machinery it was
+    never meant to touch.
+    """
+
+    def test_the_adapter_ships_its_whole_surface(self):
+        """A missing script is the failure every check below would mask."""
+        missing = [n for n in _CC_SURFACE if not (_CC_DIR / n).is_file()]
+        assert not missing, (
+            "setup/claude-code is missing %s. Every other check in this class "
+            "reads these files, so they would pass having read nothing."
+            % missing)
+
+    def test_every_repo_path_the_installer_reads_from_exists(self):
+        """A moved source directory is a silent install of nothing.
+
+        Both installers copy from fixed repo paths. If one is renamed, the
+        loops that read it simply iterate zero times -- `[ -f "$x" ] || continue`
+        skips everything and the install reports success having written no
+        skills at all.
+        """
+        for script, pattern, floor in (("install.sh", _CC_SRC_SH, 5),
+                                       ("install.ps1", _CC_SRC_PS, 5)):
+            paths = _cc_repo_paths(_cc_read(script), pattern)
+            assert len(paths) >= floor, (
+                "setup/claude-code/%s: found only %d repo paths (expected at "
+                "least %d). The script was rewritten to build its paths some "
+                "other way, and this check is now reading nothing: %s"
+                % (script, len(paths), floor, sorted(paths)))
+            gone = sorted(p for p in paths if not (_REPO_ROOT / p).exists())
+            assert not gone, (
+                "setup/claude-code/%s reads from paths that no longer exist: "
+                "%s. The installer would report success having copied nothing."
+                % (script, gone))
+
+    def test_the_uninstaller_names_every_directory_the_installer_writes(self):
+        """Anything install creates and uninstall does not name is left behind."""
+        install = _cc_read("install.sh")
+        uninstall = _cc_read("uninstall.sh")
+        dests = set(_CC_DEST_SH.findall(install))
+        assert len(dests) >= 5, (
+            "found only %d $CLAUDE_DIR destinations in install.sh (expected at "
+            "least 5); the installer no longer names its targets this way and "
+            "this check is comparing nothing: %s" % (len(dests), sorted(dests)))
+        orphans = sorted(d for d in dests if d not in uninstall)
+        assert not orphans, (
+            "install.sh names $CLAUDE_DIR/%s but uninstall.sh never mentions "
+            "it. Either the uninstaller leaves it behind, or the installer "
+            "describes something it does not actually create -- a dry-run "
+            "message that does not match a real run is the second case, and "
+            "is just as much a defect."
+            % ", $CLAUDE_DIR/".join(orphans))
+
+    def test_both_languages_offer_the_same_flags(self):
+        """A flag in one host and not the other is a platform-only feature."""
+        sh_flags = set(_CC_FLAG_SH.findall(_cc_read("install.sh")))
+        ps_flags = set(_CC_FLAG_PS.findall(_cc_read("install.ps1")))
+        for label, flags in (("install.sh", sh_flags), ("install.ps1", ps_flags)):
+            assert len(flags) >= 4, (
+                "setup/claude-code/%s: parsed only %d flags (expected at least "
+                "4). The argument parser was restructured and this check no "
+                "longer sees it: %s" % (label, len(flags), sorted(flags)))
+        sh_canon = {_cc_canonical_flag(f): f for f in sh_flags}
+        ps_canon = {_cc_canonical_flag(f): f for f in ps_flags}
+        sh_only = sorted(sh_canon[k] for k in set(sh_canon) - set(ps_canon))
+        ps_only = sorted(ps_canon[k] for k in set(ps_canon) - set(sh_canon))
+        assert not sh_only and not ps_only, (
+            "the two installers do not offer the same flags: only in "
+            "install.sh %s, only in install.ps1 %s" % (sh_only, ps_only))
+
+    def test_the_readme_documents_every_flag_the_installers_accept(self):
+        """claude-code is the only adapter shipping a README; it must be true.
+
+        Documentation drift is not cosmetic here: the README is the only place
+        --symlink is explained, and a flag that exists but is undocumented is
+        indistinguishable from one that does not exist.
+        """
+        readme = _cc_read("README.md")
+        sh_flags = sorted(_CC_FLAG_SH.findall(_cc_read("install.sh")))
+        ps_flags = sorted("-" + f
+                          for f in _CC_FLAG_PS.findall(_cc_read("install.ps1")))
+        assert len(sh_flags) >= 4 and len(ps_flags) >= 4, (
+            "parsed %d sh and %d ps1 flags (expected at least 4 each); this "
+            "check would otherwise pass having looked for nothing in the "
+            "README" % (len(sh_flags), len(ps_flags)))
+        undocumented = [f for f in sh_flags + ps_flags if f not in readme]
+        assert not undocumented, (
+            "setup/claude-code/README.md does not mention %s, which the "
+            "installers accept" % undocumented)
+
+    def test_it_installs_into_dot_claude_and_stays_out_of_the_shared_layout(self):
+        """The structural boundary, asserted in both directions.
+
+        The negative half alone would be vacuous -- it passes for a file that
+        does nothing at all. The positive half is what gives it a subject: each
+        script must actually name .claude, and each must name the skills source
+        it installs from, in its own path syntax.
+        """
+        for script, skills_src in (("install.sh", "core/skills"),
+                                   ("install.ps1", "core\\skills"),
+                                   ("uninstall.sh", "core/skills"),
+                                   ("uninstall.ps1", "core\\skills")):
+            text = _cc_read(script)
+            assert ".claude" in text, (
+                "setup/claude-code/%s never names .claude, so this check has "
+                "no subject and the absences below prove nothing" % script)
+            if script.startswith("install"):
+                assert skills_src in text, (
+                    "setup/claude-code/%s never names %s -- it no longer "
+                    "installs the core skills, or it builds the path some "
+                    "other way" % (script, skills_src))
+            intruders = [t for t in _SHARED_LAYOUT_TOKENS if t in text]
+            assert not intruders, (
+                "setup/claude-code/%s names %s. That is codex and opencode's "
+                "shared-agent layout; claude-code installs into .claude/ and "
+                "maintains no ownership registry. If this adapter genuinely "
+                "needs to join that protocol, the shared tests in this file "
+                "apply to it and this class is the wrong home for it."
+                % (script, intruders))
+
+
+# =============================================================================
+# K: a deprecated companion must not survive as a live recommendation
+# =============================================================================
+
+# Companions this project has deprecated, and the date it happened. The name is
+# what appears in an install URL or a slash command, lowercased.
+_DEPRECATED_COMPANIONS = {
+    "plannotator": "2026-08-26",
+}
+
+# Where a user-facing instruction can live. Discovered by glob, so a new adapter
+# or skill is covered the day it is added rather than the day someone remembers
+# to list it here.
+_INSTRUCTION_GLOBS = ("platforms/*/**/*.md", "core/skills/**/*.md", "CLAUDE.md")
+
+# Directories that hold the RECORD rather than instructions. History is not
+# rewritten -- the deprecation note, the changelog and the programme record must
+# all keep saying the name.
+_RECORD_PREFIXES = ("docs/", ".advanced-plans/", "CHANGELOG.md")
+
+
+def _actionable_refs(text, name):
+    """Ways a document tells a reader to actually go and use `name`.
+
+    Deliberately narrow. Naming a deprecated tool is fine and often necessary;
+    handing someone a command that installs or invokes it is not.
+    """
+    hits = []
+    for i, line in enumerate(text.splitlines(), 1):
+        low = line.lower()
+        if name not in low:
+            continue
+        if re.search(r"(?:git\s+clone|pip\s+install|npm\s+i(?:nstall)?|"
+                     r"/plugin\s+install)\s+\S*" + re.escape(name), low):
+            hits.append((i, "install command", line.strip()))
+        elif re.search(r"(?<![\w/])/" + re.escape(name) + r"[\w-]*", low):
+            hits.append((i, "slash-command invocation", line.strip()))
+        elif re.search(r"--plugin-dir\s+\S*" + re.escape(name), low):
+            hits.append((i, "plugin-dir launch", line.strip()))
+        elif re.search(r"commands/" + re.escape(name), low):
+            hits.append((i, "command-file reference", line.strip()))
+    return hits
+
+
+def _instruction_files():
+    seen = {}
+    for pattern in _INSTRUCTION_GLOBS:
+        for path in _REPO_ROOT.glob(pattern):
+            if not path.is_file():
+                continue
+            rel = path.relative_to(_REPO_ROOT).as_posix()
+            if rel.startswith(_RECORD_PREFIXES):
+                continue
+            seen[rel] = path
+    return seen
+
+
+class TestDeprecatedCompanionsAreNotRecommended:
+    """K: the deprecation reached the shipped surface, not just the record.
+
+    Plannotator was declared removed on 2026-08-26 in this project's own
+    deprecation note, and in Advanced AI Workflows' ARCHITECTURE.md, which
+    stated that /plan-and-phase Step 5b "was removed". It was not. Step 5b was
+    still detecting the plugin and invoking /plannotator-annotate, and
+    companion-detection was still telling a user without it installed to
+    git clone it -- on the same branch whose codex and opencode READMEs assert
+    "No Plannotator: the deprecated review companion is not installed or
+    invoked". Two adapters asserting a property the third violated.
+    """
+
+    def test_the_detector_actually_detects(self):
+        """Without this, every assertion below passes for a broken regex.
+
+        The scan's whole output is "no matches". That is indistinguishable
+        from a pattern that can no longer match anything, which is how a
+        check quietly stops being a check.
+        """
+        must_catch = [
+            "> git clone https://github.com/MungoHarvey/plannotator.git",
+            "claude --plugin-dir plannotator/apps/hook",
+            "Invoke `/plannotator-annotate .advanced-plans/phases/phase-1/plan.md`",
+            "- Look for `.claude/commands/plannotator-annotate.md` (plugin command)",
+            "/plugin install plannotator@plannotator",
+        ]
+        for line in must_catch:
+            assert _actionable_refs(line, "plannotator"), (
+                "the detector no longer catches a live recommendation: %r" % line)
+
+        must_not_catch = [
+            "Plannotator was deprecated on 2026-08-26.",
+            "**No Plannotator**: The deprecated review companion is not installed",
+            "the review gate it provided is now `/run-gate`",
+            "plannotator remains in the diagrams below, marked (v0.1, deprecated)",
+            "a plannotator install elsewhere on the machine is left untouched",
+        ]
+        for line in must_not_catch:
+            assert not _actionable_refs(line, "plannotator"), (
+                "the detector fires on prose that merely names the tool, which "
+                "would force the deprecation record to stop describing it: %r" % line)
+
+    def test_no_shipped_instruction_recommends_a_deprecated_companion(self):
+        files = _instruction_files()
+        assert len(files) >= 20, (
+            "found only %d instruction files (expected at least 20). The globs "
+            "%s no longer match the shipped surface, so this check is scanning "
+            "almost nothing: %s"
+            % (len(files), list(_INSTRUCTION_GLOBS), sorted(files)))
+        assert _DEPRECATED_COMPANIONS, (
+            "the deprecated-companion registry is empty, so this check has "
+            "nothing to look for and passes unconditionally")
+
+        offences = []
+        for rel, path in sorted(files.items()):
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            for name in _DEPRECATED_COMPANIONS:
+                for line_no, kind, line in _actionable_refs(text, name):
+                    offences.append("%s:%d: %s -- %s" % (rel, line_no, kind, line[:90]))
+        assert not offences, (
+            "%d shipped instruction(s) still tell a reader to install or invoke "
+            "a companion this project deprecated:\n  %s\n\nDeprecated: %s. The "
+            "record in docs/ and CHANGELOG.md is exempt and must keep naming "
+            "them; these are live instructions."
+            % (len(offences), "\n  ".join(offences),
+               ", ".join("%s (%s)" % kv for kv in
+                         sorted(_DEPRECATED_COMPANIONS.items()))))
+
+    def test_the_scan_actually_reads_the_adapters(self):
+        """The floor above counts files; this one names the ones that matter.
+
+        A glob that silently stopped matching platforms/ would still clear a
+        count of 20 on core/skills/ alone, and claude-code -- the adapter that
+        carried the defect -- is exactly what would go unscanned.
+        """
+        scanned = set(_instruction_files())
+        for adapter in ("claude-code", "codex", "opencode"):
+            covered = [r for r in scanned if r.startswith("platforms/%s/" % adapter)]
+            assert covered, (
+                "no file under platforms/%s/ was scanned. The glob no longer "
+                "reaches that adapter, and a live recommendation there would "
+                "not be seen." % adapter)
