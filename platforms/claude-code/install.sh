@@ -57,6 +57,85 @@ print_reference() {
     echo ""
 }
 
+install_skill() {
+    # install_skill SRC DEST NAME - put one core skill at DEST.
+    #
+    # `ln -sf SRC DEST` where DEST already exists as a real directory does not
+    # replace it: it creates DEST/basename(SRC) *inside* it and exits 0. So did
+    # the `cp -r` fallback. Installing twice therefore produced
+    # .claude/skills/<name>/<name> for every skill while reporting a clean
+    # "Symlinked" both times. Worse, on a host where ln really does symlink,
+    # the second install resolves through the first link and writes that nested
+    # copy into core/skills/ in the source repository. -n makes ln treat an
+    # existing symlink as a file rather than following it.
+    #
+    # The message is verified rather than assumed. MSYS ln on Windows silently
+    # copies and exits 0, so "Symlinked" was printed for a plain copy - a claim
+    # about the machine that nothing had read back off it. The line now names
+    # what is actually on disk.
+    _src="$1"
+    _dst="$2"
+    _name="$3"
+
+    if [ -L "$_dst" ]; then
+        # A link someone put there before: safe to repoint.
+        rm -f "$_dst"
+    elif [ -d "$_dst" ]; then
+        # A real directory - a previous copy-mode install, or the user's own.
+        # Refusing outright would break re-installing on every host where
+        # symlinks degrade to copies, which is most Windows machines. So
+        # compare, and refuse only a genuine divergence.
+        # Captured through `if`, not as a bare statement: `set -e` is in force
+        # at the top of this script and would abort on diff's non-zero exit
+        # before $? was ever read, making the installer exit 1 having printed
+        # no reason at all. Measured - that is exactly what the first version
+        # of this guard did.
+        # --strip-trailing-cr because this repo's .gitattributes checks the
+        # source out CRLF on Windows, and any LF-writing tool touching an
+        # installed copy would otherwise make every line of it "differ" and
+        # refuse a re-install for a reason the user cannot act on. Measured:
+        # rewriting one installed SKILL.md with sed reported 1,151c1,151.
+        # install_audit already normalises EOL before judging drift; this
+        # agrees with it rather than inventing a second answer.
+        if diff -r -q --strip-trailing-cr "$_src" "$_dst" >/dev/null 2>&1; then
+            _rc=0
+        else
+            _rc=$?
+        fi
+        if [ $_rc -eq 0 ]; then
+            echo "    - unchanged $_name"
+            return 0
+        elif [ $_rc -eq 1 ]; then
+            echo "ERROR: $_dst exists as a real directory whose contents differ from" >&2
+            echo "  $_src" >&2
+            echo "  Refusing to overwrite it or to nest a copy inside it. Remove or rename it." >&2
+            exit 1
+        else
+            # diff exits >=2 for "trouble" - it could not compare them at all.
+            # That is not evidence of either answer, so do not claim one.
+            echo "ERROR: could not compare $_src with $_dst (diff exited $_rc)." >&2
+            echo "  Refusing to install over a directory whose state is unknown." >&2
+            exit 1
+        fi
+    elif [ -e "$_dst" ]; then
+        echo "ERROR: $_dst exists as a regular file. Remove or rename it before installing." >&2
+        exit 1
+    fi
+
+    if ln -sfn "$_src" "$_dst" 2>/dev/null && [ -L "$_dst" ]; then
+        echo "    ✓ Symlinked $_name"
+        return 0
+    fi
+
+    # ln either failed or "succeeded" without producing a link. Either way the
+    # destination may now hold a partial copy, so clear it before copying.
+    if [ ! -L "$_dst" ] && [ -d "$_dst" ]; then
+        rm -rf "$_dst"
+    fi
+    cp -r "$_src" "$_dst"
+    echo "    ✓ Copied $_name"
+}
+
 install_project() {
     TARGET="$1"
 
@@ -93,13 +172,9 @@ install_project() {
     echo "  → Installing core skills..."
     for skill_dir in "$CORE_DIR/skills"/*/; do
         skill_name="$(basename "$skill_dir")"
-        # Try symlink first; fall back to copy if symlinks not supported
-        if ln -sf "$skill_dir" "$CLAUDE_DIR/skills/$skill_name" 2>/dev/null; then
-            echo "    ✓ Symlinked $skill_name"
-        else
-            cp -r "$skill_dir" "$CLAUDE_DIR/skills/$skill_name"
-            echo "    ✓ Copied $skill_name"
-        fi
+        # ${skill_dir%/} strips the trailing slash the glob leaves on, so the
+        # link target reads back cleanly and cp does not copy into a directory.
+        install_skill "${skill_dir%/}" "$CLAUDE_DIR/skills/$skill_name" "$skill_name"
     done
 
     # Copy agent files

@@ -398,25 +398,82 @@ someone eventually.
   grep -l -i "Troubleshooting" platforms/*/README.md
   ```
 
-- **`platforms/claude-code/install.sh` still has the `--symlink` defect that
-  `v0.18.0` fixed in the other two installers.** Installing over a project that
-  already has a real `.claude/skills/<name>/` directory produces a nested
-  `<name>/<name>` symlink inside it, exits `0`, and prints `✓ Symlinked
-  <name>` — a success message for work it did not do. The skill is not where
-  the host will look for it, and nothing says so.
+- **Both installers agree on a hostile destination.** This was a known gap
+  until 2026-08-31: `platforms/claude-code/install.sh` carried the `ln -sf`
+  defect that `v0.18.0` had already fixed in the other two, because no test
+  named it. Both now refuse:
 
   ```bash
   T=$(mktemp -d); mkdir -p "$T/.claude/skills/plan-todos"
   sh setup/claude-code/install.sh --project "$T" --symlink; echo "rc=$?"    # 1, names the path
-  sh platforms/claude-code/install.sh --project "$T"; echo "rc=$?"          # 0, nests the link
-  find "$T/.claude/skills/plan-todos" -maxdepth 1
+  sh platforms/claude-code/install.sh --project "$T"; echo "rc=$?"          # 1, names the path
+  find "$T/.claude/skills/plan-todos" -maxdepth 1                           # the dir alone, nothing nested
   ```
 
-  Not destructive — pre-existing files survive — but the install is silently
-  broken. This is the third adapter (F11): it is _not_ an unmaintained
-  leftover, which is worth stating because its 280 lines beside the `setup/`
-  installer's 674 invite that assumption. It is covered by
+  Expected: `rc=1` from both, each naming the path it refused, and `find`
+  printing only the directory itself. A nested `plan-todos/plan-todos` is the
+  regression this guards. `TestAdapterInstallerSkillPlacement` covers it —
+  4 of 4 of those tests fail against the pre-fix script.
+
+  Worth keeping in view because the shape recurs: this is the third adapter
+  (F11), and it is _not_ an unmaintained leftover, which its 280 lines beside
+  the `setup/` installer's 674 invite you to assume. It is covered by
   `test_ap_launcher.py` and `test_home_resolution_agreement.py`, it writes a
   `runtime.json`, `platforms/claude-code/README.md` documents it as the install
-  path, and `v0.17.0` fixed a `SCRIPT_DIR`/`REPO_ROOT` bug in it. It was simply
-  not in scope when S3 was fixed, so it kept the old behaviour.
+  path, and `v0.17.0` fixed a `SCRIPT_DIR`/`REPO_ROOT` bug in it. It kept the
+  old behaviour only because it was out of scope when S3 was fixed — so when a
+  guard lands in one installer, check the other two for the same call.
+
+- **F16 — `files_identical` in the `setup/*` installers cannot tell "these
+  differ" from "I could not read them".** `diff -q` exits `0` identical, `1`
+  differ, and `>= 2` for _trouble_; the helper returns `$?` raw, so a transient
+  read failure is reported as a divergence, and the collision error then names
+  whichever file the walk reached first rather than the file that actually
+  changed. Measured in Git Bash:
+
+  ```bash
+  diff -q a.txt b.txt      >/dev/null 2>&1; echo $?   # 0  identical
+  diff -q a.txt c.txt      >/dev/null 2>&1; echo $?   # 1  differ
+  diff -q a.txt NOSUCH.txt >/dev/null 2>&1; echo $?   # 2  could not compare
+  ```
+
+  This produced a real, once-only full-suite failure on 2026-08-31:
+  `test_nested_file_divergence_detected[opencode-sh]` reported a collision on
+  `references/gate-reviewer-prompt.md` — a file the test never touched, and
+  which sorts first — while the file it had modified was
+  `references/orchestrator-prompt.md`. The test passes in isolation, passes at
+  file scope (124/124), and passed in CI on 3.10/3.11/3.12 for the same commit;
+  the contents are byte-identical by construction, so exit `1` was impossible
+  and exit `2` is the only mechanism consistent with the evidence. Not yet
+  fixed. `platforms/claude-code/install.sh` does distinguish the three (it
+  reports a `diff` exit `>= 2` as its own outcome); the `setup/*` installers do
+  not.
+
+- **F17 — `sha256_file` returns a value that is not a hash when the path
+  contains a backslash.** GNU coreutils escapes a checksum line whose filename
+  needs it, prefixing the line with `\`; `sha256sum "$1" | cut -d' ' -f1` then
+  yields `\<64 hex chars>`. Every `setup/*` installer hashes this way, and the
+  affected paths are exactly the Windows ones a test or a user passes in.
+
+  ```bash
+  sha256sum 'C:\path\to\f.txt' | cut -d" " -f1     # \98ea6e4f…  <- leading backslash
+  sha256sum  /c/path/to/f.txt  | cut -d" " -f1     # 98ea6e4f…
+  ```
+
+  Cosmetic in that the value is only printed in the collision error — the
+  comparison itself uses `diff` — but the printed SHA is not one, so anyone who
+  pastes it into `sha256sum -c` or compares it by eye gets a false answer from
+  a message whose whole job is evidence. Not yet fixed.
+
+- **F18 — self-install reports `+ skills -> core/skills` without reading the
+  destination back.** `setup/claude-code/install.sh` guards those `ln -sf`
+  calls properly (it refuses a real directory first, which is what
+  `TestSelfInstallDoesNotBypassGuards` covers), but it announces the link
+  unconditionally afterwards. MSYS `ln` on Windows silently copies and exits
+  `0` — measured directly: the identical call in
+  `platforms/claude-code/install.sh` produced a real directory, not a link,
+  on this machine. So on Windows self-install the runtime dirs are copies
+  while the output says they are links, and the entire point of self-install
+  is that source edits surface immediately. The mechanism is measured; the
+  self-install path itself was not exercised, so the consequence is inferred
+  from it rather than observed. Not yet fixed.

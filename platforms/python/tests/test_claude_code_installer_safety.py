@@ -516,5 +516,167 @@ class TestSyntaxAndCoverage:
         )
 
 
+# ---------------------------------------------------------------------------
+# S3b in the OTHER installer - platforms/claude-code/install.sh
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="module")
+def adapter_install_sh(repo_root: Path) -> Path:
+    """The second installer.
+
+    setup/claude-code/install.sh got the S3b fix in the commit that added
+    TestS3bBashLnSafety above. This one did not, and no test named it, so it
+    kept the original defect for the whole time the fixed script sat beside it
+    under test.
+    """
+    return repo_root / "platforms" / "claude-code" / "install.sh"
+
+
+def _core_skill_names(repo_root: Path):
+    return sorted(p.name for p in (repo_root / "core" / "skills").iterdir() if p.is_dir())
+
+
+class TestAdapterInstallerSkillPlacement:
+    """`ln -sf SRC DEST` where DEST already exists as a real directory does not
+    replace it - it creates DEST/basename(SRC) inside it and exits 0. `cp -r`
+    nests identically. The pre-fix adapter installer did both, and announced
+    "Symlinked" either way."""
+
+    def test_second_install_creates_no_nested_skill(
+        self, tmp_path: Path, adapter_install_sh: Path, repo_root: Path
+    ):
+        _skip_bash()
+        project = tmp_path / "project"
+        (project / ".claude").mkdir(parents=True)
+
+        first = _run_sh(adapter_install_sh, "--project", _fwd(project), cwd=repo_root)
+        assert first.returncode == 0, f"first install failed: {first.stderr}"
+        second = _run_sh(adapter_install_sh, "--project", _fwd(project), cwd=repo_root)
+        assert second.returncode == 0, (
+            f"re-installing an unchanged project must succeed: {second.stderr}"
+        )
+
+        names = _core_skill_names(repo_root)
+        assert names, "core/skills is empty, so this test would prove nothing"
+        skills = project / ".claude" / "skills"
+        nested = [n for n in names if (skills / n / n).exists()]
+        assert not nested, (
+            f"installing twice nested a copy of each skill inside itself: {nested}"
+        )
+
+    def test_message_names_what_is_actually_on_disk(
+        self, tmp_path: Path, adapter_install_sh: Path, repo_root: Path
+    ):
+        """Whether ln links or silently copies is the host's business; claiming
+        the wrong one is the installer's.
+
+        MSYS ln on Windows copies and exits 0, so the pre-fix script printed
+        "Symlinked" for a plain copy - a claim about the machine that nothing
+        had read back off it. This asserts agreement, not which branch ran, so
+        it holds on every host.
+        """
+        _skip_bash()
+        project = tmp_path / "project"
+        (project / ".claude").mkdir(parents=True)
+
+        result = _run_sh(adapter_install_sh, "--project", _fwd(project), cwd=repo_root)
+        assert result.returncode == 0, f"install failed: {result.stderr}"
+
+        claims = {}
+        for line in result.stdout.splitlines():
+            stripped = line.strip()
+            if "✓" not in stripped:
+                continue
+            for verb in ("Symlinked", "Copied"):
+                marker = verb + " "
+                if marker in stripped:
+                    claims[stripped.split(marker, 1)[1].strip()] = verb
+        assert claims, (
+            f"installer reported no skill placements at all:\n{result.stdout}"
+        )
+
+        skills = project / ".claude" / "skills"
+        wrong = []
+        for name, verb in sorted(claims.items()):
+            dest = skills / name
+            if verb == "Symlinked" and not dest.is_symlink():
+                wrong.append(f"{name}: said Symlinked, is not a symlink")
+            if verb == "Copied" and dest.is_symlink():
+                wrong.append(f"{name}: said Copied, is a symlink")
+        assert not wrong, (
+            "the installer's success line disagrees with the filesystem:\n  "
+            + "\n  ".join(wrong)
+        )
+
+    def test_refuses_a_diverged_skill_directory(
+        self, tmp_path: Path, adapter_install_sh: Path, repo_root: Path
+    ):
+        _skip_bash()
+        project = tmp_path / "project"
+        (project / ".claude").mkdir(parents=True)
+        first = _run_sh(adapter_install_sh, "--project", _fwd(project), cwd=repo_root)
+        assert first.returncode == 0, f"first install failed: {first.stderr}"
+
+        skills = project / ".claude" / "skills"
+        target = None
+        for name in _core_skill_names(repo_root):
+            candidate = skills / name / "SKILL.md"
+            if candidate.exists() and not (skills / name).is_symlink():
+                target = (name, candidate)
+                break
+        if target is None:
+            pytest.skip(
+                "every skill installed as a symlink here, so editing one would "
+                "write through the link into core/skills in the source repo. "
+                "This is a skip, not a pass: the divergence refusal was not "
+                "verified on this host."
+            )
+
+        name, edited = target
+        edited.write_text(
+            edited.read_text(encoding="utf-8") + "\nDRIFT\n", encoding="utf-8"
+        )
+
+        result = _run_sh(adapter_install_sh, "--project", _fwd(project), cwd=repo_root)
+
+        assert result.returncode != 0, (
+            "installing over a diverged skill must fail, not nest a copy inside "
+            f"it. stdout: {result.stdout}"
+        )
+        assert "differ" in result.stderr.lower(), (
+            f"the error must say why it refused. stderr: {result.stderr}"
+        )
+        assert name in result.stderr, (
+            f"the error must name the skill it refused. stderr: {result.stderr}"
+        )
+        assert not (skills / name / name).exists(), (
+            "a refusal that still nests a copy has refused nothing"
+        )
+
+    def test_refuses_a_regular_file_at_the_destination(
+        self, tmp_path: Path, adapter_install_sh: Path, repo_root: Path
+    ):
+        _skip_bash()
+        project = tmp_path / "project"
+        skills = project / ".claude" / "skills"
+        skills.mkdir(parents=True)
+        names = _core_skill_names(repo_root)
+        assert names, "core/skills is empty, so this test would prove nothing"
+
+        squatter = skills / names[0]
+        squatter.write_text("user content that must survive", encoding="utf-8")
+
+        result = _run_sh(adapter_install_sh, "--project", _fwd(project), cwd=repo_root)
+
+        assert result.returncode != 0, (
+            f"installing over a user's file must fail. stdout: {result.stdout}"
+        )
+        assert "regular file" in result.stderr.lower(), (
+            f"the error must say why it refused. stderr: {result.stderr}"
+        )
+        assert squatter.is_file(), "the user's file must not become a directory"
+        assert squatter.read_text(encoding="utf-8") == "user content that must survive"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

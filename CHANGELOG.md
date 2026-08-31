@@ -39,6 +39,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   inline exemption naming the reason rather than being promoted into sections
   that do not exist.
 
+- **`platforms/claude-code/install.sh` no longer nests a copy of every skill
+  inside itself, and no longer claims to have symlinked what it copied.** The
+  `do_ln` guard landed in `setup/claude-code/install.sh` in `0.18.0` with a test
+  class beside it; this second installer carried the identical defect the whole
+  time, because no test named it. `ln -sf SRC DEST` where `DEST` already exists
+  as a real directory does not replace it — it creates `DEST/basename(SRC)`
+  inside it and exits 0, and the `cp -r` fallback nests identically. Installing
+  twice into the same project therefore produced `.claude/skills/<name>/<name>`
+  for all nine core skills while reporting a clean `Symlinked` both times. On a
+  host where `ln -s` really does link, the second install resolves _through_ the
+  first link and writes that nested copy into `core/skills/` in the source
+  repository; it escaped that here only because MSYS silently degrades symlinks
+  to copies.
+
+  That degradation is the second half of the fix. `ln` on Windows copies and
+  exits 0, so `Symlinked` was printed for a plain copy — a claim about the
+  machine that nothing had read back off it. The installer now reads the
+  destination back and names what is actually on disk.
+
+  A destination that already exists is compared rather than refused outright,
+  because refusing would break re-installing on every host where symlinks
+  degrade to copies. Identical reports `unchanged`; a genuine divergence is
+  refused by path with the reason; and `diff` exiting `>= 2` — _could not
+  compare_ — is reported as its own outcome instead of being read as _differs_.
+  The comparison uses `--strip-trailing-cr`, agreeing with `install_audit`
+  rather than inventing a second answer to what counts as drift.
+
+  Four tests cover it, and each was proven by restoring the pre-fix script
+  byte-for-byte and rerunning: **4 of 4 fail against it**, all 4 pass with the
+  fix, and the working tree was restored byte-identical by sha256.
+
 ---
 
 ## [0.18.0] - 2026-08-31
