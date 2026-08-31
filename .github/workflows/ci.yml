@@ -156,11 +156,28 @@ jobs:
         # not blind that file to other rules; a run with only exceptions prints
         # "PASSED WITH N SUPPRESSED" and exits 0.
 
-      - name: Audit install-layer drift (source vs project)
+      - name: Install into the runner's global layer
         run: |
-          python -m platforms.python.install_audit --layers source,project
+          sh setup/claude-code/install.sh --global
+        # The audit below needs an installed layer to compare against, and a fresh
+        # checkout has none it can use: .gitignore excludes .claude/* (everything but
+        # settings.json), so the project layer can never hold commands, agents or
+        # schemas on a runner. The global layer can -- HOME on a runner is disposable,
+        # so installing into it costs nothing and gives the audit a real subject.
+
+      - name: Audit install-layer drift (source vs global)
+        run: |
+          python -m platforms.python.install_audit --layers source,global
         # Compares platforms/claude-code/commands+agents/ and core/schemas/ against
-        # .claude/commands/, .claude/agents/, .claude/schemas/ in this repo.
-        # CI cannot see a developer's global ~/.claude/ dir so only the source<->project
-        # pair is checked. Exits non-zero if any stale or missing files are found.
-        # Fix drift by running /sync-install (or cp from source to .claude/ manually).
+        # ~/.claude/commands|agents|schemas as produced by the step above, so a pass
+        # here means the installer reproduces every source file byte-for-byte, after
+        # EOL and launcher-path normalisation. Exits non-zero on any stale or missing
+        # file; fix drift by running /sync-install.
+        #
+        # This replaced `--layers source,project`, which could not pass on a runner:
+        # .claude/settings.json IS tracked, so .claude/ exists, install_audit's
+        # "not found -- skipped" guard never fires, and all 27 source files read as
+        # missing. Do not "fix" a failure here by dropping the install step above --
+        # a missing layer is skipped with a note and the job returns 0 having audited
+        # nothing. TestCIAuditsALayerItCanActuallyHave fails the build if either the
+        # gitignored layer or the uninstalled one comes back.
