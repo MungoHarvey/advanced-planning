@@ -37,11 +37,13 @@ answer came from* -- so each case uses a distinct marker token and asserts the
 token, not the path.
 """
 
+import atexit
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import pathlib
 
 import pytest
@@ -55,10 +57,26 @@ from platforms.python import ap_launcher  # noqa: E402
 _MARKER_UP = "ap_marker_userprofile"
 _MARKER_HOME = "ap_marker_home"
 
-# Native-looking values so the Windows path conversion has something to chew
-# on; the marker segment survives cygpath in either direction.
-_UP_VALUE = "C:/" + _MARKER_UP
-_HOME_VALUE = "M:/" + _MARKER_HOME
+# These have to be directories that REALLY EXIST, and the reason is not the
+# obvious one. pwsh builds its own per-user state under $HOME while it starts;
+# point HOME at a path that is not there and it exits 70 ("The shell cannot be
+# started") before Get-ApGlobalHome is ever reached. Windows pwsh does not care,
+# so the literal "M:/ap_marker_home" that used to sit here passed on this
+# machine and failed on every Linux run of the workflow from the commit that
+# introduced this module. A check that cannot pass on the platform CI runs on is
+# not a weaker check than one that can -- it is not a check at all, and it is
+# the same defect as an audit pointed at a layer the runner cannot have.
+#
+# What is asserted does not change. It was never the path: it is WHICH VARIABLE
+# the answer came from, read off a marker token, so the marker only has to
+# survive in the path. It is the last segment of each directory, and cygpath
+# preserves it in either direction on Windows.
+_MARKER_ROOT = tempfile.mkdtemp(prefix="ap_home_agreement_")
+atexit.register(shutil.rmtree, _MARKER_ROOT, True)
+_UP_VALUE = (_MARKER_ROOT + os.sep + _MARKER_UP).replace("\\", "/")
+_HOME_VALUE = (_MARKER_ROOT + os.sep + _MARKER_HOME).replace("\\", "/")
+os.makedirs(_UP_VALUE)
+os.makedirs(_HOME_VALUE)
 
 # (case id, env overrides, expected marker). ``None`` for a variable means
 # "remove it from the child's environment entirely" -- distinct from "" which
@@ -69,6 +87,28 @@ _CASES = [
     ("home-only", {"USERPROFILE": None, "HOME": _HOME_VALUE}, _MARKER_HOME),
     ("userprofile-empty", {"USERPROFILE": "", "HOME": _HOME_VALUE}, _MARKER_HOME),
 ]
+
+def _missing_interpreter(name):
+    """Reason to skip for a missing interpreter, or None if it is present.
+
+    Under AP_REQUIRE_ADAPTER_INTERPRETERS=1 -- which the workflow sets -- a
+    missing interpreter raises here instead, at import, failing collection for
+    the whole module. The point is that "pwsh was not installed" and "the
+    PowerShell copy agrees with the launcher" must not produce the same green.
+    test_adapter_lifecycle.py already draws that line; this module did not.
+    """
+    if shutil.which(name) is not None:
+        return None
+    if os.environ.get("AP_REQUIRE_ADAPTER_INTERPRETERS") == "1":
+        raise RuntimeError(
+            "AP_REQUIRE_ADAPTER_INTERPRETERS=1 but %r was not found, so the "
+            "copies this module exists to pin would go unchecked" % name)
+    return "no %s available" % name
+
+
+_NO_SH = _missing_interpreter("sh")
+_NO_PWSH = _missing_interpreter("pwsh")
+
 
 _SH_IMPLEMENTATIONS = [
     ("setup/claude-code/install.sh", "ap_home_fs"),
@@ -157,11 +197,32 @@ def test_the_python_reference_picks_the_expected_variable(
         "assumes; every assertion below is built on it" % case_id)
 
 
+def test_the_marker_homes_are_real_directories():
+    """The premise the PowerShell cases rest on, asserted rather than assumed.
+
+    Linux pwsh will not start when HOME names a directory that is not there --
+    it exits 70 during initialisation, before any function under test runs. So
+    a marker value that is merely a plausible-looking string turns the six
+    HOME-setting cases from checks into guaranteed failures, on the platform
+    the workflow runs on and on no platform a developer here is likely to try.
+
+    Windows pwsh starts regardless, which is exactly why this needs to be an
+    assertion: the machine most likely to edit these constants is the one that
+    cannot observe the consequence.
+    """
+    for name, value in (("USERPROFILE", _UP_VALUE), ("HOME", _HOME_VALUE)):
+        assert os.path.isdir(value), (
+            "the %s marker %r is not a directory. On Linux, pwsh exits 70 "
+            "while starting rather than running Get-ApGlobalHome, so every "
+            "case that sets HOME fails for a reason that has nothing to do "
+            "with the code being pinned." % (name, value))
+
+
 # ---------------------------------------------------------------------------
 # The three unpinned copies, run rather than read.
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skipif(shutil.which("sh") is None, reason="no POSIX sh available")
+@pytest.mark.skipif(_NO_SH is not None, reason=_NO_SH or "")
 @pytest.mark.parametrize("script,func", _SH_IMPLEMENTATIONS,
                          ids=["%s:%s" % (s.split("/")[0], f)
                               for s, f in _SH_IMPLEMENTATIONS])
@@ -183,7 +244,7 @@ def test_a_shell_copy_resolves_the_same_variable_as_the_launcher(
         % (script, func, out.strip(), case_id, expected))
 
 
-@pytest.mark.skipif(shutil.which("pwsh") is None, reason="no pwsh available")
+@pytest.mark.skipif(_NO_PWSH is not None, reason=_NO_PWSH or "")
 @pytest.mark.parametrize("script", ["setup/claude-code/install.ps1",
                                     "setup/claude-code/uninstall.ps1"])
 @pytest.mark.parametrize("case_id,overrides,expected", _CASES,
@@ -210,7 +271,7 @@ def test_the_powershell_copy_resolves_the_same_variable_as_the_launcher(
 # The empty home. This is the case that writes outside the user's profile.
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skipif(shutil.which("sh") is None, reason="no POSIX sh available")
+@pytest.mark.skipif(_NO_SH is not None, reason=_NO_SH or "")
 @pytest.mark.parametrize("script,func", _SH_IMPLEMENTATIONS,
                          ids=["%s:%s" % (s.split("/")[0], f)
                               for s, f in _SH_IMPLEMENTATIONS])
@@ -241,7 +302,7 @@ def test_a_shell_copy_never_resolves_the_home_to_nothing(script, func):
             % (script, func))
 
 
-@pytest.mark.skipif(shutil.which("pwsh") is None, reason="no pwsh available")
+@pytest.mark.skipif(_NO_PWSH is not None, reason=_NO_PWSH or "")
 @pytest.mark.parametrize("script", ["setup/claude-code/install.ps1",
                                     "setup/claude-code/uninstall.ps1"])
 def test_the_powershell_copy_never_resolves_the_home_to_nothing(script):
