@@ -1,0 +1,82 @@
+{
+  "date": "2026-08-31",
+  "window_days": 7,
+  "since": "2026-08-24T00:00:00",
+  "repos": [
+    {
+      "name": "advanced-planning",
+      "base": "origin/main",
+      "base_fresh": true,
+      "commits": 67,
+      "merges": 6,
+      "insertions": 17918,
+      "deletions": 1609,
+      "active_days": 5,
+      "streak_days": 5,
+      "sessions": 15,
+      "session_minutes_total": 778,
+      "session_minutes_avg": 51,
+      "peak_hour": 16,
+      "test_ratio": 0.50,
+      "fix_ratio": 0.60,
+      "ai_coauthored": 39,
+      "test_files": 32,
+      "prs_merged": 11,
+      "tags_pushed": 1,
+      "version_range": "0.16.0 -> 0.17.0",
+      "commit_types": {"fix": 40, "feat": 10, "test": 6, "docs": 4, "chore": 2, "style": 1, "release": 1, "ci": 1, "checkpoint": 1, "other": 1},
+      "hotspots": [
+        {"path": "platforms/python/tests/test_adapter_lifecycle.py", "touches": 16},
+        {"path": "platforms/python/tests/test_ap_launcher.py", "touches": 10},
+        {"path": "setup/codex/uninstall.sh", "touches": 9},
+        {"path": "setup/codex/install.sh", "touches": 8},
+        {"path": "setup/codex/install.ps1", "touches": 8},
+        {"path": "setup/codex/uninstall.ps1", "touches": 7},
+        {"path": "setup/claude-code/install.sh", "touches": 7}
+      ]
+    },
+    {
+      "name": "Advanced-AI-Workflows",
+      "base": "docs/herdr-v0.2-import",
+      "base_fresh": false,
+      "base_note": "origin/main last moved 2026-06-08; all week's work is unmerged on the branch, so the branch was used as the base and the finding disclosed",
+      "commits": 111,
+      "insertions": 26806,
+      "deletions": 1235,
+      "active_days": 6,
+      "test_ratio": 0.22,
+      "peak_hour": 9,
+      "commit_types": {"loop": 43, "docs": 13, "fix": 12, "plan": 6, "complete": 6, "evidence": 5, "record": 4, "gate": 4},
+      "hotspots": [
+        {"path": ".advanced-plans/state/history.jsonl", "touches": 53},
+        {"path": ".advanced-plans/PLANNING.md", "touches": 41},
+        {"path": ".advanced-plans/phases/phase-6/loops.md", "touches": 24}
+      ]
+    }
+  ],
+  "prev_retro": ".context/retros/2026-06-09-1.json",
+  "trends": {
+    "commits": [64, 67],
+    "test_ratio": [0.29, 0.50],
+    "sessions": [4, 15],
+    "session_minutes_avg": [107, 51],
+    "prs_merged": [0, 11],
+    "tags_pushed": [0, 1],
+    "active_days": [2, 5]
+  },
+  "highlights": [
+    "Eleven PRs merged in a single day (#3-#13), every one green on six required checks",
+    "v0.17.0 tagged, pushed and released - the repo's first GitHub Release",
+    "Test insertion ratio 29% -> 50%; one defect class (checks whose subject is an interpolated string) found and swept across three audits, three guards and two installers"
+  ],
+  "improve": [
+    "AAW main has not moved since 2026-06-08 while 111 commits accumulated on a branch",
+    "60% of commits are fixes, and the top four hotspots are files edited 7-16 times in a week - the installers were reworked repeatedly rather than designed once",
+    "Verification scripts went unverified: a shell collection diff emitted 'added: 0, removed: 0' from two empty files, reproducing the release's own defect class inside the check for it"
+  ],
+  "habits": [
+    "Every fix proven by restoring the pre-fix code byte-for-byte and confirming the new test fails against it",
+    "Refuse to report on an empty subject - the check that cannot fail is the one to distrust",
+    "Land through PRs with an evidence table, not direct pushes to main"
+  ]
+}
