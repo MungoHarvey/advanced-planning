@@ -376,7 +376,25 @@ someone eventually.
   grep -l -i "Troubleshooting" platforms/*/README.md
   ```
 
-- **`platforms/claude-code/install.sh` is a second, older installer** (280
-  lines, v8-era) alongside the maintained `setup/claude-code/install.sh` (674
-  lines). Only the `setup/` one is audited, tested and fixed. Whichever a
-  newcomer finds first decides what they install.
+- **`platforms/claude-code/install.sh` still has the `--symlink` defect that
+  `v0.18.0` fixed in the other two installers.** Installing over a project that
+  already has a real `.claude/skills/<name>/` directory produces a nested
+  `<name>/<name>` symlink inside it, exits `0`, and prints `✓ Symlinked
+  <name>` — a success message for work it did not do. The skill is not where
+  the host will look for it, and nothing says so.
+
+  ```bash
+  T=$(mktemp -d); mkdir -p "$T/.claude/skills/plan-todos"
+  sh setup/claude-code/install.sh --project "$T" --symlink; echo "rc=$?"    # 1, names the path
+  sh platforms/claude-code/install.sh --project "$T"; echo "rc=$?"          # 0, nests the link
+  find "$T/.claude/skills/plan-todos" -maxdepth 1
+  ```
+
+  Not destructive — pre-existing files survive — but the install is silently
+  broken. This is the third adapter (F11): it is *not* an unmaintained
+  leftover, which is worth stating because its 280 lines beside the `setup/`
+  installer's 674 invite that assumption. It is covered by
+  `test_ap_launcher.py` and `test_home_resolution_agreement.py`, it writes a
+  `runtime.json`, `platforms/claude-code/README.md` documents it as the install
+  path, and `v0.17.0` fixed a `SCRIPT_DIR`/`REPO_ROOT` bug in it. It was simply
+  not in scope when S3 was fixed, so it kept the old behaviour.
