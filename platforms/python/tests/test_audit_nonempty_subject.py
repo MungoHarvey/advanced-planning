@@ -221,53 +221,61 @@ class TestPathAuditNonemptySubject:
 class TestInstallAuditNonemptySubject:
     """Tests for install_audit.py non-empty-subject assertions."""
 
-    def test_empty_layer_verdicts_returns_exit_2(self, tmp_path, capsys):
-        """When a layer explicitly named in --layers produces no verdicts, exit 2."""
-        # Create a minimal repo
-        repo = tmp_path / "repo"
-        repo.mkdir()
-        (repo / "core").mkdir()
-        (repo / "core" / "constraints.json").write_text("{}", encoding="utf-8")
-        
-        # Create a .claude dir but with no surfaces (empty commands/agents/schemas)
-        project_claude = repo / ".claude"
-        project_claude.mkdir()
-        # Create empty surface dirs
-        (project_claude / "commands").mkdir()
-        (project_claude / "agents").mkdir()
-        (project_claude / "schemas").mkdir()
-        
-        # Source surfaces don't exist, so no verdicts will be produced
-        exit_code = install_audit_main([
-            "--root", str(repo),
-            "--layers", "source,project",
-        ])
-        
-        # Should exit 2 because source surfaces don't exist (treated as error)
-        # OR because no verdicts were produced
-        assert exit_code in (0, 2), f"Expected exit 0 or 2, got {exit_code}"
+    def test_no_layer_pairs_audited_returns_exit_2(self, tmp_path, capsys):
+        """A run that compared no layer pair has not shown the install is
+        current, and must not say so by exiting 0.
 
-    def test_missing_source_treated_as_error_not_skip(self, tmp_path, capsys):
-        """A missing source directory should be an error, not silently skipped."""
+        This replaces a test that asserted ``exit_code in (0, 2)`` while
+        being named for exit 2 -- an assertion that cannot fail for any
+        exit code the tool actually produces.
+        """
         repo = tmp_path / "repo"
-        repo.mkdir()
-        (repo / "core").mkdir()
+        (repo / "core").mkdir(parents=True)
         (repo / "core" / "constraints.json").write_text("{}", encoding="utf-8")
-        
-        # Create project layer but no source layer
+        # A source surface exists, so the source side is fine...
+        cmds = repo / "platforms" / "claude-code" / "commands"
+        cmds.mkdir(parents=True)
+        (cmds / "cmd.md").write_text("# x\n", encoding="utf-8")
+        # ...but there is no installed layer anywhere to compare it against.
+        empty_home = tmp_path / "empty_home"
+        empty_home.mkdir()
+
+        exit_code = install_audit_main(
+            ["--root", str(repo), "--layers", "source,project"],
+            env={"USERPROFILE": str(empty_home), "HOME": str(empty_home)},
+        )
+
+        assert exit_code == 2, f"expected exit 2, got {exit_code}"
+        err = capsys.readouterr().err
+        assert "inconclusive" in err.lower()
+
+    def test_missing_source_surface_is_drift_not_a_skip(self, tmp_path, capsys):
+        """An absent source surface must produce a verdict, not a `continue`.
+
+        Skipping it is how an audit of a wrong or incomplete checkout reports
+        "all layers current". A stderr line alongside the skip is not enough:
+        the exit code and the report are what callers act on.
+        """
+        repo = tmp_path / "repo"
+        (repo / "core").mkdir(parents=True)
+        (repo / "core" / "constraints.json").write_text("{}", encoding="utf-8")
+        # No source surfaces at all.
         project_claude = repo / ".claude"
-        project_claude.mkdir()
-        (project_claude / "commands").mkdir()
-        
-        exit_code = install_audit_main([
-            "--root", str(repo),
-            "--layers", "source,project",
-        ])
-        
-        captured = capsys.readouterr()
-        # Missing source should produce an ERROR message
-        assert "ERROR" in captured.err or "Source directory missing" in captured.err, (
-            f"Expected ERROR for missing source: {captured.err}")
+        (project_claude / "commands").mkdir(parents=True)
+
+        result = audit_pair(repo, project_claude, "source -> project")
+        kinds = {v.verdict for v in result.verdicts}
+        assert kinds == {"source_missing"}, kinds
+        assert len(result.verdicts) == 3, "one per declared surface"
+
+        exit_code = install_audit_main(
+            ["--root", str(repo), "--layers", "source,project"],
+            env={"USERPROFILE": str(tmp_path), "HOME": str(tmp_path)},
+        )
+        out = capsys.readouterr().out
+        assert exit_code == 1, f"expected drift (1), got {exit_code}"
+        assert "SOURCE_MISSING" in out
+        assert "DRIFT DETECTED" in out
 
 
 # ---------------------------------------------------------------------------

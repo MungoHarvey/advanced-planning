@@ -67,7 +67,8 @@ class FileVerdict(NamedTuple):
 
     surface: str           # e.g. "commands", "agents", "schemas"
     filename: str          # relative filename within the surface dir
-    verdict: str           # "current", "stale", "missing", "extra"
+    verdict: str           # "current", "stale", "missing", "extra",
+                           # "source_missing"
     source_hash: Optional[str]    # None when source file is absent (extra)
     installed_hash: Optional[str] # None when installed file is absent (missing)
 
@@ -232,11 +233,19 @@ def audit_pair(
         installed_dir = installed_base / installed_name
 
         if not source_dir.exists():
-            # Source surface missing — this is a bug, not a skip condition.
-            # The source tree is the one thing this module can assume.
-            # Treat as drift: record all source files as missing.
-            print(f"ERROR: Source directory missing: {source_dir}", file=sys.stderr)
-            # Continue to collect what we can, but mark this as an error condition
+            # Source surface missing. The source tree is the one thing this
+            # module can assume, so its absence is drift to be reported, not
+            # a surface to skip: skipping it is how an audit of a wrong or
+            # incomplete checkout reports "all layers current".
+            verdicts.append(
+                FileVerdict(
+                    surface=installed_name,
+                    filename=f"{source_rel}/ (entire source surface)",
+                    verdict="source_missing",
+                    source_hash=None,
+                    installed_hash=None,
+                )
+            )
             continue
 
         source_files: Dict[str, pathlib.Path] = {}
@@ -290,7 +299,7 @@ def audit_pair(
 
 
 def has_drift(result: LayerPairResult) -> bool:
-    """Return True if *result* contains any stale or missing files.
+    """Return True if *result* contains any stale, missing, or absent-source files.
 
     Parameters
     ----------
@@ -300,7 +309,10 @@ def has_drift(result: LayerPairResult) -> bool:
     -------
     bool
     """
-    return any(v.verdict in ("stale", "missing") for v in result.verdicts)
+    return any(
+        v.verdict in ("stale", "missing", "source_missing")
+        for v in result.verdicts
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -325,8 +337,8 @@ def _print_result(result: LayerPairResult, verbose: bool = False) -> None:
     for v in result.verdicts:
         by_verdict.setdefault(v.verdict, []).append(v)
 
-    # Always print stale and missing
-    for verdict_name in ("stale", "missing"):
+    # Always print stale, missing, and absent source surfaces
+    for verdict_name in ("source_missing", "stale", "missing"):
         for v in by_verdict.get(verdict_name, []):
             print(f"  {verdict_name.upper():8s}  {v.surface}/{v.filename}")
             if v.source_hash:
@@ -346,6 +358,7 @@ def _print_result(result: LayerPairResult, verbose: bool = False) -> None:
         f"  Summary: {counts.get('current', 0)} current, "
         f"{counts.get('stale', 0)} stale, "
         f"{counts.get('missing', 0)} missing, "
+        f"{counts.get('source_missing', 0)} source-missing, "
         f"{counts.get('extra', 0)} extra  (total: {total})"
     )
 
@@ -458,11 +471,17 @@ def main(argv: List[str] = None, env: Optional[Dict[str, str]] = None) -> int:
             )
 
     if not results:
-        if skipped_layers:
-            print(f"ERROR: No layer pairs found to audit. Skipped: {', '.join(skipped_layers)}. Run is inconclusive.", file=sys.stderr)
-        else:
-            print("NOTE: no layer pairs found to compare — nothing to audit")
-        return 0
+        # Nothing was compared. Whether that is "nothing to audit" or "the
+        # audit could not run" is the whole question: a run that examined no
+        # pairs has not shown the install is current, and must not say so by
+        # exiting 0.
+        print(
+            "ERROR: no layer pairs were audited"
+            + (f" (skipped: {', '.join(skipped_layers)})" if skipped_layers else "")
+            + " — run is inconclusive, not clean.",
+            file=sys.stderr,
+        )
+        return 2
 
     # Check if any explicitly requested layer produced no verdicts
     if args.layers != "all":
