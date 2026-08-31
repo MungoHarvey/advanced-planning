@@ -1916,3 +1916,145 @@ class TestClaudeCodeAdapter:
                 "needs to join that protocol, the shared tests in this file "
                 "apply to it and this class is the wrong home for it."
                 % (script, intruders))
+
+
+# =============================================================================
+# K: a deprecated companion must not survive as a live recommendation
+# =============================================================================
+
+# Companions this project has deprecated, and the date it happened. The name is
+# what appears in an install URL or a slash command, lowercased.
+_DEPRECATED_COMPANIONS = {
+    "plannotator": "2026-08-26",
+}
+
+# Where a user-facing instruction can live. Discovered by glob, so a new adapter
+# or skill is covered the day it is added rather than the day someone remembers
+# to list it here.
+_INSTRUCTION_GLOBS = ("platforms/*/**/*.md", "core/skills/**/*.md", "CLAUDE.md")
+
+# Directories that hold the RECORD rather than instructions. History is not
+# rewritten -- the deprecation note, the changelog and the programme record must
+# all keep saying the name.
+_RECORD_PREFIXES = ("docs/", ".advanced-plans/", "CHANGELOG.md")
+
+
+def _actionable_refs(text, name):
+    """Ways a document tells a reader to actually go and use `name`.
+
+    Deliberately narrow. Naming a deprecated tool is fine and often necessary;
+    handing someone a command that installs or invokes it is not.
+    """
+    hits = []
+    for i, line in enumerate(text.splitlines(), 1):
+        low = line.lower()
+        if name not in low:
+            continue
+        if re.search(r"(?:git\s+clone|pip\s+install|npm\s+i(?:nstall)?|"
+                     r"/plugin\s+install)\s+\S*" + re.escape(name), low):
+            hits.append((i, "install command", line.strip()))
+        elif re.search(r"(?<![\w/])/" + re.escape(name) + r"[\w-]*", low):
+            hits.append((i, "slash-command invocation", line.strip()))
+        elif re.search(r"--plugin-dir\s+\S*" + re.escape(name), low):
+            hits.append((i, "plugin-dir launch", line.strip()))
+        elif re.search(r"commands/" + re.escape(name), low):
+            hits.append((i, "command-file reference", line.strip()))
+    return hits
+
+
+def _instruction_files():
+    seen = {}
+    for pattern in _INSTRUCTION_GLOBS:
+        for path in _REPO_ROOT.glob(pattern):
+            if not path.is_file():
+                continue
+            rel = path.relative_to(_REPO_ROOT).as_posix()
+            if rel.startswith(_RECORD_PREFIXES):
+                continue
+            seen[rel] = path
+    return seen
+
+
+class TestDeprecatedCompanionsAreNotRecommended:
+    """K: the deprecation reached the shipped surface, not just the record.
+
+    Plannotator was declared removed on 2026-08-26 in this project's own
+    deprecation note, and in Advanced AI Workflows' ARCHITECTURE.md, which
+    stated that /plan-and-phase Step 5b "was removed". It was not. Step 5b was
+    still detecting the plugin and invoking /plannotator-annotate, and
+    companion-detection was still telling a user without it installed to
+    git clone it -- on the same branch whose codex and opencode READMEs assert
+    "No Plannotator: the deprecated review companion is not installed or
+    invoked". Two adapters asserting a property the third violated.
+    """
+
+    def test_the_detector_actually_detects(self):
+        """Without this, every assertion below passes for a broken regex.
+
+        The scan's whole output is "no matches". That is indistinguishable
+        from a pattern that can no longer match anything, which is how a
+        check quietly stops being a check.
+        """
+        must_catch = [
+            "> git clone https://github.com/MungoHarvey/plannotator.git",
+            "claude --plugin-dir plannotator/apps/hook",
+            "Invoke `/plannotator-annotate .advanced-plans/phases/phase-1/plan.md`",
+            "- Look for `.claude/commands/plannotator-annotate.md` (plugin command)",
+            "/plugin install plannotator@plannotator",
+        ]
+        for line in must_catch:
+            assert _actionable_refs(line, "plannotator"), (
+                "the detector no longer catches a live recommendation: %r" % line)
+
+        must_not_catch = [
+            "Plannotator was deprecated on 2026-08-26.",
+            "**No Plannotator**: The deprecated review companion is not installed",
+            "the review gate it provided is now `/run-gate`",
+            "plannotator remains in the diagrams below, marked (v0.1, deprecated)",
+            "a plannotator install elsewhere on the machine is left untouched",
+        ]
+        for line in must_not_catch:
+            assert not _actionable_refs(line, "plannotator"), (
+                "the detector fires on prose that merely names the tool, which "
+                "would force the deprecation record to stop describing it: %r" % line)
+
+    def test_no_shipped_instruction_recommends_a_deprecated_companion(self):
+        files = _instruction_files()
+        assert len(files) >= 20, (
+            "found only %d instruction files (expected at least 20). The globs "
+            "%s no longer match the shipped surface, so this check is scanning "
+            "almost nothing: %s"
+            % (len(files), list(_INSTRUCTION_GLOBS), sorted(files)))
+        assert _DEPRECATED_COMPANIONS, (
+            "the deprecated-companion registry is empty, so this check has "
+            "nothing to look for and passes unconditionally")
+
+        offences = []
+        for rel, path in sorted(files.items()):
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            for name in _DEPRECATED_COMPANIONS:
+                for line_no, kind, line in _actionable_refs(text, name):
+                    offences.append("%s:%d: %s -- %s" % (rel, line_no, kind, line[:90]))
+        assert not offences, (
+            "%d shipped instruction(s) still tell a reader to install or invoke "
+            "a companion this project deprecated:\n  %s\n\nDeprecated: %s. The "
+            "record in docs/ and CHANGELOG.md is exempt and must keep naming "
+            "them; these are live instructions."
+            % (len(offences), "\n  ".join(offences),
+               ", ".join("%s (%s)" % kv for kv in
+                         sorted(_DEPRECATED_COMPANIONS.items()))))
+
+    def test_the_scan_actually_reads_the_adapters(self):
+        """The floor above counts files; this one names the ones that matter.
+
+        A glob that silently stopped matching platforms/ would still clear a
+        count of 20 on core/skills/ alone, and claude-code -- the adapter that
+        carried the defect -- is exactly what would go unscanned.
+        """
+        scanned = set(_instruction_files())
+        for adapter in ("claude-code", "codex", "opencode"):
+            covered = [r for r in scanned if r.startswith("platforms/%s/" % adapter)]
+            assert covered, (
+                "no file under platforms/%s/ was scanned. The glob no longer "
+                "reaches that adapter, and a live recommendation there would "
+                "not be seen." % adapter)

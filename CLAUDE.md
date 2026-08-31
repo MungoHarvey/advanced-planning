@@ -35,7 +35,7 @@ powershell setup/claude-code/install.ps1 -Project /path/to/your/project  # Windo
 **Core** (`core/`) is platform-agnostic. **Adapters** (`platforms/`) wrap it for specific environments. Adapters reference the core but never duplicate it.
 
 - `core/schemas/` — Markdown schema definitions for phase-plan, ralph-loop, todo, handoff
-- `core/skills/` — Seven planning skills loaded per-todo by targeted injection (load → execute → unload). Includes `companion-detection`, which scans todos for Plannotator review opportunities.
+- `core/skills/` — Seven planning skills loaded per-todo by targeted injection (load → execute → unload). Includes `companion-detection`, which checks whether Superpowers is installed and recommends it once per session.
 - `core/agents/` — Abstract orchestrator, worker, and gate-reviewer role definitions
 - `core/state/` — JSON schemas for the filesystem state bus
 
