@@ -369,11 +369,10 @@ if ($SelfInstall) {
         Write-Host "  [dry-run] New-Item Junction $($ClaudeDir)\schemas -> $schemasSrc"
         Write-Host "  [dry-run] symlink agents from core\agents and platforms\claude-code\agents"
     } else {
-        # Remove existing dirs/junctions before creating new ones
-        foreach ($dirName in @("commands", "skills", "schemas")) {
-            $target = Join-Path $ClaudeDir $dirName
-            if (Test-Path $target) { Remove-Item $target -Recurse -Force }
-        }
+        # No pre-delete here. Do-Junction removes the destination only when
+        # it is already a reparse point, and fails loudly otherwise. Deleting
+        # first would make that guard dead code and would recursively delete a
+        # real directory -- which the POSIX host refuses to do.
         Do-Junction (Join-Path $ClaudeDir "commands") $commandsSrc
         Say "  + commands -> platforms\claude-code\commands"
         Do-Junction (Join-Path $ClaudeDir "skills") $skillsSrc
@@ -382,8 +381,21 @@ if ($SelfInstall) {
         Say "  + schemas -> core\schemas"
 
         # Agents: individual symlinks from both core\agents and platforms\claude-code\agents
+        # Mirrors install.sh: replace a link, refuse a real directory. The
+        # agents directory is rebuilt from individual links, but a user may
+        # have put their own agents here, and recursive deletion would take
+        # them with it.
         $agentsDir = Join-Path $ClaudeDir "agents"
-        if (Test-Path $agentsDir) { Remove-Item $agentsDir -Recurse -Force }
+        if (Test-Path $agentsDir) {
+            $agentsItem = Get-Item $agentsDir -Force -ErrorAction SilentlyContinue
+            if ($null -ne $agentsItem -and $null -ne $agentsItem.Attributes -and
+                ($agentsItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint)) {
+                Remove-Item $agentsDir -Force | Out-Null
+            } else {
+                Write-Error "$agentsDir exists as a real directory/file. Remove or rename it before self-install."
+                exit 1
+            }
+        }
         New-Item -ItemType Directory -Path $agentsDir -Force | Out-Null
         $coreAgents = Get-ChildItem -Path (Join-Path $RepoRoot "core\agents") -Filter "*.md" -File
         foreach ($agent in $coreAgents) {

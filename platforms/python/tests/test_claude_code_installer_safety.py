@@ -1,13 +1,26 @@
-"""
-Tests for installer safety fixes (S1, S3, S3b).
+"""Tests for installer safety fixes (S1, S3, S3b) in setup/claude-code/.
 
-These tests verify that:
-  - S1: settings.json is preserved when it exists, with planning content written to settings.planning.json
-  - S1: dry-run correctly reports which branch would be taken
-  - S3: Do-Junction refuses to delete non-reparse-point destinations (PowerShell)
-  - S3b: ln -sf does not create nested links inside existing directories (POSIX)
+  - S1  : an existing settings.json is preserved byte-identical; the planning
+          settings go to settings.planning.json instead.
+  - S3  : Do-Junction refuses a destination that is not a reparse point, and
+          the self-install path does not delete it before asking.
+  - S3b : do_ln refuses a real directory instead of creating a nested link
+          inside it.
 
-Tests are skipped loudly (not silently green) when bash or pwsh is unavailable.
+Every test here drives a real installer as a subprocess and asserts on what
+ended up on disk. Each fails against the pre-fix scripts.
+
+**On Windows the `bash` on PATH is WSL, not Git Bash.** WSL resolves
+`/mnt/c/...`, so a Windows path handed to it fails with "No such file or
+directory" -- which reads as "bash is unreliable here" and is not. Git Bash is
+resolved explicitly by path below and accepts `C:/...` with forward slashes.
+Getting this wrong is what previously caused every bash test in this file to be
+skipped on the only platform anyone runs them on, leaving S3b covered by
+nothing while the file reported green.
+
+Skips are loud and narrow: a host is skipped only when its interpreter is
+genuinely absent, and `test_at_least_one_host_was_exercised` fails if that left
+the run proving nothing.
 """
 
 import json
@@ -21,532 +34,486 @@ import pytest
 
 
 # ---------------------------------------------------------------------------
-# Skip loudly if interpreter unavailable
+# Interpreter resolution
 # ---------------------------------------------------------------------------
 
+def _find_git_bash():
+    """Return a path to Git Bash, or None.
+
+    Deliberately does not use shutil.which("bash"): on Windows that finds WSL,
+    which cannot resolve Windows paths.
+    """
+    if sys.platform != "win32":
+        return shutil.which("bash")
+    candidates = [
+        Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Git" / "bin" / "bash.exe",
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Git" / "bin" / "bash.exe",
+        Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "Git" / "bin" / "bash.exe",
+    ]
+    for candidate in candidates:
+        try:
+            if candidate.is_file():
+                return str(candidate)
+        except OSError:
+            continue
+    return None
+
+
+GIT_BASH = _find_git_bash()
+PWSH = shutil.which("pwsh")
+
+
 def _bash_available() -> bool:
-    """Check if bash is available on PATH."""
-    return shutil.which("bash") is not None
+    return GIT_BASH is not None
 
 
 def _pwsh_available() -> bool:
-    """Check if PowerShell 7+ (pwsh) is available on PATH."""
-    return shutil.which("pwsh") is not None
+    return PWSH is not None
 
 
-def _skip_reason(interpreter: str) -> str:
-    """Return a skip reason that names the missing interpreter."""
-    return f"{interpreter} not found on PATH — skipping {interpreter} installer tests (this is a skip, not a pass)"
+def _skip_bash():
+    if not _bash_available():
+        pytest.skip(
+            "Git Bash not found (looked in Program Files, "
+            "LOCALAPPDATA/Programs, Program Files (x86)) - skipping POSIX "
+            "installer tests. This is a skip, not a pass: nothing about "
+            "install.sh was verified."
+        )
 
 
-def _to_posix_path(path: Path) -> str:
-    """Convert a Windows Path to POSIX form for Git Bash.
-    
-    On Windows, tries cygpath first. If unavailable, tests whether bash can
-    access the Windows path directly (Git Bash on Windows usually can).
-    Returns the Windows path if bash can access it, otherwise the POSIX form.
-    """
-    if sys.platform == "win32":
-        # Try cygpath first
-        try:
-            result = subprocess.run(
-                ["bash", "-c", f"cygpath -u '{str(path)}'"],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-            return result.stdout.strip()
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            # cygpath not available - bash may still handle Windows paths
-            # Test if bash can access the path directly
-            test_result = subprocess.run(
-                ["bash", "-c", f"test -f '{str(path)}' || test -d '{str(path)}'"],
-                capture_output=True,
-                text=True,
-            )
-            if test_result.returncode == 0:
-                return str(path)  # bash can access it
-            # Try converting manually: C:\foo -> /c/foo
-            win_path = str(path)
-            if len(win_path) >= 2 and win_path[1] == ':':
-                drive = win_path[0].lower()
-                rest = win_path[2:].replace('\\', '/')
-                return f"/{drive}{rest}"
-    return str(path)
+def _skip_pwsh():
+    if not _pwsh_available():
+        pytest.skip(
+            "pwsh not found on PATH - skipping PowerShell installer tests. "
+            "This is a skip, not a pass: nothing about install.ps1 was verified."
+        )
+
+
+def _fwd(path) -> str:
+    """A Windows path in the forward-slash form Git Bash accepts."""
+    return str(path).replace(os.sep, "/")
+
+
+def _run(args, cwd=None):
+    """Subprocess with decoding that survives the installers' non-ASCII output."""
+    return subprocess.run(
+        args,
+        cwd=str(cwd) if cwd else None,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+
+
+def _run_sh(script: Path, *args, cwd: Path):
+    return _run([GIT_BASH, _fwd(script), *args], cwd=cwd)
+
+
+def _run_ps1(script: Path, *args, cwd: Path):
+    return _run(
+        [PWSH, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script), *args],
+        cwd=cwd,
+    )
 
 
 # ---------------------------------------------------------------------------
-# Test data
+# Fixtures
 # ---------------------------------------------------------------------------
 
 EXISTING_USER_SETTINGS = {
-    "permissions": {
-        "allow": [
-            "Read(**)",
-            "Write(**)",
-        ]
-    },
+    "permissions": {"allow": ["Read(**)", "Write(**)"]},
     "myCustomKey": "userValue",
 }
 
 
-# ---------------------------------------------------------------------------
-# Module-level fixtures
-# ---------------------------------------------------------------------------
-
 @pytest.fixture(scope="module")
 def repo_root() -> Path:
-    """Path to repo root."""
     return Path(__file__).resolve().parents[3]
 
 
 @pytest.fixture(scope="module")
-def repo_root_posix(repo_root: Path) -> str:
-    """Path to repo root in POSIX form for Git Bash."""
-    return _to_posix_path(repo_root)
-
-
-@pytest.fixture(scope="module")
 def install_sh(repo_root: Path) -> Path:
-    """Path to install.sh."""
     return repo_root / "setup" / "claude-code" / "install.sh"
 
 
 @pytest.fixture(scope="module")
-def install_sh_posix(repo_root: Path) -> str:
-    """Path to install.sh in POSIX form for Git Bash."""
-    return _to_posix_path(repo_root / "setup" / "claude-code" / "install.sh")
-
-
-@pytest.fixture(scope="module")
 def install_ps1(repo_root: Path) -> Path:
-    """Path to install.ps1."""
     return repo_root / "setup" / "claude-code" / "install.ps1"
 
 
+@pytest.fixture
+def project_dir(tmp_path: Path) -> Path:
+    """An empty target project with a .claude/ directory."""
+    target = tmp_path / "project"
+    (target / ".claude").mkdir(parents=True)
+    return target
+
+
+def _seed_settings(project: Path):
+    """Write a user-authored settings.json; return (path, exact content)."""
+    settings = project / ".claude" / "settings.json"
+    content = json.dumps(EXISTING_USER_SETTINGS, indent=2)
+    settings.write_text(content, encoding="utf-8")
+    return settings, content
+
+
+@pytest.fixture
+def fake_repo(tmp_path: Path, repo_root: Path) -> Path:
+    """A throwaway git repo carrying just enough of the tree to install from.
+
+    Self-install fires when --project resolves to the same git toplevel as the
+    script's own repo root, so this is how that branch gets exercised without
+    touching the real checkout.
+    """
+    fake = tmp_path / "fake_repo"
+    fake.mkdir()
+    for rel in ("setup/claude-code", "core", "platforms/claude-code"):
+        source = repo_root / rel
+        if source.exists():
+            shutil.copytree(source, fake / rel, dirs_exist_ok=True)
+    # ap_launcher.py is copied to .advanced-plans/bin/ap.py well before the
+    # runtime-dirs block. Omitting it stops the installer early, which would
+    # leave every test below passing because the code under test never ran.
+    for rel in ("VERSION", "platforms/python/ap_launcher.py"):
+        source = repo_root / rel
+        if source.exists():
+            (fake / rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, fake / rel)
+    subprocess.run(["git", "init", "-q"], cwd=str(fake), capture_output=True)
+    return fake
+
+
+def _assert_reached_runtime_dirs(result, host: str):
+    """Guard against the installer dying before the code under test.
+
+    Every assertion in the self-install tests is about what the runtime-dirs
+    block does. If the installer exits before reaching it, those assertions
+    hold trivially and the test passes without testing anything.
+    """
+    assert "Installing runtime dirs" in result.stdout, (
+        f"{host} never reached the runtime-dirs block, so this test proved "
+        f"nothing about it.\nstdout: {result.stdout}\nstderr: {result.stderr}"
+    )
+
+
 # ---------------------------------------------------------------------------
-# S1 Tests: settings.json preservation
+# S1 - settings.json preservation
 # ---------------------------------------------------------------------------
 
-class TestS1_SettingsPreservation:
-    """S1: installers must not truncate existing settings.json."""
+class TestS1BashSettingsPreservation:
+    """install.sh must never truncate a settings.json it did not write."""
 
-    def test_bash_available_skip(self):
-        """Test that bash availability is detected. This test always passes but documents the check."""
-        if not _bash_available():
-            pytest.skip(_skip_reason("bash"))
+    def test_no_existing_settings_json_is_written_normally(
+        self, project_dir: Path, install_sh: Path, repo_root: Path
+    ):
+        _skip_bash()
+        result = _run_sh(install_sh, "--project", _fwd(project_dir), cwd=repo_root)
+        assert result.returncode == 0, f"install failed: {result.stderr}"
 
-    def test_pwsh_available_skip(self):
-        """Test that pwsh availability is detected. This test always passes but documents the check."""
-        if not _pwsh_available():
-            pytest.skip(_skip_reason("pwsh"))
-
-    def test_sh_no_existing_settings_json(self, tmp_path: Path, install_sh: Path, repo_root: Path):
-        """S1: with no existing settings.json, install.sh writes settings.json (no .planning.json).
-        
-        Note: This test is skipped on Windows because subprocess cannot reliably invoke
-        Git Bash with POSIX paths from Python. The PowerShell equivalent test passes.
-        """
-        if not _bash_available():
-            pytest.skip(_skip_reason("bash"))
-        if sys.platform == "win32":
-            pytest.skip("bash tests unreliable on Windows from Python subprocess - PowerShell tests cover S1")
-
-        project_dir = tmp_path / "project"
-        project_dir.mkdir()
-        claude_dir = project_dir / ".claude"
-        claude_dir.mkdir()
-
-        result = subprocess.run(
-            ["bash", str(install_sh), "--project", str(project_dir)],
-            cwd=str(repo_root),
-            capture_output=True,
-            text=True,
+        settings = project_dir / ".claude" / "settings.json"
+        planning = project_dir / ".claude" / "settings.planning.json"
+        assert settings.exists(), f"settings.json should be written. stderr: {result.stderr}"
+        assert not planning.exists(), (
+            "settings.planning.json must NOT be written when settings.json was "
+            "the installer's own to create"
         )
-
-        settings_json = claude_dir / "settings.json"
-        settings_planning = claude_dir / "settings.planning.json"
-
-        assert settings_json.exists(), f"settings.json should be written. stderr: {result.stderr}"
-        assert not settings_planning.exists(), "settings.planning.json should NOT be written when settings.json was created"
-
-        content = json.loads(settings_json.read_text(encoding="utf-8"))
+        content = json.loads(settings.read_text(encoding="utf-8"))
         assert "permissions" in content
         assert "planning" in content
 
-    def test_sh_existing_settings_json_preserved(self, tmp_path: Path, install_sh: Path, repo_root: Path):
-        """S1: with existing settings.json, install.sh preserves it byte-identical and writes .planning.json.
-        
-        Note: This test is skipped on Windows because subprocess cannot reliably invoke
-        Git Bash with POSIX paths from Python. The PowerShell equivalent test passes.
-        """
-        if not _bash_available():
-            pytest.skip(_skip_reason("bash"))
-        if sys.platform == "win32":
-            pytest.skip("bash tests unreliable on Windows from Python subprocess - PowerShell tests cover S1")
+    def test_existing_settings_json_preserved_byte_identical(
+        self, project_dir: Path, install_sh: Path, repo_root: Path
+    ):
+        _skip_bash()
+        settings, original = _seed_settings(project_dir)
 
-        project_dir = tmp_path / "project"
-        project_dir.mkdir()
-        claude_dir = project_dir / ".claude"
-        claude_dir.mkdir()
+        result = _run_sh(install_sh, "--project", _fwd(project_dir), cwd=repo_root)
+        assert result.returncode == 0, f"install failed: {result.stderr}"
 
-        # Create existing settings.json with user content
-        settings_json = claude_dir / "settings.json"
-        original_content = json.dumps(EXISTING_USER_SETTINGS, indent=2)
-        settings_json.write_text(original_content, encoding="utf-8")
-
-        result = subprocess.run(
-            ["bash", str(install_sh), "--project", str(project_dir)],
-            cwd=str(repo_root),
-            capture_output=True,
-            text=True,
+        assert settings.read_text(encoding="utf-8") == original, (
+            "settings.json must be preserved byte-identical"
         )
-
-        settings_planning = claude_dir / "settings.planning.json"
-
-        # Original settings.json must be byte-identical
-        assert settings_json.exists(), "settings.json should still exist"
-        preserved_content = settings_json.read_text(encoding="utf-8")
-        assert preserved_content == original_content, "settings.json must be preserved byte-identical"
-
-        # Planning settings should be written to .planning.json
-        assert settings_planning.exists(), f"settings.planning.json should be written. stdout: {result.stdout}, stderr: {result.stderr}"
-        planning_content = json.loads(settings_planning.read_text(encoding="utf-8"))
+        planning = project_dir / ".claude" / "settings.planning.json"
+        assert planning.exists(), (
+            "settings.planning.json should carry the planning config instead. "
+            f"stdout: {result.stdout}"
+        )
+        planning_content = json.loads(planning.read_text(encoding="utf-8"))
         assert "permissions" in planning_content
         assert "planning" in planning_content
 
-    def test_sh_dry_run_reports_branch(self, tmp_path: Path, install_sh: Path, repo_root: Path):
-        """S1: dry-run must report which branch would be taken and write nothing.
-        
-        Note: This test is skipped on Windows because subprocess cannot reliably invoke
-        Git Bash with POSIX paths from Python. The PowerShell equivalent test passes.
-        """
-        if not _bash_available():
-            pytest.skip(_skip_reason("bash"))
-        if sys.platform == "win32":
-            pytest.skip("bash tests unreliable on Windows from Python subprocess - PowerShell tests cover S1")
+    def test_dry_run_reports_the_planning_branch_and_writes_nothing(
+        self, project_dir: Path, install_sh: Path, repo_root: Path
+    ):
+        _skip_bash()
+        settings, original = _seed_settings(project_dir)
 
-        project_dir = tmp_path / "project"
-        project_dir.mkdir()
-        claude_dir = project_dir / ".claude"
-        claude_dir.mkdir()
-
-        # Create existing settings.json
-        settings_json = claude_dir / "settings.json"
-        settings_json.write_text(json.dumps(EXISTING_USER_SETTINGS), encoding="utf-8")
-
-        result = subprocess.run(
-            ["bash", str(install_sh), "--project", str(project_dir), "--dry-run"],
-            cwd=str(repo_root),
-            capture_output=True,
-            text=True,
+        result = _run_sh(
+            install_sh, "--project", _fwd(project_dir), "--dry-run", cwd=repo_root
         )
 
-        # Dry run output should mention the branch decision
-        assert "settings.planning.json" in result.stdout or "exists" in result.stdout.lower(), \
-            f"dry-run should mention settings.planning.json. stdout: {result.stdout}"
-
-    def test_ps1_no_existing_settings_json(self, tmp_path: Path, install_ps1: Path, repo_root: Path):
-        """S1: with no existing settings.json, install.ps1 writes settings.json (no .planning.json)."""
-        if not _pwsh_available():
-            pytest.skip(_skip_reason("pwsh"))
-
-        project_dir = tmp_path / "project"
-        project_dir.mkdir()
-        claude_dir = project_dir / ".claude"
-        claude_dir.mkdir()
-
-        result = subprocess.run(
-            ["pwsh", "-ExecutionPolicy", "Bypass", "-File", str(install_ps1), "-Project", str(project_dir)],
-            cwd=str(repo_root),
-            capture_output=True,
-            text=True,
+        assert "settings.planning.json" in result.stdout, (
+            f"dry-run must name the branch it would take. stdout: {result.stdout}"
+        )
+        assert settings.read_text(encoding="utf-8") == original
+        assert not (project_dir / ".claude" / "settings.planning.json").exists(), (
+            "a dry run must not write the planning file it only described"
         )
 
-        settings_json = claude_dir / "settings.json"
-        settings_planning = claude_dir / "settings.planning.json"
 
-        assert settings_json.exists(), "settings.json should be written when no existing file"
-        assert not settings_planning.exists(), "settings.planning.json should NOT be written when settings.json was created"
+class TestS1PwshSettingsPreservation:
+    """install.ps1 must behave identically to install.sh."""
 
-        content = json.loads(settings_json.read_text(encoding="utf-8"))
+    def test_no_existing_settings_json_is_written_normally(
+        self, project_dir: Path, install_ps1: Path, repo_root: Path
+    ):
+        _skip_pwsh()
+        result = _run_ps1(install_ps1, "-Project", str(project_dir), cwd=repo_root)
+        assert result.returncode == 0, f"install failed: {result.stderr}"
+
+        settings = project_dir / ".claude" / "settings.json"
+        planning = project_dir / ".claude" / "settings.planning.json"
+        assert settings.exists(), f"settings.json should be written. stderr: {result.stderr}"
+        assert not planning.exists()
+        content = json.loads(settings.read_text(encoding="utf-8"))
         assert "permissions" in content
         assert "planning" in content
 
-    def test_ps1_existing_settings_json_preserved(self, tmp_path: Path, install_ps1: Path, repo_root: Path):
-        """S1: with existing settings.json, install.ps1 preserves it and writes .planning.json."""
-        if not _pwsh_available():
-            pytest.skip(_skip_reason("pwsh"))
+    def test_existing_settings_json_preserved_byte_identical(
+        self, project_dir: Path, install_ps1: Path, repo_root: Path
+    ):
+        _skip_pwsh()
+        settings, original = _seed_settings(project_dir)
 
-        project_dir = tmp_path / "project"
-        project_dir.mkdir()
-        claude_dir = project_dir / ".claude"
-        claude_dir.mkdir()
+        result = _run_ps1(install_ps1, "-Project", str(project_dir), cwd=repo_root)
+        assert result.returncode == 0, f"install failed: {result.stderr}"
 
-        # Create existing settings.json with user content
-        settings_json = claude_dir / "settings.json"
-        original_content = json.dumps(EXISTING_USER_SETTINGS, indent=2)
-        settings_json.write_text(original_content, encoding="utf-8")
-
-        result = subprocess.run(
-            ["pwsh", "-ExecutionPolicy", "Bypass", "-File", str(install_ps1), "-Project", str(project_dir)],
-            cwd=str(repo_root),
-            capture_output=True,
-            text=True,
+        assert settings.read_text(encoding="utf-8") == original, (
+            "settings.json must be preserved byte-identical"
         )
-
-        settings_planning = claude_dir / "settings.planning.json"
-
-        # Original settings.json must be byte-identical
-        assert settings_json.exists(), "settings.json should still exist"
-        preserved_content = settings_json.read_text(encoding="utf-8")
-        assert preserved_content == original_content, "settings.json must be preserved byte-identical"
-
-        # Planning settings should be written to .planning.json
-        assert settings_planning.exists(), "settings.planning.json should be written when settings.json existed"
-        planning_content = json.loads(settings_planning.read_text(encoding="utf-8"))
+        planning = project_dir / ".claude" / "settings.planning.json"
+        assert planning.exists(), f"stdout: {result.stdout}"
+        planning_content = json.loads(planning.read_text(encoding="utf-8"))
         assert "permissions" in planning_content
         assert "planning" in planning_content
 
-    def test_ps1_dry_run_reports_branch(self, tmp_path: Path, install_ps1: Path, repo_root: Path):
-        """S1: PowerShell dry-run must report which branch would be taken."""
-        if not _pwsh_available():
-            pytest.skip(_skip_reason("pwsh"))
+    def test_dry_run_reports_the_planning_branch_and_writes_nothing(
+        self, project_dir: Path, install_ps1: Path, repo_root: Path
+    ):
+        _skip_pwsh()
+        settings, original = _seed_settings(project_dir)
 
-        project_dir = tmp_path / "project"
-        project_dir.mkdir()
-        claude_dir = project_dir / ".claude"
-        claude_dir.mkdir()
-
-        # Create existing settings.json
-        settings_json = claude_dir / "settings.json"
-        settings_json.write_text(json.dumps(EXISTING_USER_SETTINGS), encoding="utf-8")
-
-        result = subprocess.run(
-            ["pwsh", "-ExecutionPolicy", "Bypass", "-File", str(install_ps1), "-Project", str(project_dir), "-DryRun"],
-            cwd=str(repo_root),
-            capture_output=True,
-            text=True,
+        result = _run_ps1(
+            install_ps1, "-Project", str(project_dir), "-DryRun", cwd=repo_root
         )
 
-        # Dry run output should mention the branch decision
-        assert "settings.planning.json" in result.stdout or "exists" in result.stdout.lower(), \
-            "dry-run should mention settings.planning.json when settings.json exists"
+        assert "settings.planning.json" in result.stdout, (
+            f"dry-run must name the branch it would take. stdout: {result.stdout}"
+        )
+        assert settings.read_text(encoding="utf-8") == original
+        assert not (project_dir / ".claude" / "settings.planning.json").exists()
 
 
 # ---------------------------------------------------------------------------
-# S3 Tests: Do-Junction safety (PowerShell)
+# S3b - do_ln must refuse a real directory rather than nest inside it
 # ---------------------------------------------------------------------------
 
-class TestS3_JunctionSafety:
-    """S3: Do-Junction must refuse to delete non-reparse-point destinations."""
+class TestS3bBashLnSafety:
+    """`ln -sf SRC DEST` where DEST is a real directory silently creates
+    DEST/basename(SRC). The pre-fix installer did exactly that and exited 0."""
 
-    def test_pwsh_available_skip(self):
-        """Test that pwsh availability is detected."""
-        if not _pwsh_available():
-            pytest.skip(_skip_reason("pwsh"))
+    def test_refuses_real_directory_and_creates_no_nested_link(
+        self, project_dir: Path, install_sh: Path, repo_root: Path
+    ):
+        _skip_bash()
+        skills = project_dir / ".claude" / "skills"
+        skills.mkdir()
+        keeper = skills / "keep.txt"
+        keeper.write_text("must not be deleted", encoding="utf-8")
 
-    def test_junction_refuses_real_directory(self, tmp_path: Path, install_ps1: Path, repo_root: Path):
-        """S3: Do-Junction against a real non-empty directory must leave it intact and exit non-zero."""
-        if not _pwsh_available():
-            pytest.skip(_skip_reason("pwsh"))
-
-        # We test Do-Junction indirectly via the installer's -Symlink -Global path
-        # Create a fake global skills directory with content
-        home_dir = tmp_path / "fake_home"
-        home_dir.mkdir()
-        os.environ["USERPROFILE"] = str(home_dir)
-
-        global_claude = home_dir / ".claude"
-        global_claude.mkdir()
-        skills_dir = global_claude / "skills"
-        skills_dir.mkdir()
-
-        # Put a file in the skills directory to make it non-empty
-        (skills_dir / "important_skill").mkdir()
-        (skills_dir / "important_skill" / "SKILL.md").write_text(
-            "# Important Skill\nThis should not be deleted.\n",
-            encoding="utf-8"
+        result = _run_sh(
+            install_sh, "--project", _fwd(project_dir), "--symlink", cwd=repo_root
         )
 
-        # Run install with -Symlink -Global
-        result = subprocess.run(
-            ["pwsh", "-ExecutionPolicy", "Bypass", "-File", str(install_ps1), "-Global", "-Symlink"],
-            cwd=str(repo_root),
-            capture_output=True,
-            text=True,
-            env={**os.environ, "USERPROFILE": str(home_dir)},
+        assert result.returncode != 0, (
+            "installing over a real skills directory must fail, not succeed "
+            f"quietly. stdout: {result.stdout}"
+        )
+        assert "real directory" in result.stderr.lower(), (
+            f"the error must say why it refused. stderr: {result.stderr}"
+        )
+        assert _fwd(skills) in _fwd(result.stderr), (
+            f"the error must name the path it refused. stderr: {result.stderr}"
+        )
+        assert keeper.read_text(encoding="utf-8") == "must not be deleted", (
+            "the user's directory contents must survive"
+        )
+        assert not (skills / "skills").exists(), (
+            "a nested link inside the real directory is the S3b bug"
         )
 
-        # If the directory still exists with its content, the test passes
-        if skills_dir.exists():
-            important_file = skills_dir / "important_skill" / "SKILL.md"
-            if important_file.exists():
-                # Content preserved — this is the safe behavior
-                pass
-            else:
-                # File deleted — this would be the bug
-                pytest.fail("S3 bug: real directory content was deleted by Do-Junction")
+    def test_dry_run_reports_the_refusal_it_would_make(
+        self, project_dir: Path, install_sh: Path, repo_root: Path
+    ):
+        _skip_bash()
+        skills = project_dir / ".claude" / "skills"
+        skills.mkdir()
 
-
-# ---------------------------------------------------------------------------
-# S3b Tests: POSIX ln -sf safety
-# ---------------------------------------------------------------------------
-
-class TestS3b_LnSafety:
-    """S3b: ln -sf must not create nested links inside existing directories."""
-
-    def test_bash_available_skip(self):
-        """Test that bash availability is detected."""
-        if not _bash_available():
-            pytest.skip(_skip_reason("bash"))
-
-    def test_ln_refuses_real_directory(self, tmp_path: Path, install_sh: Path, repo_root: Path):
-        """S3b: linking over an existing real directory must not produce a nested link.
-        
-        Note: This test is skipped on Windows because subprocess cannot reliably invoke
-        Git Bash with POSIX paths from Python. The PowerShell S3 test covers the same safety pattern.
-        """
-        if not _bash_available():
-            pytest.skip(_skip_reason("bash"))
-        if sys.platform == "win32":
-            pytest.skip("bash tests unreliable on Windows from Python subprocess - PowerShell S3 test covers same pattern")
-
-        # Test the do_ln helper directly by creating a scenario
-        # where a real directory exists at the destination
-        project_dir = tmp_path / "project"
-        project_dir.mkdir()
-        claude_dir = project_dir / ".claude"
-        claude_dir.mkdir()
-
-        # Create a real skills directory with content
-        skills_dir = claude_dir / "skills"
-        skills_dir.mkdir()
-        (skills_dir / "existing_file.txt").write_text("should not be deleted", encoding="utf-8")
-
-        # Create source directory
-        source_skills = tmp_path / "source_skills"
-        source_skills.mkdir()
-        (source_skills / "test_skill").mkdir()
-        (source_skills / "test_skill" / "SKILL.md").write_text("# Test", encoding="utf-8")
-
-        # Run install with --symlink (not self-install, so it uses do_ln)
-        # This should fail because skills_dir is a real directory
-        result = subprocess.run(
-            ["bash", str(install_sh), "--project", str(project_dir), "--symlink"],
-            cwd=str(repo_root),
-            capture_output=True,
-            text=True,
+        result = _run_sh(
+            install_sh, "--project", _fwd(project_dir), "--symlink", "--dry-run",
+            cwd=repo_root,
         )
 
-        # The install should fail with an error message about the real directory
-        # OR the directory should still exist with its content preserved
-        if skills_dir.exists() and (skills_dir / "existing_file.txt").exists():
-            # Content preserved — safe behavior (either refused or handled correctly)
-            pass
-        elif "real directory" in result.stderr.lower() or "exists as a real" in result.stderr.lower():
-            # Correctly refused — this is the safe behavior
-            pass
-        else:
-            # Directory was removed — this is the bug
-            pytest.fail(f"S3b bug: real directory was removed or nested. stderr: {result.stderr}")
+        assert "would refuse" in result.stdout, (
+            "a dry run that reports a link where the real run refuses is a "
+            f"report of work that will not happen. stdout: {result.stdout}"
+        )
+        assert not (skills / "skills").exists()
 
-    def test_ln_replaces_symlink(self, tmp_path: Path, install_sh_posix: str, repo_root_posix: str):
-        """S3b: ln -sf should replace an existing symlink without error."""
-        if not _bash_available():
-            pytest.skip(_skip_reason("bash"))
-
-        # Skip on Windows - symlink privileges require admin
-        if sys.platform == "win32":
-            pytest.skip("symlink creation requires elevated privileges on Windows - skipping POSIX symlink test")
-
-        project_dir = tmp_path / "project"
-        project_dir.mkdir()
-        claude_dir = project_dir / ".claude"
-        claude_dir.mkdir()
-
-        # Create source directory
-        source_skills = tmp_path / "source_skills"
-        source_skills.mkdir()
-        (source_skills / "test_skill").mkdir()
-
-        # Create an existing symlink
-        skills_link = claude_dir / "skills"
+    def test_replaces_an_existing_symlink(
+        self, project_dir: Path, install_sh: Path, repo_root: Path, tmp_path: Path
+    ):
+        _skip_bash()
         old_target = tmp_path / "old_target"
         old_target.mkdir()
-        skills_link.symlink_to(old_target)
+        link = project_dir / ".claude" / "skills"
+        try:
+            link.symlink_to(old_target, target_is_directory=True)
+        except (OSError, NotImplementedError) as exc:
+            pytest.skip(
+                f"cannot create a directory symlink here ({exc}) - on Windows "
+                "this needs Developer Mode or elevation. This is a skip, not a "
+                "pass: the replace-a-symlink path was not verified."
+            )
 
-        # Now run install with --symlink
-        result = subprocess.run(
-            ["bash", install_sh_posix, "--project", str(project_dir), "--symlink"],
-            cwd=repo_root_posix,
-            capture_output=True,
-            text=True,
+        result = _run_sh(
+            install_sh, "--project", _fwd(project_dir), "--symlink", cwd=repo_root
         )
 
-        # The symlink should now point to source_skills
-        # (This test may need adjustment based on exact self-install detection)
+        assert result.returncode == 0, (
+            f"replacing an existing symlink must succeed. stderr: {result.stderr}"
+        )
+        assert link.is_symlink() or link.is_dir(), "the link must still be there"
+        resolved = link.resolve()
+        assert resolved != old_target.resolve(), (
+            f"the link must be repointed away from the old target, got {resolved}"
+        )
+        assert any(resolved.iterdir()), "the link must point at the real skills tree"
 
 
 # ---------------------------------------------------------------------------
-# Combined behavior tests
+# S3 / self-install - the caller must not bypass the junction guard
 # ---------------------------------------------------------------------------
 
-class TestCombinedBehavior:
-    """Tests that verify the complete installer behavior."""
+class TestSelfInstallDoesNotBypassGuards:
+    """Do-Junction refuses a non-reparse-point destination, but that guard is
+    worth nothing if its caller has already deleted the directory."""
 
-    def test_sh_syntax_check(self, install_sh: Path):
-        """Verify install.sh has valid bash syntax."""
-        if not _bash_available():
-            pytest.skip(_skip_reason("bash"))
-        if sys.platform == "win32":
-            # On Windows, run bash -n directly with the Windows path - bash can usually access it
-            result = subprocess.run(
-                ["bash", "-n", str(install_sh)],
-                capture_output=True,
-                text=True,
-            )
-            if result.returncode != 0 and "No such file" in result.stderr:
-                pytest.skip(f"bash could not access the script path on Windows")
-            assert result.returncode == 0, f"install.sh syntax error:\n{result.stderr}"
-        else:
-            result = subprocess.run(
-                ["bash", "-n", str(install_sh)],
-                capture_output=True,
-                text=True,
-            )
-            assert result.returncode == 0, f"install.sh syntax error:\n{result.stderr}"
+    def test_ps1_self_install_refuses_a_real_skills_directory(self, fake_repo: Path):
+        _skip_pwsh()
+        skills = fake_repo / ".claude" / "skills"
+        skills.mkdir(parents=True)
+        keeper = skills / "keep.txt"
+        keeper.write_text("must not be deleted", encoding="utf-8")
 
-    def test_ps1_syntax_check(self, install_ps1: Path):
-        """Verify install.ps1 has valid PowerShell syntax."""
-        if not _pwsh_available():
-            pytest.skip(_skip_reason("pwsh"))
+        script = fake_repo / "setup" / "claude-code" / "install.ps1"
+        result = _run_ps1(script, "-Project", str(fake_repo), cwd=fake_repo)
 
-        # Write a temp script to avoid escaping issues
-        import tempfile
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.ps1', delete=False) as f:
-            f.write(f"""
-$errors = $null
-$content = Get-Content -Raw -Path '{install_ps1}'
-$null = [System.Management.Automation.PSParser]::Tokenize($content, [ref]$errors)
-if ($errors.Count -gt 0) {{
-    Write-Error "Syntax errors found"
-    exit 1
-}}
-Write-Host "PowerShell syntax OK"
-exit 0
-""")
-            temp_script = f.name
+        assert "SELF-INSTALL" in result.stdout, (
+            "the fixture must actually reach the self-install branch. "
+            f"stdout: {result.stdout}"
+        )
+        _assert_reached_runtime_dirs(result, "install.ps1")
+        assert keeper.exists() and keeper.read_text(encoding="utf-8") == "must not be deleted", (
+            "self-install recursively deleted a real skills directory: the "
+            f"Do-Junction guard was bypassed by its caller. stdout: {result.stdout}"
+        )
+        assert result.returncode != 0, (
+            "refusing to install over a real directory must be reported as failure"
+        )
 
-        try:
-            result = subprocess.run(
-                ["pwsh", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", temp_script],
-                capture_output=True,
-                text=True,
-            )
-            assert result.returncode == 0, f"install.ps1 syntax error:\n{result.stderr}"
-        finally:
-            os.unlink(temp_script)
+    def test_ps1_self_install_refuses_a_real_agents_directory(self, fake_repo: Path):
+        _skip_pwsh()
+        agents = fake_repo / ".claude" / "agents"
+        agents.mkdir(parents=True)
+        keeper = agents / "my-own-agent.md"
+        keeper.write_text("# mine", encoding="utf-8")
+
+        script = fake_repo / "setup" / "claude-code" / "install.ps1"
+        result = _run_ps1(script, "-Project", str(fake_repo), cwd=fake_repo)
+
+        assert "SELF-INSTALL" in result.stdout, f"stdout: {result.stdout}"
+        _assert_reached_runtime_dirs(result, "install.ps1")
+        assert keeper.exists(), (
+            "self-install recursively deleted a real agents directory, taking "
+            f"the user's own agents with it. stdout: {result.stdout}"
+        )
+
+    def test_sh_self_install_refuses_a_real_skills_directory(self, fake_repo: Path):
+        _skip_bash()
+        skills = fake_repo / ".claude" / "skills"
+        skills.mkdir(parents=True)
+        keeper = skills / "keep.txt"
+        keeper.write_text("must not be deleted", encoding="utf-8")
+
+        script = fake_repo / "setup" / "claude-code" / "install.sh"
+        result = _run_sh(script, "--project", _fwd(fake_repo), cwd=fake_repo)
+
+        assert "Self-install detected" in result.stdout, (
+            "the fixture must actually reach the self-install branch. "
+            f"stdout: {result.stdout}"
+        )
+        _assert_reached_runtime_dirs(result, "install.sh")
+        assert result.returncode != 0
+        assert keeper.read_text(encoding="utf-8") == "must not be deleted"
+
+
+# ---------------------------------------------------------------------------
+# Syntax and coverage
+# ---------------------------------------------------------------------------
+
+class TestSyntaxAndCoverage:
+
+    def test_sh_syntax(self, install_sh: Path):
+        _skip_bash()
+        result = _run([GIT_BASH, "-n", _fwd(install_sh)])
+        assert result.returncode == 0, f"install.sh syntax error:\n{result.stderr}"
+
+    def test_ps1_syntax(self, install_ps1: Path, tmp_path: Path):
+        _skip_pwsh()
+        checker = tmp_path / "check.ps1"
+        checker.write_text(
+            "$errors = $null\n"
+            f"$content = Get-Content -Raw -LiteralPath '{install_ps1}'\n"
+            "$null = [System.Management.Automation.PSParser]::Tokenize("
+            "$content, [ref]$errors)\n"
+            "if ($errors.Count -gt 0) { $errors | ForEach-Object "
+            "{ Write-Error $_.Message }; exit 1 }\n"
+            "exit 0\n",
+            encoding="utf-8",
+        )
+        result = _run(
+            [PWSH, "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(checker)]
+        )
+        assert result.returncode == 0, f"install.ps1 syntax error:\n{result.stderr}"
+
+    def test_at_least_one_host_was_exercised(self):
+        """Fail if every installer test in this file skipped.
+
+        A file of skipped tests reports green and proves nothing, which is the
+        exact defect class these tests exist to catch.
+        """
+        hosts = []
+        if _bash_available():
+            hosts.append(f"Git Bash ({GIT_BASH})")
+        if _pwsh_available():
+            hosts.append(f"pwsh ({PWSH})")
+        assert hosts, (
+            "Neither Git Bash nor pwsh is available, so every installer test in "
+            "this file skipped and this run proved nothing about the "
+            "installers. Install one, or run these tests on a host that has one."
+        )
 
 
 if __name__ == "__main__":

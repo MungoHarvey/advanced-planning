@@ -86,7 +86,18 @@ do_ln() {
     # (prevents creating the link inside an existing real directory).
     # Only removes DEST if it is already a symlink; refuses real directories.
     if [ "$DRY_RUN" = true ]; then
-        echo "  [dry-run] ln -sfn $1 $2"
+        # Take the same decision the real branch would take. A dry run that
+        # reports a link where the real run refuses is a report of work that
+        # will not happen.
+        if [ -L "$2" ]; then
+            echo "  [dry-run] rm -f $2 (existing symlink); ln -sf $1 $2"
+        elif [ -d "$2" ]; then
+            echo "  [dry-run] ERROR: $2 exists as a real directory — would refuse and exit 1"
+        elif [ -e "$2" ]; then
+            echo "  [dry-run] ERROR: $2 exists as a regular file — would refuse and exit 1"
+        else
+            echo "  [dry-run] ln -sf $1 $2"
+        fi
     else
         # Check if destination exists and is a real directory (not a symlink)
         if [ -e "$2" ] || [ -L "$2" ]; then
