@@ -444,10 +444,22 @@ someone eventually.
   `references/orchestrator-prompt.md`. The test passes in isolation, passes at
   file scope (124/124), and passed in CI on 3.10/3.11/3.12 for the same commit;
   the contents are byte-identical by construction, so exit `1` was impossible
-  and exit `2` is the only mechanism consistent with the evidence. Not yet
-  fixed. `platforms/claude-code/install.sh` does distinguish the three (it
-  reports a `diff` exit `>= 2` as its own outcome); the `setup/*` installers do
-  not.
+  and exit `2` is the only mechanism consistent with the evidence.
+
+  **Fixed in 0.19.0**, and the fix corrected the description above. The helper
+  did return `2` — it passed `diff`'s status through — so the loss was at the
+  _caller_: `check_collision` tested `if ! files_identical`, which reads `1` and
+  `2` alike, and then printed `ERROR: collision detected` with two SHA-256
+  values beneath it as though they were the evidence for a divergence nobody
+  had observed. `files_identical` now documents three return codes and the
+  caller branches on them, saying `could not compare` and refusing without
+  claiming a collision. Two further holes closed with it: the helper had no
+  guard for a missing operand, and its no-`diff` fallback hashed both files to
+  the literal `NO_SHA256`, compared them equal, and reported _identical_ — a
+  branch that could not fail. `TestComparisonHelpers` in
+  `test_adapter_lifecycle.py` covers all of it, parametrised over both
+  installers through the existing `adapter` fixture so a third adapter is
+  covered by adding one tuple.
 
 - **F17 — `sha256_file` returns a value that is not a hash when the path
   contains a backslash.** GNU coreutils escapes a checksum line whose filename
@@ -463,7 +475,17 @@ someone eventually.
   Cosmetic in that the value is only printed in the collision error — the
   comparison itself uses `diff` — but the printed SHA is not one, so anyone who
   pastes it into `sha256sum -c` or compares it by eye gets a false answer from
-  a message whose whole job is evidence. Not yet fixed.
+  a message whose whole job is evidence.
+
+  **Fixed in 0.19.0.** The escape prefix is stripped and the result is then
+  _checked_ to be 64 hex digits rather than assumed to be; anything else is
+  reported as `UNREADABLE`, so a value that is not a hash can no longer be
+  printed as if it were. Proven by hashing one unchanged file under both
+  spellings of its path: `bfe5ed57e6e3…` and `\bfe5ed57e6e3…` before, the same
+  digest after. Note the PowerShell hosts never had either F16 or F17 —
+  `Get-FileHash` has no line to escape and no exit code to conflate — so the
+  two hosts of the same installer had been disagreeing about what a refusal
+  means. The shell now agrees with PowerShell.
 
 - **F18 — self-install reports `+ skills -> core/skills` without reading the
   destination back.** `setup/claude-code/install.sh` guards those `ln -sf`

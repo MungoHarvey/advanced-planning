@@ -70,6 +70,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   byte-for-byte and rerunning: **4 of 4 fail against it**, all 4 pass with the
   fix, and the working tree was restored byte-identical by sha256.
 
+- **The `setup/*` collision check no longer reports a divergence it never
+  observed, and no longer prints a SHA-256 that is not one.** Two defects in
+  the same 21-line helper block, which `setup/codex/install.sh` and
+  `setup/opencode/install.sh` carried byte-identically — the second instance
+  this release of one guard being copied and only one copy maintained.
+
+  `check_collision` tested `if ! files_identical`, and `diff -q` has three
+  outcomes, not two: `0` identical, `1` differ, `>= 2` _could not compare_. The
+  helper passed that status through faithfully; the caller collapsed it, so a
+  comparison that never happened was announced as `ERROR: collision detected`
+  with two hashes printed beneath it as though they were its evidence. That is
+  the mechanism behind a once-only suite failure on 2026-08-31 in which
+  `test_nested_file_divergence_detected[opencode-sh]` named a file the test had
+  never touched. `files_identical` now documents three return codes, guards a
+  missing operand, and the caller says _could not compare_ and refuses without
+  asserting a divergence. Its no-`diff` fallback was a third hole: with no hash
+  tool present both files hashed to the literal `NO_SHA256`, compared equal,
+  and every collision in the tree was waved through as identical.
+
+  `sha256_file` returned `\<64 hex>` for any path containing a backslash —
+  coreutils escapes a checksum line whose filename needs it, prefixing the
+  whole line — so on Windows the value printed into the collision error was not
+  a digest at all. Measured on one unchanged file: `bfe5ed57e6e3…` by its POSIX
+  name, `\bfe5ed57e6e3…` by its Windows one. The prefix is stripped and the
+  result is now _checked_ to be 64 hex digits rather than assumed to be;
+  anything else reports `UNREADABLE`, so a non-hash can never again be printed
+  as one.
+
+  Neither defect ever existed in `install.ps1`, which compares with
+  `Get-FileHash` — no line to escape, no exit code to conflate. The two hosts
+  of the same installer had been disagreeing about what a refusal means, and
+  the shell now agrees with PowerShell.
+
+  `TestComparisonHelpers` extracts the shell functions from the shipped script
+  rather than restating them, and runs through the existing `adapter` fixture,
+  so adding an adapter to `_ADAPTERS` covers it automatically. Proven the same
+  way as above: **6 of the 8 parametrised cases fail against the pre-fix
+  installers**, all 8 pass with the fix, both files restored byte-identical by
+  sha256. The other two are a regression guard on the `diff` branch, which was
+  already correct — recorded as such rather than counted as proof.
+
 ---
 
 ## [0.18.0] - 2026-08-31
