@@ -92,25 +92,85 @@ do_mkdir() {
 }
 
 sha256_file() {
+    # GNU coreutils escapes a checksum line whose filename contains a backslash
+    # or a newline: it prefixes the whole line with `\` and escapes those
+    # characters inside the name. On Windows an ordinary path does exactly that,
+    # so `sha256sum "$1" | cut -d' ' -f1` returned `\<64 hex>` - a string that is
+    # not a hash, printed into the collision error the user is meant to act on.
+    # Measured: one file hashed by its POSIX and its Windows spelling gave
+    # bfe5ed57e6e3... and \bfe5ed57e6e3....
+    #
+    # The escape prefix is stripped, and the result is then CHECKED to be 64 hex
+    # digits rather than assumed to be. A hash that could not be produced is
+    # reported as such; it is never allowed to look like one.
+    _line=""
     if command -v sha256sum >/dev/null 2>&1; then
-        sha256sum "$1" | cut -d' ' -f1
+        _line="$(sha256sum "$1" 2>/dev/null)" || _line=""
     elif command -v shasum >/dev/null 2>&1; then
-        shasum -a 256 "$1" | cut -d' ' -f1
+        _line="$(shasum -a 256 "$1" 2>/dev/null)" || _line=""
     else
         echo "NO_SHA256"
+        return 0
+    fi
+
+    _hash="${_line#\\}"
+    _hash="${_hash%% *}"
+    if [ ${#_hash} -eq 64 ]; then
+        case "$_hash" in
+            *[!0-9a-fA-F]*) echo "UNREADABLE" ;;
+            *) echo "$_hash" ;;
+        esac
+    else
+        echo "UNREADABLE"
     fi
 }
 
 files_identical() {
-    if command -v diff >/dev/null 2>&1; then
-        diff -q "$1" "$2" >/dev/null 2>&1
-        return $?
-    else
-        # Fallback: compare SHA-256
-        _h1="$(sha256_file "$1")"
-        _h2="$(sha256_file "$2")"
-        [ "$_h1" = "$_h2" ]
+    # Three outcomes, not two:
+    #   0  identical
+    #   1  differ
+    #   2  could not compare - no answer was obtained
+    #
+    # `diff -q` has exactly these three, and the old code did `return $?` on it,
+    # so every caller written as `if ! files_identical` read "could not compare"
+    # as "differs" and reported a divergence that had never been observed. The
+    # PowerShell host has never had this defect - it compares SHA-256 via
+    # Get-FileHash - so the two hosts of the same installer disagreed about what
+    # a refusal means. This makes the shell agree with PowerShell about the
+    # answer, and keeps the third state the shell needs and PowerShell does not.
+    if [ ! -f "$1" ] || [ ! -f "$2" ]; then
+        return 2
     fi
+
+    if command -v diff >/dev/null 2>&1; then
+        # Captured through `if`, never as a bare statement: `set -e` is in force
+        # at the top of this script and would abort the installer on diff's
+        # non-zero exit before $? was ever read.
+        if diff -q "$1" "$2" >/dev/null 2>&1; then
+            _drc=0
+        else
+            _drc=$?
+        fi
+        if [ "$_drc" -eq 0 ]; then
+            return 0
+        elif [ "$_drc" -eq 1 ]; then
+            return 1
+        fi
+        return 2
+    fi
+
+    # Fallback: compare SHA-256. Two sentinels have to be caught here, or this
+    # branch becomes a check that cannot fail - with neither diff nor sha256sum
+    # nor shasum present, both files hash to the literal "NO_SHA256", compare
+    # equal, and every collision in the tree is silently reported as identical.
+    _h1="$(sha256_file "$1")"
+    _h2="$(sha256_file "$2")"
+    case "$_h1" in NO_SHA256|UNREADABLE) return 2 ;; esac
+    case "$_h2" in NO_SHA256|UNREADABLE) return 2 ;; esac
+    if [ "$_h1" = "$_h2" ]; then
+        return 0
+    fi
+    return 1
 }
 
 # ---------------------------------------------------------------------------
@@ -286,20 +346,38 @@ check_collision() {
                 ap_rewrite_call_sites "$_tmp_file" "$_launcher"
                 _cmp_file="$_tmp_file"
             fi
-            if ! files_identical "$_cmp_file" "$_dst_file"; then
+            # Captured through `if`, never as a bare statement: `set -e` is in
+            # force and would abort before $? was read.
+            if files_identical "$_cmp_file" "$_dst_file"; then
+                _cmp_rc=0
+            else
+                _cmp_rc=$?
+            fi
+            if [ "$_cmp_rc" -ne 0 ]; then
                 _collision=true
                 _src_hash="$(sha256_file "$_cmp_file")"
                 _dst_hash="$(sha256_file "$_dst_file")"
                 if [ -n "$_tmp_file" ]; then
                     rm -f "$_tmp_file"
                 fi
-                echo "ERROR: collision detected for skill '$_skill_name'" >&2
+                if [ "$_cmp_rc" -eq 1 ]; then
+                    echo "ERROR: collision detected for skill '$_skill_name'" >&2
+                else
+                    # rc 2 - no comparison was obtained. Refusing is still the
+                    # right action, because the state is unknown; but calling it
+                    # a collision would assert a divergence nobody observed.
+                    echo "ERROR: could not compare skill '$_skill_name'" >&2
+                fi
                 echo "  Source:      $_src_file (SHA-256: $_src_hash)" >&2
                 if [ -n "$_launcher" ]; then
                     echo "  (source hashed as it would be installed, call sites rewritten)" >&2
                 fi
                 echo "  Installed:   $_dst_file (SHA-256: $_dst_hash)" >&2
-                echo "  Refusing to overwrite - silent divergence is the defect this check exists to catch." >&2
+                if [ "$_cmp_rc" -eq 1 ]; then
+                    echo "  Refusing to overwrite - silent divergence is the defect this check exists to catch." >&2
+                else
+                    echo "  Refusing to overwrite a file whose state could not be established." >&2
+                fi
                 return 1
             fi
             if [ -n "$_tmp_file" ]; then

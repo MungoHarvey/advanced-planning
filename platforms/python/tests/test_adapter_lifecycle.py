@@ -2058,3 +2058,256 @@ class TestDeprecatedCompanionsAreNotRecommended:
                 "no file under platforms/%s/ was scanned. The glob no longer "
                 "reaches that adapter, and a live recommendation there would "
                 "not be seen." % adapter)
+
+
+# ---------------------------------------------------------------------------
+# F16 / F17 -- the comparison helpers the collision check is built on
+# ---------------------------------------------------------------------------
+
+def _extract_shell_functions(script_path, names):
+    """Pull named top-level functions out of a shell script, verbatim.
+
+    The alternative -- retyping the helpers into the test -- would let the test
+    pass while the shipped script did something else, which is the defect class
+    this whole suite exists for. Anchoring on a line that is exactly ``}`` is
+    safe here because every nested close in these functions is indented.
+    """
+    text = _read(script_path)
+    out = {}
+    wanted = set(names)
+    lines = text.split("\n")
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        name = None
+        for candidate in wanted:
+            if line == "%s() {" % candidate:
+                name = candidate
+                break
+        if name is None:
+            i += 1
+            continue
+        body = [line]
+        i += 1
+        while i < len(lines) and lines[i] != "}":
+            body.append(lines[i])
+            i += 1
+        if i >= len(lines):
+            raise AssertionError(
+                "%s: function %s() has no closing brace at column 0"
+                % (script_path.name, name))
+        body.append("}")
+        out[name] = "\n".join(body)
+        i += 1
+    missing = wanted - set(out)
+    if missing:
+        raise AssertionError(
+            "%s: could not extract %s. The helpers were renamed or reshaped; "
+            "this test is now measuring nothing and must be updated rather "
+            "than deleted." % (script_path, ", ".join(sorted(missing))))
+    return out
+
+
+def _run_harness(tmp_path, script_path, functions, driver):
+    """Source the extracted functions and run a driver script against them."""
+    funcs = _extract_shell_functions(script_path, functions)
+    harness = tmp_path / "harness.sh"
+    parts = ["#!/bin/sh", "set -u", ""]
+    for name in functions:
+        parts.append(funcs[name])
+        parts.append("")
+    parts.append(driver)
+    with open(str(harness), "w", encoding="utf-8", newline="\n") as handle:
+        handle.write("\n".join(parts) + "\n")
+    proc = subprocess.Popen(
+        ["sh", str(harness)],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        universal_newlines=True, cwd=str(tmp_path),
+    )
+    out, err = proc.communicate(timeout=120)
+    return proc.returncode, out, err
+
+
+class TestComparisonHelpers:
+    """The two helpers `check_collision` decides on.
+
+    Both installers carry a byte-identical copy of these, and only one copy of
+    an earlier guard was ever maintained -- which is exactly how
+    platforms/claude-code/install.sh kept a defect that setup/claude-code had
+    already fixed. Parametrising over both is the point of this class, not a
+    convenience.
+    """
+
+    def test_a_hash_is_a_hash_or_says_it_is_not(self, tmp_path, adapter):
+        """F17: the same file, named two ways, must hash the same.
+
+        GNU coreutils escapes a checksum line whose filename contains a
+        backslash: it prefixes the line with `\\` and escapes the name. The old
+        `sha256sum "$1" | cut -d' ' -f1` therefore returned `\\<64 hex>` for any
+        Windows-style path -- not a hash, and printed straight into the
+        collision error the operator is meant to act on. Measured on this
+        machine: bfe5ed57e6e3... by the POSIX name, \\bfe5ed57e6e3... by the
+        Windows one, for one unchanged file.
+        """
+        _skip_if_no_sh()
+        _name, script, _ps1, _u1, _u2 = adapter
+
+        driver = (
+            'printf "contents\\n" > plain.txt\n'
+            'PLAIN="$(sha256_file plain.txt)"\n'
+            'echo "PLAIN=$PLAIN"\n'
+            '# A name containing a backslash is what triggers the escaping.\n'
+            '# Creatable directly on POSIX; on Windows the same shape arrives\n'
+            '# as an ordinary native path, so use cygpath there.\n'
+            'ODD=""\n'
+            'if printf "contents\\n" > "odd\\\\name.txt" 2>/dev/null && '
+            '[ -f "odd\\\\name.txt" ]; then\n'
+            '    ODD="odd\\\\name.txt"; echo "VIA=literal-backslash"\n'
+            'elif command -v cygpath >/dev/null 2>&1; then\n'
+            '    ODD="$(cygpath -w "$PWD/plain.txt")"; echo "VIA=cygpath"\n'
+            'else\n'
+            '    echo "VIA=none"\n'
+            'fi\n'
+            'if [ -n "$ODD" ]; then\n'
+            '    echo "ODD=$(sha256_file "$ODD")"\n'
+            'fi\n'
+        )
+        rc, out, err = _run_harness(tmp_path, script,
+                                    ["sha256_file"], driver)
+        assert rc == 0, "harness failed: %s" % err
+        values = dict(
+            line.split("=", 1) for line in out.strip().split("\n") if "=" in line
+        )
+        if values.get("VIA") == "none":
+            pytest.skip(
+                "no way to present a backslash-bearing path on this host: "
+                "the filesystem refused the name and cygpath is absent")
+
+        plain = values["PLAIN"]
+        assert len(plain) == 64 and all(c in "0123456789abcdefABCDEF" for c in plain), (
+            "sha256_file returned %r for an ordinary path, which is not a "
+            "64-character hex digest" % plain)
+
+        odd = values["ODD"]
+        if values["VIA"] == "cygpath":
+            assert odd == plain, (
+                "the same file hashed to %r by its POSIX name and %r by its "
+                "Windows name. A leading backslash is coreutils' escape marker "
+                "for the line, not part of the digest." % (plain, odd))
+        else:
+            assert odd == "UNREADABLE" or (
+                len(odd) == 64
+                and all(c in "0123456789abcdefABCDEF" for c in odd)), (
+                "sha256_file returned %r for a backslash-bearing filename. It "
+                "must return a real digest or say it could not, never a string "
+                "that merely looks like one." % odd)
+
+    def test_no_hash_tool_does_not_make_every_file_identical(
+            self, tmp_path, adapter):
+        """The fallback branch has to be able to report a difference.
+
+        With neither diff nor sha256sum nor shasum on PATH, the old code hashed
+        both files to the literal "NO_SHA256", compared them equal, and returned
+        "identical" -- so every collision in the tree was silently waved
+        through. A check that cannot fail is not a check.
+        """
+        _skip_if_no_sh()
+        _name, script, _ps1, _u1, _u2 = adapter
+
+        driver = (
+            'printf "a\\n" > f1\n'
+            'printf "b\\n" > f2\n'
+            'mkdir -p emptybin\n'
+            'OLD="$PATH"\n'
+            'PATH="$PWD/emptybin"; export PATH\n'
+            'if command -v diff >/dev/null 2>&1 || '
+            'command -v sha256sum >/dev/null 2>&1 || '
+            'command -v shasum >/dev/null 2>&1; then\n'
+            '    RESULT="SKIP"\n'
+            'else\n'
+            '    if files_identical f1 f2; then RC=0; else RC=$?; fi\n'
+            '    RESULT="$RC"\n'
+            'fi\n'
+            'PATH="$OLD"; export PATH\n'
+            'echo "RESULT=$RESULT"\n'
+        )
+        rc, out, err = _run_harness(tmp_path, script,
+                                    ["sha256_file", "files_identical"], driver)
+        assert rc == 0, "harness failed: %s" % err
+        result = out.strip().split("RESULT=")[-1].strip()
+        if result == "SKIP":
+            pytest.skip("could not clear diff/sha256sum/shasum from PATH here")
+        assert result == "2", (
+            "with no tool available to compare them, files_identical returned "
+            "%s for two files whose contents genuinely differ. 0 means it "
+            "claimed they were identical; 1 means it claimed a comparison it "
+            "never made. The only honest answer is 2, could not compare."
+            % result)
+
+    def test_the_three_outcomes_are_distinct(self, tmp_path, adapter):
+        """identical / differ / could-not-compare must not collapse into two.
+
+        The diff branch already returned diff's own status, so this half is a
+        regression guard rather than proof of the fix; the missing-file guard
+        and the fallback branch above are what changed.
+        """
+        _skip_if_no_sh()
+        _name, script, _ps1, _u1, _u2 = adapter
+
+        driver = (
+            'printf "a\\n" > f1\n'
+            'printf "a\\n" > f2\n'
+            'printf "b\\n" > f3\n'
+            'mkdir -p adir\n'
+            'probe() { if files_identical "$2" "$3"; then echo "$1=0"; '
+            'else echo "$1=$?"; fi; }\n'
+            'probe SAME f1 f2\n'
+            'probe DIFF f1 f3\n'
+            'probe GONE f1 nope\n'
+            'probe DIR  f1 adir\n'
+        )
+        rc, out, err = _run_harness(tmp_path, script,
+                                    ["sha256_file", "files_identical"], driver)
+        assert rc == 0, "harness failed: %s" % err
+        got = dict(
+            line.split("=", 1) for line in out.strip().split("\n") if "=" in line
+        )
+        assert got == {"SAME": "0", "DIFF": "1", "GONE": "2", "DIR": "2"}, (
+            "files_identical returned %r. Expected 0 identical, 1 differ, "
+            "2 could-not-compare." % got)
+
+    def test_could_not_compare_is_not_announced_as_a_collision(
+            self, tmp_path, adapter):
+        """F16: the caller must not turn "no answer" into "they diverged".
+
+        `check_collision` tested `if ! files_identical`, which reads 1 and 2
+        alike, so a comparison that never happened was reported to the operator
+        as an observed divergence -- with two SHA-256 values printed beneath it
+        as if they were the evidence. files_identical is stubbed here so the
+        caller's own branch is what is under test.
+        """
+        _skip_if_no_sh()
+        _name, script, _ps1, _u1, _u2 = adapter
+
+        driver = (
+            'say() { echo "$*"; }\n'
+            'files_identical() { return 2; }\n'
+            'mkdir -p src dst\n'
+            'printf "x\\n" > src/thing.md\n'
+            'printf "y\\n" > dst/thing.md\n'
+            'if check_collision "$PWD/src" "$PWD/dst" demo-skill; then '
+            'echo "RC=0"; else echo "RC=$?"; fi\n'
+        )
+        rc, out, err = _run_harness(
+            tmp_path, script,
+            ["sha256_file", "files_identical", "check_collision"], driver)
+        assert rc == 0, "harness failed: %s" % err
+        assert "RC=1" in out, (
+            "check_collision returned %r; it must still refuse when it could "
+            "not compare." % out.strip())
+        assert "could not compare" in err, (
+            "check_collision said %r. When no comparison was obtained it must "
+            "say so, not assert a divergence nobody observed." % err.strip())
+        assert "collision detected" not in err, (
+            "check_collision announced a collision it never observed: %r"
+            % err.strip())

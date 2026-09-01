@@ -39,6 +39,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   inline exemption naming the reason rather than being promoted into sections
   that do not exist.
 
+- **`platforms/claude-code/install.sh` no longer nests a copy of every skill
+  inside itself, and no longer claims to have symlinked what it copied.** The
+  `do_ln` guard landed in `setup/claude-code/install.sh` in `0.18.0` with a test
+  class beside it; this second installer carried the identical defect the whole
+  time, because no test named it. `ln -sf SRC DEST` where `DEST` already exists
+  as a real directory does not replace it — it creates `DEST/basename(SRC)`
+  inside it and exits 0, and the `cp -r` fallback nests identically. Installing
+  twice into the same project therefore produced `.claude/skills/<name>/<name>`
+  for all nine core skills while reporting a clean `Symlinked` both times. On a
+  host where `ln -s` really does link, the second install resolves _through_ the
+  first link and writes that nested copy into `core/skills/` in the source
+  repository; it escaped that here only because MSYS silently degrades symlinks
+  to copies.
+
+  That degradation is the second half of the fix. `ln` on Windows copies and
+  exits 0, so `Symlinked` was printed for a plain copy — a claim about the
+  machine that nothing had read back off it. The installer now reads the
+  destination back and names what is actually on disk.
+
+  A destination that already exists is compared rather than refused outright,
+  because refusing would break re-installing on every host where symlinks
+  degrade to copies. Identical reports `unchanged`; a genuine divergence is
+  refused by path with the reason; and `diff` exiting `>= 2` — _could not
+  compare_ — is reported as its own outcome instead of being read as _differs_.
+  The comparison uses `--strip-trailing-cr`, agreeing with `install_audit`
+  rather than inventing a second answer to what counts as drift.
+
+  Four tests cover it, and each was proven by restoring the pre-fix script
+  byte-for-byte and rerunning: **4 of 4 fail against it**, all 4 pass with the
+  fix, and the working tree was restored byte-identical by sha256.
+
+- **The `setup/*` collision check no longer reports a divergence it never
+  observed, and no longer prints a SHA-256 that is not one.** Two defects in
+  the same 21-line helper block, which `setup/codex/install.sh` and
+  `setup/opencode/install.sh` carried byte-identically — the second instance
+  this release of one guard being copied and only one copy maintained.
+
+  `check_collision` tested `if ! files_identical`, and `diff -q` has three
+  outcomes, not two: `0` identical, `1` differ, `>= 2` _could not compare_. The
+  helper passed that status through faithfully; the caller collapsed it, so a
+  comparison that never happened was announced as `ERROR: collision detected`
+  with two hashes printed beneath it as though they were its evidence. That is
+  the mechanism behind a once-only suite failure on 2026-08-31 in which
+  `test_nested_file_divergence_detected[opencode-sh]` named a file the test had
+  never touched. `files_identical` now documents three return codes, guards a
+  missing operand, and the caller says _could not compare_ and refuses without
+  asserting a divergence. Its no-`diff` fallback was a third hole: with no hash
+  tool present both files hashed to the literal `NO_SHA256`, compared equal,
+  and every collision in the tree was waved through as identical.
+
+  `sha256_file` returned `\<64 hex>` for any path containing a backslash —
+  coreutils escapes a checksum line whose filename needs it, prefixing the
+  whole line — so on Windows the value printed into the collision error was not
+  a digest at all. Measured on one unchanged file: `bfe5ed57e6e3…` by its POSIX
+  name, `\bfe5ed57e6e3…` by its Windows one. The prefix is stripped and the
+  result is now _checked_ to be 64 hex digits rather than assumed to be;
+  anything else reports `UNREADABLE`, so a non-hash can never again be printed
+  as one.
+
+  Neither defect ever existed in `install.ps1`, which compares with
+  `Get-FileHash` — no line to escape, no exit code to conflate. The two hosts
+  of the same installer had been disagreeing about what a refusal means, and
+  the shell now agrees with PowerShell.
+
+  `TestComparisonHelpers` extracts the shell functions from the shipped script
+  rather than restating them, and runs through the existing `adapter` fixture,
+  so adding an adapter to `_ADAPTERS` covers it automatically. Proven the same
+  way as above: **6 of the 8 parametrised cases fail against the pre-fix
+  installers**, all 8 pass with the fix, both files restored byte-identical by
+  sha256. The other two are a regression guard on the `diff` branch, which was
+  already correct — recorded as such rather than counted as proof.
+
 ---
 
 ## [0.18.0] - 2026-08-31
