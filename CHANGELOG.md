@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+_Nothing yet._
+
+---
+
+## [0.19.0] - 2026-09-01
+
 ### Fixed
 
 - **The Markdown Lint job can now fail.** It ran
@@ -801,6 +807,7 @@ Gate PASSED attempt 1, both agents. Completed 2026-05-13.
 
 ---
 
+[0.19.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.19.0
 [0.18.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.18.0
 [0.17.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.17.0
 [0.16.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.16.0
@@ -814,4 +821,4 @@ Gate PASSED attempt 1, both agents. Completed 2026-05-13.
 [0.8.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.8.0
 [0.7.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.7.0
 [0.6.0]: https://github.com/MungoHarvey/advanced-planning/releases/tag/v0.6.0
-[Unreleased]: https://github.com/MungoHarvey/advanced-planning/compare/v0.18.0...HEAD
+[Unreleased]: https://github.com/MungoHarvey/advanced-planning/compare/v0.19.0...HEAD
